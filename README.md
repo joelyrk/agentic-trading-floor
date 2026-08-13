@@ -1,0 +1,81 @@
+# Agentic Trading Floor
+
+A multi-agent paper-trading application built with the OpenAI Agents SDK and Model Context Protocol (MCP). Four strategy agents share research, request market data, operate paper accounts, and expose their activity through a FastAPI backend and Vite frontend.
+
+This is an educational simulation. It does not place real orders and is not financial advice.
+
+## Architecture
+
+- `backend/`: agents, MCP servers, paper accounts, market data, tracing, and API
+- `frontend/`: Vite/TypeScript dashboard
+- `memory/`: runtime location for per-agent MCP memory databases
+- `build-plan.md`: priority-ordered roadmap and acceptance gates
+
+All agents use the project-owned typed market MCP server. Behind it, the configured provider is either Massive's previous-close endpoint (`end_of_day`) or the deterministic simulator (`simulated`). The application never probes progressively more privileged Massive endpoints and never silently changes to synthetic prices.
+
+## Requirements
+
+- Python 3.12
+- `uv`
+- Node.js 22+
+- npm
+- `npx` (used by the Tavily and memory MCP servers)
+
+## Setup
+
+```bash
+cp .env.example .env
+uv sync
+cd frontend
+npm ci
+```
+
+Add at least `OPENAI_API_KEY` and `TAVILY_API_KEY` to `.env`. Market data is configured explicitly:
+
+```dotenv
+# Safe credential-free demo
+MARKET_DATA_MODE=simulated
+MARKET_DATA_FALLBACK=fail_closed
+
+# Or Massive's end-of-day previous close
+MARKET_DATA_MODE=end_of_day
+MASSIVE_API_KEY=...
+MARKET_DATA_FALLBACK=fail_closed
+```
+
+`MARKET_DATA_FALLBACK` accepts `fail_closed`, `explicit_simulator`, or `last_known_good`. `fail_closed` is the default, including whenever Massive is configured. An explicit simulator fallback is returned with `source=simulator`, `mode=simulated`, and degraded health; it is never presented as Massive data. `last_known_good` is process-local and is re-evaluated against the freshness threshold before every use.
+
+`MARKET_DATA_FRESHNESS_SECONDS` defaults to 300 seconds for simulated observations and four days for EOD observations so a Friday close remains usable over an ordinary weekend. `MARKET_DATA_TIMEOUT_SECONDS` defaults to 10 seconds. This phase supports only `simulated` and `end_of_day`; requesting `delayed` or `real_time`, or requesting EOD without a key, fails startup with an actionable configuration error.
+
+## Run
+
+Open three terminals in the project root.
+
+Trading scheduler:
+
+```bash
+uv run python -m backend.trading_floor
+```
+
+Read-only API:
+
+```bash
+uv run uvicorn backend.api:app --port 8000
+```
+
+Frontend:
+
+```bash
+cd frontend
+npm run dev
+```
+
+Vite normally serves the dashboard at `http://localhost:5173`.
+
+## Market-data contract
+
+Every observation includes `symbol`, `price`, `currency`, `market_timestamp`, `retrieved_at`, `source`, `mode`, `is_stale`, and `provider_endpoint`. Timestamps are timezone-aware UTC values, and future-dated market observations are rejected. The exact observation behind each holding valuation is returned by the trader API and stored in `market_observations`; each new paper transaction also embeds and references its execution observation.
+
+`GET /api/market` reports the effective and configured provider/mode, fallback policy, last successful observation, freshness threshold, degraded state, and a credential-safe error summary. The dashboard labels EOD, delayed, real-time, and simulated modes explicitly. These labels describe data quality, not whether the paper-trading scheduler is placing real trades—it never does.
+
+Massive credentialed tests are not part of the default suite. Provider behavior is tested with deterministic fakes for success, authentication failure, entitlement failure, timeout, malformed responses, empty market days, and weekend previous-close handling.

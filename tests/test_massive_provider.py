@@ -1,0 +1,117 @@
+from datetime import datetime, timezone
+from types import SimpleNamespace
+
+import pytest
+
+from backend.market.massive import MassiveEodProvider
+from backend.market.provider import (
+    AuthenticationError,
+    EmptyMarketDayError,
+    EntitlementError,
+    MalformedResponseError,
+    ProviderTimeoutError,
+)
+
+
+class FixedClock:
+    def __init__(self, now: datetime):
+        self.value = now
+
+    def now(self) -> datetime:
+        return self.value
+
+
+class FakeHttpError(Exception):
+    def __init__(self, status_code: int):
+        super().__init__(f"HTTP {status_code}")
+        self.response = SimpleNamespace(status_code=status_code)
+
+
+class FakeClient:
+    def __init__(self, result=None, error: Exception | None = None):
+        self.result = result
+        self.error = error
+        self.calls: list[str] = []
+
+    def get_previous_close_agg(self, symbol: str):
+        self.calls.append(symbol)
+        if self.error:
+            raise self.error
+        return self.result
+
+
+def provider(client: FakeClient, now: datetime | None = None) -> MassiveEodProvider:
+    captured = {}
+
+    def factory(api_key, **kwargs):
+        captured.update(api_key=api_key, **kwargs)
+        return client
+
+    result = MassiveEodProvider(
+        "key",
+        FixedClock(now or datetime(2026, 8, 13, 12, tzinfo=timezone.utc)),
+        timeout_seconds=3,
+        client_factory=factory,
+    )
+    assert captured == {"api_key": "key", "connect_timeout": 3, "read_timeout": 3}
+    return result
+
+
+def test_massive_previous_close_success_uses_one_intentional_endpoint() -> None:
+    stamp_ms = 1_765_411_400_000
+    client = FakeClient([SimpleNamespace(close=199.75, timestamp=stamp_ms)])
+    result = provider(client).observe("aapl")
+
+    assert result.symbol == "AAPL"
+    assert float(result.price) == 199.75
+    assert result.provider_endpoint == "/v2/aggs/ticker/AAPL/prev"
+    assert client.calls == ["AAPL"]
+
+
+@pytest.mark.parametrize(
+    ("error", "expected"),
+    [
+        (FakeHttpError(401), AuthenticationError),
+        (FakeHttpError(403), EntitlementError),
+        (TimeoutError(), ProviderTimeoutError),
+    ],
+)
+def test_massive_normalizes_expected_failures(error: Exception, expected: type[Exception]) -> None:
+    with pytest.raises(expected):
+        provider(FakeClient(error=error)).observe("AAPL")
+
+
+def test_massive_rejects_malformed_payload() -> None:
+    with pytest.raises(MalformedResponseError):
+        provider(FakeClient([{"close": "not-a-price", "timestamp": "nope"}])).observe("AAPL")
+
+
+def test_massive_reports_empty_market_day() -> None:
+    with pytest.raises(EmptyMarketDayError):
+        provider(FakeClient([])).observe("AAPL")
+
+
+def test_weekend_uses_previous_trading_close_without_live_probe() -> None:
+    sunday = datetime(2026, 8, 16, 12, tzinfo=timezone.utc)
+    friday_close_ms = int(datetime(2026, 8, 14, 20, tzinfo=timezone.utc).timestamp() * 1000)
+    client = FakeClient([{"c": 202.5, "t": friday_close_ms}])
+    adapter = provider(client, sunday)
+
+    result = adapter.observe("MSFT")
+
+    assert result.market_timestamp.weekday() == 4
+    assert adapter.is_market_open() is False
+    assert client.calls == ["MSFT"]
+
+
+def test_holiday_gap_preserves_provider_previous_close_timestamp() -> None:
+    # Friday 2026-07-03 is the observed Independence Day market holiday, so
+    # Massive's previous-close result remains Thursday's daily aggregate.
+    sunday = datetime(2026, 7, 5, 12, tzinfo=timezone.utc)
+    thursday_close = datetime(2026, 7, 2, 20, tzinfo=timezone.utc)
+    client = FakeClient([{"c": 155.25, "t": int(thursday_close.timestamp() * 1000)}])
+
+    result = provider(client, sunday).observe("NVDA")
+
+    assert result.market_timestamp == thursday_close
+    assert result.retrieved_at == sunday

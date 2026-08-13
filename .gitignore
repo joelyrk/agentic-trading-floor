@@ -1,0 +1,14 @@
+.env
+.venv/
+__pycache__/
+*.py[cod]
+*.db
+*.sqlite*
+*.log
+.DS_Store
+.ipynb_checkpoints/
+.pytest_cache/
+memory/
+frontend/node_modules/
+frontend/dist/
+.playwright-mcp/

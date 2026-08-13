@@ -1,0 +1,26 @@
+[project]
+name = "agentic-trading-floor"
+version = "0.1.0"
+description = "A multi-agent paper-trading platform powered by MCP and the OpenAI Agents SDK."
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "fastapi>=0.136.1",
+    "massive>=2.8.0",
+    "mcp<2",
+    "openai>=2.34.0",
+    "openai-agents[viz]>=0.15.1",
+    "pydantic>=2.13.3",
+    "python-dotenv>=1.2.2",
+    "requests>=2.33.1",
+    "uvicorn[standard]>=0.46.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.4.0",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
