@@ -1,0 +1,22 @@
+{
+  "dataset_id": "historical-v1",
+  "dataset_version": "1.0.0",
+  "decision_fixtures": {
+    "path": "decision_fixtures.json",
+    "sha256": "fbb1035e3a4dc98d6d917cd40f650324bc238747279a397e952ca7a3f3a6ceb0"
+  },
+  "description": "Thirty one-session historical replay scenarios from adjusted 2014 closes; SPX is an explicitly derived equal-weight proxy, not the S&P 500 index.",
+  "outcome_fixtures": {
+    "path": "outcome_fixtures.json",
+    "sha256": "2fa4f8f43f5729393d43af473d4e1d3c836fc4c3c9e33674b36c222313d0d590"
+  },
+  "scenario_count": 30,
+  "schema_version": "1.0",
+  "symbols": [
+    "AAPL",
+    "MSFT",
+    "NVDA",
+    "XOM",
+    "SPX"
+  ]
+}

@@ -12,3 +12,4 @@ memory/
 frontend/node_modules/
 frontend/dist/
 .playwright-mcp/
+evals/results/

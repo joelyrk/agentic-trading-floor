@@ -9,6 +9,7 @@ This is an educational simulation. It does not place real orders and is not fina
 - `backend/`: agents, MCP servers, paper accounts, market data, tracing, and API
 - `frontend/`: Vite/TypeScript dashboard
 - `memory/`: runtime location for per-agent MCP memory databases
+- `evals/`: immutable replay fixtures, deterministic baselines, metrics, and reports
 - `build-plan.md`: priority-ordered roadmap and acceptance gates
 
 All agents use the project-owned typed market MCP server. Behind it, the configured provider is either Massive's previous-close endpoint (`end_of_day`) or the deterministic simulator (`simulated`). The application never probes progressively more privileged Massive endpoints and never silently changes to synthetic prices.
@@ -118,3 +119,19 @@ Every observation includes `symbol`, `price`, `currency`, `market_timestamp`, `r
 `GET /api/evidence/{proposal_id}` returns the citation-linked research brief and prompt versions together with the exact market observation, rule-level risk decision, paper order, and execution result. The dashboard’s recommendation drill-down consumes this endpoint and links only to canonical source URLs; it shows concise evidence and never model chain-of-thought.
 
 Massive credentialed tests are not part of the default suite. Provider behavior is tested with deterministic fakes for success, authentication failure, entitlement failure, timeout, malformed responses, empty market days, and weekend previous-close handling.
+
+## Replay evaluation
+
+Run the credential-free, point-in-time evaluation with:
+
+```bash
+uv run python -m evals.runner
+```
+
+It verifies immutable fixture hashes and no-look-ahead boundaries, evaluates 30
+historical scenarios against five simple baselines, and includes a deterministic
+single-agent versus multi-agent workflow ablation. Machine-readable JSON, a
+concise Markdown report, and an idempotent retry checkpoint are written below
+`evals/results/`. See [`evals/README.md`](evals/README.md) for schemas,
+methodology, metric definitions, provenance, and limitations. This offline
+evaluation tests replay infrastructure; it does not establish investment merit.

@@ -139,22 +139,22 @@ A reviewer can open any decision and verify which timestamped evidence supported
 
 ### Deliverables
 
-- [ ] Add `evals/` with versioned scenario manifests, immutable fixtures, schemas, and runners.
-- [ ] Introduce a simulation clock used by research cutoff, market data, decisions, and execution.
-- [ ] Build 30–100 representative historical scenarios without future data in agent context.
-- [ ] Separate decision-time fixtures from outcome data; make look-ahead leakage structurally difficult.
-- [ ] Add baselines: buy-and-hold, equal weight, no trade, random valid trades, and a simple momentum rule.
-- [ ] Add an ablation comparing multi-agent and single-agent workflows.
-- [ ] Measure total/benchmark-relative return, volatility, Sharpe, max drawdown, turnover, win rate, decision validity, citation validity, tool success, latency, and model/API cost.
-- [ ] Store run metadata: dataset version, git SHA, model, prompt version, configuration, seed, and timestamps.
-- [ ] Generate machine-readable JSON and a concise Markdown evaluation report.
+- [x] Add `evals/` with versioned scenario manifests, immutable fixtures, schemas, and runners.
+- [x] Introduce a simulation clock used by research cutoff, market data, decisions, and execution.
+- [x] Build 30–100 representative historical scenarios without future data in agent context.
+- [x] Separate decision-time fixtures from outcome data; make look-ahead leakage structurally difficult.
+- [x] Add baselines: buy-and-hold, equal weight, no trade, random valid trades, and a simple momentum rule.
+- [x] Add an ablation comparing multi-agent and single-agent workflows.
+- [x] Measure total/benchmark-relative return, volatility, Sharpe, max drawdown, turnover, win rate, decision validity, citation validity, tool success, latency, and model/API cost.
+- [x] Store run metadata: dataset version, git SHA, model, prompt version, configuration, seed, and timestamps.
+- [x] Generate machine-readable JSON and a concise Markdown evaluation report.
 
 ### Tests
 
-- [ ] Replay determinism for non-model components.
-- [ ] No-look-ahead assertions across sources and prices.
-- [ ] Metric calculations against known fixtures.
-- [ ] Resume/retry without duplicate orders.
+- [x] Replay determinism for non-model components.
+- [x] No-look-ahead assertions across sources and prices.
+- [x] Metric calculations against known fixtures.
+- [x] Resume/retry without duplicate orders.
 
 ### Acceptance gate
 
@@ -271,3 +271,4 @@ Record material architecture decisions here as short dated entries or replace th
 - **2026-08-13:** Trader agents return structured proposals and have no account-mutation MCP tools. Deterministic services persist proposal observations, evaluate configurable rule-level risk policy, and execute approved paper orders atomically with stable idempotency keys.
 - **2026-08-13:** Sector concentration uses configured classifications rather than model claims; unmapped symbols share a conservative `unclassified` sector. High-risk human approval is opt-in and disabled during automated replay.
 - **2026-08-13:** Phase 3 uses a versioned, citation-linked research graph persisted with each run in SQLite. Canonical URL/content deduplication, domain policy, and publication cutoffs are deterministic gates; prompt versions and concise evidence are persisted without chain-of-thought.
+- **2026-08-13:** Phase 4 uses hashed, physically separated decision/outcome fixtures and an injected monotonic simulation clock. The credential-free default evaluator compares five deterministic baselines plus single-agent/multi-agent workflow proxies, checkpoints by stable scenario keys and order IDs, and emits versioned JSON/Markdown reports. Its 30-scenario historical fixture and derived benchmark proxy are explicitly limited to replay-system validation, not investment-strategy claims.
