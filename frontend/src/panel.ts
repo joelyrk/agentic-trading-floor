@@ -6,6 +6,8 @@ import { Heatmap } from "./heatmap";
 import { LogView } from "./log";
 import type { TraderState } from "./state";
 import { TransactionsView } from "./transactions";
+import { EvidenceView } from "./evidence";
+import type { DecisionAudit } from "./api";
 
 export class TraderPanel {
   readonly root: HTMLElement;
@@ -17,6 +19,7 @@ export class TraderPanel {
   private valueEl: HTMLElement;
   private pnlEl: HTMLElement;
   private strategyEl: HTMLElement;
+  private evidence: EvidenceView;
 
   constructor(state: TraderState) {
     this.state = state;
@@ -43,6 +46,10 @@ export class TraderPanel {
           <div class="panel-transactions"></div>
         </div>
       </div>
+      <div class="panel-evidence-wrap">
+        <span class="panel-col-label">Recommendations &amp; evidence</span>
+        <div class="panel-evidence"></div>
+      </div>
     `;
     this.root.querySelector(".panel-name")!.textContent = name;
     this.root.querySelector(".panel-sub")!.textContent = `${model_name} · ${lastname}`;
@@ -52,6 +59,7 @@ export class TraderPanel {
     this.heatmap = new Heatmap(this.root.querySelector(".panel-heatmap")!);
     this.log = new LogView(this.root.querySelector(".panel-log")!);
     this.transactions = new TransactionsView(this.root.querySelector(".panel-transactions")!);
+    this.evidence = new EvidenceView(this.root.querySelector(".panel-evidence")!);
     // Chart is created in mount(), after the panel is in the DOM, because uPlot misbehaves
     // when its host is not laid out at construction time.
   }
@@ -82,6 +90,10 @@ export class TraderPanel {
 
   renderLogs(rows: LogRow[]): void {
     this.log.render(rows);
+  }
+
+  renderDecisions(rows: DecisionAudit[]): void {
+    this.evidence.render(rows);
   }
 
   setLeader(isLeader: boolean): void {

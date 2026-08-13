@@ -136,6 +136,15 @@ def get_trader_decisions(name: str) -> list[dict]:
     return decision_repository.audit_chain(name)
 
 
+@app.get("/api/evidence/{proposal_id}")
+def get_decision_evidence(proposal_id: str) -> dict:
+    """Citation-linked evidence, observation, policy result, and paper execution."""
+    try:
+        return decision_repository.evidence_chain(proposal_id)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
 @app.post("/api/decisions/{decision_id}/approve")
 def approve_high_risk_decision(decision_id: str) -> dict:
     """Explicitly approve and execute a pending high-risk paper proposal."""

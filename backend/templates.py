@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 from .market import DataMode, get_market_settings
+from .research import RESEARCHER_PROMPT_VERSION, TRADER_PROMPT_VERSION
 
 market_settings = get_market_settings()
 if market_settings.mode == DataMode.END_OF_DAY:
@@ -14,7 +15,8 @@ else:
     )
 
 
-def researcher_instructions():
+def researcher_instructions(decision_cutoff: datetime | None = None):
+    cutoff = decision_cutoff or datetime.now(timezone.utc)
     return f"""You are a financial researcher. You are able to search the web for interesting financial news,
 look for possible trading opportunities, and help with research.
 Based on the request, you carry out necessary research and respond with your findings.
@@ -29,7 +31,12 @@ Also use it to store web addresses that you find interesting so you can check th
 Draw on your knowledge graph to build your expertise over time.
 
 If there isn't a specific request, then just respond with investment opportunities based on searching latest news.
-The current UTC datetime is {datetime.now(timezone.utc).isoformat()}
+Return only concise, verifiable evidence in the structured ResearchBrief. For every source, include a stable
+source_id, canonical URL, publisher, title, publication and retrieval timestamps, and a short supporting excerpt.
+Every material claim must cite one or more source IDs. Do not include hidden reasoning or chain-of-thought.
+Do not use or cite anything published after the decision cutoff. Record the actual retrieval time for every source.
+Researcher prompt version: {RESEARCHER_PROMPT_VERSION}
+Decision cutoff (UTC): {cutoff.isoformat()}
 """
 
 def research_tool():
@@ -38,7 +45,8 @@ either based on your specific request to look into a certain stock, \
 or generally for notable financial news and opportunities. \
 Describe what kind of research you're looking for."
 
-def trader_instructions(name: str):
+def trader_instructions(name: str, decision_cutoff: datetime | None = None):
+    cutoff = decision_cutoff or datetime.now(timezone.utc)
     return f"""
 You are {name}, a trader on the stock market. Your account is under your name, {name}.
 You actively manage your portfolio according to your strategy.
@@ -46,6 +54,8 @@ You have access to tools including a researcher to research online for news and 
 You also have tools to access to financial data for stocks. {note}
 You do not have account-mutation tools. Return proposed paper trades in the required structured output;
 deterministic code will independently approve, reject, size, and execute them.
+Every proposal must reference one or more supported, material evidence claim IDs from the ResearchBrief. Do not
+invent or cite sources published after the decision cutoff. Return concise rationale, never private chain-of-thought.
 Check the attributed share observation and available cash before proposing a trade.
 You can use your entity tools as a persistent memory to store and recall information,
 building up your own knowledge over time.
@@ -53,9 +63,12 @@ Review how your past paper trades have performed and reflect those lessons in th
 Use these tools to carry out research and make decisions. Never claim a proposal was executed.
 Send a push notification describing proposals as pending policy review, then return the structured decision and a 2-3 sentence appraisal.
 Your goal is to maximize your profits according to your strategy.
+Trader prompt version: {TRADER_PROMPT_VERSION}
+Decision cutoff (UTC): {cutoff.isoformat()}
 """
 
-def trade_message(name, strategy, account):
+def trade_message(name, strategy, account, decision_cutoff: datetime | None = None):
+    cutoff = decision_cutoff or datetime.now(timezone.utc)
     return f"""Based on your investment strategy, you should now look for new opportunities.
 Use the research tool to find news and opportunities consistent with your strategy.
 Do not use the 'get company news' tool; use the research tool instead.
@@ -68,14 +81,15 @@ Your investment strategy:
 {strategy}
 Here is your current account:
 {account}
-Here is the current UTC datetime:
-{datetime.now(timezone.utc).isoformat()}
+Decision cutoff (UTC); do not use later evidence:
+{cutoff.isoformat()}
 Now, carry out analysis and propose trades. Your account name is {name}.
 After creating proposals, send a push notification stating they are pending policy review, then
 respond with a brief 2-3 sentence appraisal of your portfolio and its outlook.
 """
 
-def rebalance_message(name, strategy, account):
+def rebalance_message(name, strategy, account, decision_cutoff: datetime | None = None):
+    cutoff = decision_cutoff or datetime.now(timezone.utc)
     return f"""Based on your investment strategy, you should now examine your portfolio and decide if you need to rebalance.
 Use the research tool to find news and opportunities affecting your existing portfolio.
 Use the tools to research stock price and other company information affecting your existing portfolio. {note}
@@ -87,8 +101,8 @@ Your investment strategy:
 Look at how your holdings have performed and apply those lessons while following the configured strategy.
 Here is your current account:
 {account}
-Here is the current UTC datetime:
-{datetime.now(timezone.utc).isoformat()}
+Decision cutoff (UTC); do not use later evidence:
+{cutoff.isoformat()}
 Now, carry out analysis and propose trades. Your account name is {name}.
 After creating proposals, send a push notification stating they are pending policy review, then
 respond with a brief 2-3 sentence appraisal of your portfolio and its outlook."""

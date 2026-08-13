@@ -79,6 +79,70 @@ export interface MarketInfo {
   error_summary: string | null;
 }
 
+export type EvidenceStance = "supports" | "opposes" | "mixed" | "context";
+
+export interface SourceRecord {
+  source_id: string;
+  canonical_url: string;
+  publisher: string;
+  title: string;
+  published_at: string;
+  retrieved_at: string;
+  supporting_excerpt: string;
+  content_hash: string;
+  caveats: string[];
+}
+
+export interface EvidenceClaim {
+  claim_id: string;
+  claim: string;
+  source_ids: string[];
+  stance: EvidenceStance;
+  confidence: string;
+  material: boolean;
+  caveats: string[];
+}
+
+export interface ResearchBrief {
+  schema_version: "1.0";
+  research_id: string;
+  summary: string;
+  as_of: string;
+  sources: SourceRecord[];
+  claims: EvidenceClaim[];
+  caveats: string[];
+  researcher_prompt_version: string;
+}
+
+export interface TradeProposal {
+  proposal_id: string;
+  symbol: string;
+  side: "buy" | "sell";
+  quantity: number;
+  rationale: string;
+  evidence_claim_ids: string[];
+  created_at: string;
+  research: ResearchBrief;
+  market_observation: MarketObservation;
+}
+
+export interface DecisionAudit {
+  proposal: TradeProposal;
+  risk_decision: { outcome: "approved" | "rejected" | "pending_human" } | null;
+  order: unknown | null;
+  execution: { status: string } | null;
+}
+
+export interface EvidenceChain {
+  research: ResearchBrief;
+  prompt_versions: { researcher: string; trader: string };
+  proposal: TradeProposal;
+  market_observation: MarketObservation;
+  risk_decision: { outcome: string; rules: Array<{ rule: string; passed: boolean; reason: string }> } | null;
+  order: unknown | null;
+  execution: { status: string; executed_at: string } | null;
+}
+
 async function get<T>(path: string): Promise<T> {
   const r = await fetch(path);
   if (!r.ok) throw new Error(`${path} failed: ${r.status}`);
@@ -99,4 +163,12 @@ export function getTraderLogs(name: string, lastN = 13): Promise<LogRow[]> {
 
 export function getMarket(): Promise<MarketInfo> {
   return get("/api/market");
+}
+
+export function getTraderDecisions(name: string): Promise<DecisionAudit[]> {
+  return get(`/api/traders/${encodeURIComponent(name)}/decisions`);
+}
+
+export function getEvidence(proposalId: string): Promise<EvidenceChain> {
+  return get(`/api/evidence/${encodeURIComponent(proposalId)}`);
 }

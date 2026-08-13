@@ -8,6 +8,8 @@ from uuid import NAMESPACE_URL, uuid5
 from pydantic import ValidationError
 
 from backend.market import MarketObservation
+from backend.research import ResearchPolicy, ResearchPolicyError
+from backend.research.models import TRADER_PROMPT_VERSION
 
 from .models import (
     ExecutionResult,
@@ -28,12 +30,26 @@ Observe = Callable[[str], MarketObservation]
 
 
 class ProposalService:
-    def __init__(self, repository: DecisionRepository, observe: Observe, clock: Clock | None = None):
+    def __init__(
+        self,
+        repository: DecisionRepository,
+        observe: Observe,
+        clock: Clock | None = None,
+        research_policy: ResearchPolicy | None = None,
+    ):
         self.repository = repository
         self.observe = observe
         self.clock = clock or (lambda: datetime.now(timezone.utc))
+        self.research_policy = research_policy or ResearchPolicy.from_env()
 
-    def create(self, account_name: str, proposed: ProposedTrade, research: ResearchBrief) -> TradeProposal:
+    def create(
+        self,
+        account_name: str,
+        proposed: ProposedTrade,
+        research: ResearchBrief,
+        trader_prompt_version: str = TRADER_PROMPT_VERSION,
+    ) -> TradeProposal:
+        self.record_research(account_name, research, trader_prompt_version)
         observation = self.observe(proposed.symbol)
         now = self.clock()
         proposal = TradeProposal(
@@ -42,6 +58,17 @@ class ProposalService:
         )
         self.repository.save_proposal(proposal)
         return proposal
+
+    def record_research(
+        self,
+        account_name: str,
+        research: ResearchBrief,
+        trader_prompt_version: str,
+    ) -> datetime:
+        self.research_policy.validate(research)
+        now = self.clock()
+        self.repository.save_research_brief(account_name, research, trader_prompt_version, now)
+        return now
 
 
 class RiskService:
@@ -109,8 +136,14 @@ class DecisionPipeline:
 
     def process(self, account_name: str, output: TradingDecision) -> list[tuple[TradeProposal, RiskDecision, ExecutionResult | None]]:
         results = []
+        if not output.proposals:
+            self.proposal_service.record_research(
+                account_name, output.research, output.trader_prompt_version
+            )
         for proposed in output.proposals:
-            proposal = self.proposal_service.create(account_name, proposed, output.research)
+            proposal = self.proposal_service.create(
+                account_name, proposed, output.research, output.trader_prompt_version
+            )
             decision = self.risk_service.evaluate(proposal)
             execution = self.execution_service.execute(proposal, decision)
             results.append((proposal, decision, execution))
@@ -120,9 +153,11 @@ class DecisionPipeline:
         """Validate untrusted agent output; malformed output never reaches execution."""
         try:
             output = raw_output if isinstance(raw_output, TradingDecision) else TradingDecision.model_validate(raw_output)
-        except (ValidationError, TypeError, ValueError) as exc:
+        except (ValidationError, TypeError, ValueError, ResearchPolicyError) as exc:
             return [], f"invalid_agent_output: {exc}"
         try:
             return self.process(account_name, output), None
+        except ResearchPolicyError as exc:
+            return [], f"research_policy_rejection: {exc}"
         except ExecutionConflict as exc:
             return [], f"execution_conflict: {exc}"

@@ -43,12 +43,34 @@ def initialize_database(path: str | None = None) -> None:
         ON market_observations(account_name, usage_kind, recorded_at)
         ''')
         cursor.execute('''
+        CREATE TABLE IF NOT EXISTS research_briefs (
+            research_id TEXT PRIMARY KEY,
+            account_name TEXT NOT NULL,
+            brief TEXT NOT NULL,
+            decision_cutoff TEXT NOT NULL,
+            researcher_prompt_version TEXT NOT NULL,
+            trader_prompt_version TEXT NOT NULL,
+            created_at TEXT NOT NULL
+        )
+        ''')
+        cursor.execute('''
         CREATE TABLE IF NOT EXISTS trade_proposals (
             proposal_id TEXT PRIMARY KEY,
             account_name TEXT NOT NULL,
             proposal TEXT NOT NULL,
-            created_at TEXT NOT NULL
+            created_at TEXT NOT NULL,
+            research_id TEXT,
+            FOREIGN KEY(research_id) REFERENCES research_briefs(research_id)
         )
+        ''')
+        proposal_columns = {
+            row[1] for row in cursor.execute("PRAGMA table_info(trade_proposals)").fetchall()
+        }
+        if "research_id" not in proposal_columns:
+            cursor.execute("ALTER TABLE trade_proposals ADD COLUMN research_id TEXT")
+        cursor.execute('''
+        CREATE INDEX IF NOT EXISTS idx_research_account_cutoff
+        ON research_briefs(account_name, decision_cutoff)
         ''')
         cursor.execute('''
         CREATE TABLE IF NOT EXISTS risk_decisions (

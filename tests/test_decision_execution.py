@@ -19,6 +19,8 @@ from backend.decisions import (
     RiskPolicy,
     RiskService,
     TradingDecision,
+    EvidenceClaim,
+    SourceRecord,
 )
 from backend.decisions.models import ProposedTrade
 from backend.decisions.repository import DecisionRepository, ExecutionConflict
@@ -47,9 +49,22 @@ def policy(**updates) -> RiskPolicy:
 
 
 def output(quantity=2, side=OrderSide.BUY) -> TradingDecision:
+    source = SourceRecord(
+        source_id="source-1", canonical_url="https://example.com/aapl?utm_source=test",
+        publisher="Example News", title="Apple update", published_at=NOW,
+        retrieved_at=NOW, supporting_excerpt="Apple published a relevant operating update.",
+    )
+    claim = EvidenceClaim(
+        claim_id="claim-1", claim="Apple has a current operating update.",
+        source_ids=[source.source_id], stance="supports", confidence=Decimal("0.8"),
+    )
     return TradingDecision(
-        research=ResearchBrief(summary="evidence", as_of=NOW), appraisal="paper proposal only",
-        proposals=[ProposedTrade(symbol="AAPL", side=side, quantity=quantity, sector="Technology", rationale="test")],
+        research=ResearchBrief(summary="evidence", as_of=NOW, sources=[source], claims=[claim]),
+        appraisal="paper proposal only",
+        proposals=[ProposedTrade(
+            symbol="AAPL", side=side, quantity=quantity, sector="Technology",
+            rationale="test", evidence_claim_ids=[claim.claim_id],
+        )],
     )
 
 
@@ -181,7 +196,7 @@ def test_malformed_agent_output_is_safely_rejected(tmp_path) -> None:
     processed, error = DecisionPipeline(proposals, risks, executions).safely_process(
         "Alice", {"research": {"summary": "x", "as_of": NOW}, "appraisal": "x",
                   "proposals": [{"symbol": "AAPL", "side": "buy", "quantity": 1.5,
-                                 "sector": "tech", "rationale": "x"}]},
+                                 "sector": "tech", "rationale": "x", "evidence_claim_ids": ["missing"]}]},
     )
     assert processed == []
     assert error and error.startswith("invalid_agent_output")
@@ -190,4 +205,7 @@ def test_malformed_agent_output_is_safely_rejected(tmp_path) -> None:
 
 def test_positive_integral_quantity_schema() -> None:
     with pytest.raises(ValidationError):
-        ProposedTrade(symbol="AAPL", side="buy", quantity=1.5, sector="tech", rationale="x")
+        ProposedTrade(
+            symbol="AAPL", side="buy", quantity=1.5, sector="tech",
+            rationale="x", evidence_claim_ids=["claim-1"],
+        )

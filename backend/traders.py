@@ -6,6 +6,7 @@ from openai import AsyncOpenAI
 from dotenv import load_dotenv
 import os
 import json
+from datetime import datetime, timezone
 from functools import lru_cache
 from .templates import (
     researcher_instructions,
@@ -27,6 +28,7 @@ from .decisions import (
     TradingDecision,
 )
 from .decisions.repository import DecisionRepository
+from .research import RESEARCHER_PROMPT_VERSION, TRADER_PROMPT_VERSION
 
 load_dotenv(override=True)
 
@@ -69,10 +71,10 @@ def get_model(model_name: str):
         return model_name
 
 
-async def get_researcher(mcp_servers, model_name) -> Agent:
+async def get_researcher(mcp_servers, model_name, decision_cutoff: datetime) -> Agent:
     researcher = Agent(
         name="Researcher",
-        instructions=researcher_instructions(),
+        instructions=researcher_instructions(decision_cutoff),
         model=get_model(model_name),
         mcp_servers=mcp_servers,
         output_type=ResearchBrief,
@@ -80,8 +82,8 @@ async def get_researcher(mcp_servers, model_name) -> Agent:
     return researcher
 
 
-async def get_researcher_tool(mcp_servers, model_name) -> Tool:
-    researcher = await get_researcher(mcp_servers, model_name)
+async def get_researcher_tool(mcp_servers, model_name, decision_cutoff: datetime) -> Tool:
+    researcher = await get_researcher(mcp_servers, model_name, decision_cutoff)
     return researcher.as_tool(tool_name="Researcher", tool_description=research_tool())
 
 
@@ -93,11 +95,11 @@ class Trader:
         self.model_name = model_name
         self.do_trade = True
 
-    async def create_agent(self, trader_mcp_servers, researcher_mcp_servers) -> Agent:
-        tool = await get_researcher_tool(researcher_mcp_servers, self.model_name)
+    async def create_agent(self, trader_mcp_servers, researcher_mcp_servers, decision_cutoff: datetime) -> Agent:
+        tool = await get_researcher_tool(researcher_mcp_servers, self.model_name, decision_cutoff)
         self.agent = Agent(
             name=self.name,
-            instructions=trader_instructions(self.name),
+            instructions=trader_instructions(self.name, decision_cutoff),
             model=get_model(self.model_name),
             tools=[tool],
             mcp_servers=trader_mcp_servers,
@@ -112,20 +114,31 @@ class Trader:
         return json.dumps(account_json)
 
     async def run_agent(self, trader_mcp_servers, researcher_mcp_servers):
-        self.agent = await self.create_agent(trader_mcp_servers, researcher_mcp_servers)
+        decision_cutoff = datetime.now(timezone.utc)
+        self.agent = await self.create_agent(trader_mcp_servers, researcher_mcp_servers, decision_cutoff)
         account = await self.get_account_report()
         strategy = await read_strategy_resource(self.name)
         message = (
-            trade_message(self.name, strategy, account)
+            trade_message(self.name, strategy, account, decision_cutoff)
             if self.do_trade
-            else rebalance_message(self.name, strategy, account)
+            else rebalance_message(self.name, strategy, account, decision_cutoff)
         )
         result = await Runner.run(self.agent, message, max_turns=MAX_TURNS)
         repository = DecisionRepository()
         proposal_service = ProposalService(repository, get_market_observation)
         risk_service = RiskService(repository, RiskEngine(RiskPolicy.from_env()), get_market_observation)
         pipeline = DecisionPipeline(proposal_service, risk_service, ExecutionService(repository))
-        processed, error = pipeline.safely_process(self.name, result.final_output)
+        output = result.final_output
+        if isinstance(output, TradingDecision):
+            output = output.model_copy(
+                update={
+                    "trader_prompt_version": TRADER_PROMPT_VERSION,
+                    "research": output.research.model_copy(
+                        update={"researcher_prompt_version": RESEARCHER_PROMPT_VERSION}
+                    ),
+                }
+            )
+        processed, error = pipeline.safely_process(self.name, output)
         if error:
             raise ValueError(error)
         return processed

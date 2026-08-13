@@ -8,6 +8,7 @@ from decimal import Decimal
 from backend import database
 from backend.accounts import INITIAL_BALANCE, SPREAD, Transaction
 from backend.market import MarketObservation
+from backend.research import ResearchBrief
 
 from .models import (
     ExecutionResult,
@@ -33,14 +34,51 @@ class DecisionRepository:
     def db_path(self) -> str:
         return self.path or database.DB
 
+    def save_research_brief(
+        self,
+        account_name: str,
+        brief: ResearchBrief,
+        trader_prompt_version: str,
+        created_at: datetime,
+    ) -> None:
+        with sqlite3.connect(self.db_path) as conn:
+            conn.execute(
+                """INSERT INTO research_briefs
+                   (research_id, account_name, brief, decision_cutoff, researcher_prompt_version,
+                    trader_prompt_version, created_at)
+                   VALUES (?, ?, ?, ?, ?, ?, ?)
+                   ON CONFLICT(research_id) DO NOTHING""",
+                (
+                    str(brief.research_id), account_name.lower(), brief.model_dump_json(),
+                    brief.as_of.isoformat(), brief.researcher_prompt_version,
+                    trader_prompt_version, created_at.isoformat(),
+                ),
+            )
+            stored = conn.execute(
+                """SELECT account_name, brief, researcher_prompt_version, trader_prompt_version
+                   FROM research_briefs WHERE research_id = ?""",
+                (str(brief.research_id),),
+            ).fetchone()
+            expected = (
+                account_name.lower(), brief.model_dump_json(),
+                brief.researcher_prompt_version, trader_prompt_version,
+            )
+            if stored != expected:
+                raise ExecutionConflict("research_id already exists with different evidence or prompt versions")
+
     def save_proposal(self, proposal: TradeProposal) -> None:
         observation_id = f"proposal:{proposal.proposal_id}"
         with sqlite3.connect(self.db_path) as conn:
             conn.execute("PRAGMA foreign_keys = ON")
             conn.execute("BEGIN IMMEDIATE")
             conn.execute(
-                "INSERT INTO trade_proposals VALUES (?, ?, ?, ?)",
-                (str(proposal.proposal_id), proposal.account_name, proposal.model_dump_json(), proposal.created_at.isoformat()),
+                """INSERT INTO trade_proposals
+                   (proposal_id, account_name, proposal, created_at, research_id)
+                   VALUES (?, ?, ?, ?, ?)""",
+                (
+                    str(proposal.proposal_id), proposal.account_name, proposal.model_dump_json(),
+                    proposal.created_at.isoformat(), str(proposal.research.research_id),
+                ),
             )
             conn.execute(
                 """INSERT INTO market_observations
@@ -102,6 +140,33 @@ class DecisionRepository:
         if row is None:
             raise KeyError(f"unknown decision {decision_id}")
         return RiskDecision.model_validate_json(row[0])
+
+    def evidence_chain(self, proposal_id: str) -> dict:
+        """Return only persisted concise evidence and deterministic decision artifacts."""
+        with sqlite3.connect(self.db_path) as conn:
+            row = conn.execute(
+                """SELECT rb.brief, rb.researcher_prompt_version, rb.trader_prompt_version,
+                          tp.proposal, rd.decision, po.order_payload, er.result
+                   FROM trade_proposals tp
+                   JOIN research_briefs rb ON rb.research_id = tp.research_id
+                   LEFT JOIN risk_decisions rd ON rd.proposal_id = tp.proposal_id
+                   LEFT JOIN paper_orders po ON po.proposal_id = tp.proposal_id
+                   LEFT JOIN execution_results er ON er.order_id = po.order_id
+                   WHERE tp.proposal_id = ?""",
+                (proposal_id,),
+            ).fetchone()
+        if row is None:
+            raise KeyError(f"unknown proposal {proposal_id}")
+        proposal = json.loads(row[3])
+        return {
+            "research": json.loads(row[0]),
+            "prompt_versions": {"researcher": row[1], "trader": row[2]},
+            "proposal": proposal,
+            "market_observation": proposal["market_observation"],
+            "risk_decision": json.loads(row[4]) if row[4] else None,
+            "order": json.loads(row[5]) if row[5] else None,
+            "execution": json.loads(row[6]) if row[6] else None,
+        }
 
     def load_account_data(self, account_name: str) -> dict:
         with sqlite3.connect(self.db_path) as conn:

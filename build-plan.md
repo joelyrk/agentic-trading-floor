@@ -113,19 +113,19 @@ No model-controlled path can bypass risk validation or execute the same order tw
 
 ### Deliverables
 
-- [ ] Define structured `SourceRecord`, `EvidenceClaim`, and `ResearchBrief` models.
-- [ ] Store canonical URL, publisher, title, publication time, retrieval time, claim, short supporting excerpt/hash, stance, confidence, and caveats.
-- [ ] Require each material recommendation claim to reference one or more source IDs.
-- [ ] Add source deduplication, domain allow/deny policy, and publication-time checks.
-- [ ] Reject or flag sources published after the decision cutoff.
-- [ ] Version researcher/trader prompts and store those versions with each run.
-- [ ] Create an evidence API and frontend drill-down from recommendation to sources, market observation, risk decision, and execution.
-- [ ] Present concise rationale and evidence only; never expose private chain-of-thought.
+- [x] Define structured `SourceRecord`, `EvidenceClaim`, and `ResearchBrief` models.
+- [x] Store canonical URL, publisher, title, publication time, retrieval time, claim, short supporting excerpt/hash, stance, confidence, and caveats.
+- [x] Require each material recommendation claim to reference one or more source IDs.
+- [x] Add source deduplication, domain allow/deny policy, and publication-time checks.
+- [x] Reject or flag sources published after the decision cutoff.
+- [x] Version researcher/trader prompts and store those versions with each run.
+- [x] Create an evidence API and frontend drill-down from recommendation to sources, market observation, risk decision, and execution.
+- [x] Present concise rationale and evidence only; never expose private chain-of-thought.
 
 ### Tests
 
-- [ ] Missing citations, broken citations, duplicate articles, conflicting publication dates, future-dated sources, and unsupported claims.
-- [ ] Research brief schema stability and database round-trip.
+- [x] Missing citations, broken citations, duplicate articles, conflicting publication dates, future-dated sources, and unsupported claims.
+- [x] Research brief schema stability and database round-trip.
 
 ### Acceptance gate
 
@@ -270,3 +270,4 @@ Record material architecture decisions here as short dated entries or replace th
 - **2026-08-13:** Phase 1 supports Massive previous-close EOD and deterministic simulation. Fail-closed is the default; simulator fallback must be explicit and is always surfaced as degraded simulated data.
 - **2026-08-13:** Trader agents return structured proposals and have no account-mutation MCP tools. Deterministic services persist proposal observations, evaluate configurable rule-level risk policy, and execute approved paper orders atomically with stable idempotency keys.
 - **2026-08-13:** Sector concentration uses configured classifications rather than model claims; unmapped symbols share a conservative `unclassified` sector. High-risk human approval is opt-in and disabled during automated replay.
+- **2026-08-13:** Phase 3 uses a versioned, citation-linked research graph persisted with each run in SQLite. Canonical URL/content deduplication, domain policy, and publication cutoffs are deterministic gates; prompt versions and concise evidence are persisted without chain-of-thought.

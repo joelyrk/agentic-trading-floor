@@ -9,6 +9,7 @@ from uuid import UUID, uuid4
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from backend.market.models import MarketObservation, normalize_symbol
+from backend.research.models import ResearchBrief, TRADER_PROMPT_VERSION
 
 
 class StrictModel(BaseModel):
@@ -32,21 +33,6 @@ class ExecutionStatus(StrEnum):
     DUPLICATE = "duplicate"
 
 
-class ResearchBrief(StrictModel):
-    """Concise decision evidence; Phase 3 will add source-level records."""
-
-    summary: str = Field(min_length=1, max_length=4000)
-    as_of: datetime
-    caveats: list[str] = Field(default_factory=list, max_length=20)
-
-    @field_validator("as_of")
-    @classmethod
-    def require_aware_datetime(cls, value: datetime) -> datetime:
-        if value.tzinfo is None or value.utcoffset() is None:
-            raise ValueError("as_of must be timezone-aware")
-        return value
-
-
 class ProposedTrade(StrictModel):
     """Model-owned fields. IDs and observations are assigned by deterministic code."""
 
@@ -55,6 +41,7 @@ class ProposedTrade(StrictModel):
     quantity: Annotated[int, Field(strict=True, gt=0)]
     sector: str = Field(min_length=1, max_length=80)
     rationale: str = Field(min_length=1, max_length=2000)
+    evidence_claim_ids: list[str] = Field(min_length=1, max_length=20)
 
     @field_validator("symbol", mode="before")
     @classmethod
@@ -73,6 +60,23 @@ class TradingDecision(StrictModel):
     research: ResearchBrief
     proposals: list[ProposedTrade] = Field(default_factory=list, max_length=20)
     appraisal: str = Field(min_length=1, max_length=2000)
+    trader_prompt_version: str = Field(default=TRADER_PROMPT_VERSION, min_length=1, max_length=100)
+
+    @model_validator(mode="after")
+    def proposals_reference_supported_claims(self) -> "TradingDecision":
+        claims = {claim.claim_id: claim for claim in self.research.claims}
+        for proposal in self.proposals:
+            broken = set(proposal.evidence_claim_ids) - claims.keys()
+            if broken:
+                raise ValueError(f"proposal has unknown evidence claim IDs: {sorted(broken)}")
+            unsupported = [
+                claim_id
+                for claim_id in proposal.evidence_claim_ids
+                if not claims[claim_id].material or not claims[claim_id].source_ids
+            ]
+            if unsupported:
+                raise ValueError(f"proposal cites unsupported evidence claims: {unsupported}")
+        return self
 
 
 class TradeProposal(ProposedTrade):
@@ -93,6 +97,8 @@ class TradeProposal(ProposedTrade):
             raise ValueError("created_at must be timezone-aware")
         if self.research.as_of > self.created_at:
             raise ValueError("research cannot be from after proposal creation")
+        if any(source.retrieved_at > self.created_at for source in self.research.sources):
+            raise ValueError("research source cannot be retrieved after proposal creation")
         if self.market_observation.retrieved_at > self.created_at:
             raise ValueError("market observation cannot be retrieved after proposal creation")
         return self

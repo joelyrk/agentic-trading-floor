@@ -15,6 +15,8 @@ All agents use the project-owned typed market MCP server. Behind it, the configu
 
 Trader agents cannot mutate accounts. They return validated `TradingDecision` output containing a research brief and zero or more proposals. Deterministic services fetch and persist the exact observation, evaluate every risk rule, and only execute a persisted approval. Paper execution uses stable IDs and a single SQLite transaction for cash, holdings, the transaction record, its observation, the order, result, and audit log.
 
+Research is a versioned, point-in-time contract rather than free-form analysis. Each material recommendation cites a structured claim; each claim links to canonicalized source records containing publisher, title, publication/retrieval times, a bounded supporting excerpt and SHA-256 hash, confidence, stance, and caveats. Future publications, broken citations, duplicate URLs/content, conflicting dates, and disallowed domains are rejected before a proposal can reach risk review. Only concise evidence and rationale are stored—private chain-of-thought is neither requested nor exposed.
+
 ## Requirements
 
 - Python 3.12
@@ -69,6 +71,17 @@ AUTOMATED_REPLAY=false
 
 An empty allowed universe permits any syntactically valid ticker. Sector classification never trusts the model: configured mappings are authoritative and unmapped symbols share the conservative `unclassified` bucket. Human approval is off by default and is bypassed only when `AUTOMATED_REPLAY=true`; that replay setting does not bypass any deterministic risk rule.
 
+Research source policy is optional and deterministic:
+
+```dotenv
+# Empty means all valid HTTP(S) domains are allowed.
+RESEARCH_ALLOWED_DOMAINS=reuters.com,sec.gov
+# Deny rules take precedence and include subdomains.
+RESEARCH_DENIED_DOMAINS=example.invalid
+```
+
+The research schema is version `1.0`; live agent runs persist `researcher-v1` and `trader-v1` prompt versions with the research record. The decision cutoff is injected into both prompts. Source publication times must be at or before that cutoff, and source retrieval must precede proposal creation.
+
 ## Run
 
 Open three terminals in the project root.
@@ -101,5 +114,7 @@ Every observation includes `symbol`, `price`, `currency`, `market_timestamp`, `r
 `GET /api/market` reports the effective and configured provider/mode, fallback policy, last successful observation, freshness threshold, degraded state, and a credential-safe error summary. The dashboard labels EOD, delayed, real-time, and simulated modes explicitly. These labels describe data quality, not whether the paper-trading scheduler is placing real trades—it never does.
 
 `GET /api/traders/{name}/decisions` returns the complete proposal, rule-level risk decision, paper order, and execution chain. When human approval policy is active, `POST /api/decisions/{decision_id}/approve` records explicit approval and submits that approved paper order idempotently. This endpoint only affects the local paper account; it has no broker integration.
+
+`GET /api/evidence/{proposal_id}` returns the citation-linked research brief and prompt versions together with the exact market observation, rule-level risk decision, paper order, and execution result. The dashboard’s recommendation drill-down consumes this endpoint and links only to canonical source URLs; it shows concise evidence and never model chain-of-thought.
 
 Massive credentialed tests are not part of the default suite. Provider behavior is tested with deterministic fakes for success, authentication failure, entitlement failure, timeout, malformed responses, empty market days, and weekend previous-close handling.

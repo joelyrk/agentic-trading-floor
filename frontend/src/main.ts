@@ -1,7 +1,7 @@
 // App entry point: build a panel per trader, then poll the backend for portfolio
 // data and activity logs. The trading floor runs on its own; this only reads.
 
-import { getMarket, getTrader, getTraderLogs, getTraders } from "./api";
+import { getMarket, getTrader, getTraderDecisions, getTraderLogs, getTraders } from "./api";
 import { TraderPanel } from "./panel";
 import { TraderState } from "./state";
 import { initTheme } from "./theme";
@@ -61,6 +61,7 @@ async function pollData(): Promise<void> {
       try {
         state.recordDetail(await getTrader(name));
         panels.get(name)!.update();
+        panels.get(name)!.renderDecisions(await getTraderDecisions(name));
       } catch (err) {
         console.error(`data fetch failed for ${name}`, err);
       }

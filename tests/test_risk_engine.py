@@ -11,6 +11,8 @@ from backend.decisions import (
     RiskOutcome,
     RiskPolicy,
     TradeProposal,
+    EvidenceClaim,
+    SourceRecord,
 )
 from backend.market.models import DataMode, MarketObservation, ObservationSource
 
@@ -26,10 +28,20 @@ def observation(*, stale=False, mode=DataMode.SIMULATED, price="100") -> MarketO
 
 
 def proposal(**updates) -> TradeProposal:
+    source = SourceRecord(
+        source_id="source-1", canonical_url="https://example.com/aapl",
+        publisher="Example News", title="Apple update", published_at=NOW,
+        retrieved_at=NOW, supporting_excerpt="A concise supporting excerpt.",
+    )
+    claim = EvidenceClaim(
+        claim_id="claim-1", claim="A supported material claim", source_ids=["source-1"],
+        stance="supports", confidence=Decimal("0.75"),
+    )
     data = dict(
         account_name="risk", symbol="AAPL", side=OrderSide.BUY, quantity=1,
         sector="technology", rationale="bounded test", created_at=NOW,
-        research=ResearchBrief(summary="test evidence", as_of=NOW),
+        evidence_claim_ids=["claim-1"],
+        research=ResearchBrief(summary="test evidence", as_of=NOW, sources=[source], claims=[claim]),
         market_observation=observation(),
     )
     data.update(updates)
