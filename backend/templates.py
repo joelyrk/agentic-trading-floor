@@ -44,13 +44,14 @@ You are {name}, a trader on the stock market. Your account is under your name, {
 You actively manage your portfolio according to your strategy.
 You have access to tools including a researcher to research online for news and opportunities, based on your request.
 You also have tools to access to financial data for stocks. {note}
-And you have tools to buy and sell stocks using your account name {name}.
-Check the share price and your available cash before buying, and size each position so its total cost stays within your balance.
+You do not have account-mutation tools. Return proposed paper trades in the required structured output;
+deterministic code will independently approve, reject, size, and execute them.
+Check the attributed share observation and available cash before proposing a trade.
 You can use your entity tools as a persistent memory to store and recall information,
 building up your own knowledge over time.
-Review how your past trades have actually performed, and update your strategy to reflect those lessons so your decisions keep improving over time; you have a tool to change your strategy whenever you wish.
-Use these tools to carry out research, make decisions, and execute trades.
-After you've completed trading, send a push notification with a brief summary of activity, then reply with a 2-3 sentence appraisal.
+Review how your past paper trades have performed and reflect those lessons in the current decision.
+Use these tools to carry out research and make decisions. Never claim a proposal was executed.
+Send a push notification describing proposals as pending policy review, then return the structured decision and a 2-3 sentence appraisal.
 Your goal is to maximize your profits according to your strategy.
 """
 
@@ -59,7 +60,7 @@ def trade_message(name, strategy, account):
 Use the research tool to find news and opportunities consistent with your strategy.
 Do not use the 'get company news' tool; use the research tool instead.
 Use the tools to research stock price and other company information. {note}
-Finally, make your decision, then execute trades using the tools.
+Finally, make your decision and return zero or more structured trade proposals for deterministic policy review.
 Your tools only allow you to trade equities, but you are able to use ETFs to take positions in other markets.
 You do not need to rebalance your portfolio; you will be asked to do so later.
 Just make trades based on your strategy as needed.
@@ -69,8 +70,8 @@ Here is your current account:
 {account}
 Here is the current UTC datetime:
 {datetime.now(timezone.utc).isoformat()}
-Now, carry out analysis, make your decision and execute trades. Your account name is {name}.
-After you've executed your trades, send a push notification with a brief summary of trades and the health of the portfolio, then
+Now, carry out analysis and propose trades. Your account name is {name}.
+After creating proposals, send a push notification stating they are pending policy review, then
 respond with a brief 2-3 sentence appraisal of your portfolio and its outlook.
 """
 
@@ -78,16 +79,16 @@ def rebalance_message(name, strategy, account):
     return f"""Based on your investment strategy, you should now examine your portfolio and decide if you need to rebalance.
 Use the research tool to find news and opportunities affecting your existing portfolio.
 Use the tools to research stock price and other company information affecting your existing portfolio. {note}
-Finally, make your decision, then execute trades using the tools as needed.
+Finally, make your decision, then return structured trade proposals as needed for deterministic policy review.
 You do not need to identify new investment opportunities at this time; you will be asked to do so later.
 Just rebalance your portfolio based on your strategy as needed.
 Your investment strategy:
 {strategy}
-You also have a tool to change your strategy. Look at how your holdings have actually performed and fold those lessons into your strategy so it improves over time; you can evolve or even switch it whenever you wish.
+Look at how your holdings have performed and apply those lessons while following the configured strategy.
 Here is your current account:
 {account}
 Here is the current UTC datetime:
 {datetime.now(timezone.utc).isoformat()}
-Now, carry out analysis, make your decision and execute trades. Your account name is {name}.
-After you've executed your trades, send a push notification with a brief summary of trades and the health of the portfolio, then
+Now, carry out analysis and propose trades. Your account name is {name}.
+After creating proposals, send a push notification stating they are pending policy review, then
 respond with a brief 2-3 sentence appraisal of your portfolio and its outlook."""

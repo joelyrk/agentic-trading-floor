@@ -19,9 +19,8 @@ market_params = {
 
 
 def trader_mcp_servers() -> list[MCPServerStdio]:
-    """The trader's MCP servers: our Accounts server, Push Notification and Market data."""
+    """Model-facing tools cannot mutate accounts; execution happens after structured output."""
     params = [
-        {"command": "uv", "args": ["run", "-m", "backend.accounts_server"], "cwd": PROJECT_DIR},
         {"command": "uv", "args": ["run", "-m", "backend.push_server"], "cwd": PROJECT_DIR},
         market_params,
     ]

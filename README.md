@@ -13,6 +13,8 @@ This is an educational simulation. It does not place real orders and is not fina
 
 All agents use the project-owned typed market MCP server. Behind it, the configured provider is either Massive's previous-close endpoint (`end_of_day`) or the deterministic simulator (`simulated`). The application never probes progressively more privileged Massive endpoints and never silently changes to synthetic prices.
 
+Trader agents cannot mutate accounts. They return validated `TradingDecision` output containing a research brief and zero or more proposals. Deterministic services fetch and persist the exact observation, evaluate every risk rule, and only execute a persisted approval. Paper execution uses stable IDs and a single SQLite transaction for cash, holdings, the transaction record, its observation, the order, result, and audit log.
+
 ## Requirements
 
 - Python 3.12
@@ -47,6 +49,26 @@ MARKET_DATA_FALLBACK=fail_closed
 
 `MARKET_DATA_FRESHNESS_SECONDS` defaults to 300 seconds for simulated observations and four days for EOD observations so a Friday close remains usable over an ordinary weekend. `MARKET_DATA_TIMEOUT_SECONDS` defaults to 10 seconds. This phase supports only `simulated` and `end_of_day`; requesting `delayed` or `real_time`, or requesting EOD without a key, fails startup with an actionable configuration error.
 
+Risk policy is configured with these optional environment variables:
+
+```dotenv
+RISK_MAX_POSITION_PERCENTAGE=0.30
+RISK_MAX_SYMBOL_CONCENTRATION=0.30
+RISK_MAX_SECTOR_CONCENTRATION=0.50
+RISK_MINIMUM_CASH_RESERVE=500
+RISK_MAXIMUM_ORDER_NOTIONAL=2500
+RISK_MAXIMUM_DAILY_TURNOVER=5000
+RISK_MAXIMUM_DRAWDOWN=0.25
+RISK_ALLOWED_UNIVERSE=AAPL,MSFT,NVDA
+RISK_ALLOWED_MARKET_MODES=end_of_day,simulated
+RISK_SECTOR_MAP={"AAPL":"technology","MSFT":"technology","NVDA":"technology"}
+RISK_HUMAN_APPROVAL_ENABLED=false
+RISK_HUMAN_APPROVAL_NOTIONAL=2000
+AUTOMATED_REPLAY=false
+```
+
+An empty allowed universe permits any syntactically valid ticker. Sector classification never trusts the model: configured mappings are authoritative and unmapped symbols share the conservative `unclassified` bucket. Human approval is off by default and is bypassed only when `AUTOMATED_REPLAY=true`; that replay setting does not bypass any deterministic risk rule.
+
 ## Run
 
 Open three terminals in the project root.
@@ -77,5 +99,7 @@ Vite normally serves the dashboard at `http://localhost:5173`.
 Every observation includes `symbol`, `price`, `currency`, `market_timestamp`, `retrieved_at`, `source`, `mode`, `is_stale`, and `provider_endpoint`. Timestamps are timezone-aware UTC values, and future-dated market observations are rejected. The exact observation behind each holding valuation is returned by the trader API and stored in `market_observations`; each new paper transaction also embeds and references its execution observation.
 
 `GET /api/market` reports the effective and configured provider/mode, fallback policy, last successful observation, freshness threshold, degraded state, and a credential-safe error summary. The dashboard labels EOD, delayed, real-time, and simulated modes explicitly. These labels describe data quality, not whether the paper-trading scheduler is placing real trades—it never does.
+
+`GET /api/traders/{name}/decisions` returns the complete proposal, rule-level risk decision, paper order, and execution chain. When human approval policy is active, `POST /api/decisions/{decision_id}/approve` records explicit approval and submits that approved paper order idempotently. This endpoint only affects the local paper account; it has no broker integration.
 
 Massive credentialed tests are not part of the default suite. Provider behavior is tested with deterministic fakes for success, authentication failure, entitlement failure, timeout, malformed responses, empty market days, and weekend previous-close handling.

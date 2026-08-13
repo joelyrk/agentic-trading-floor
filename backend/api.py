@@ -1,14 +1,14 @@
 """HTTP API over the trading floor, for a separate frontend to consume.
 
-The Gradio dashboard in demo/ reads accounts.db in-process. This serves the same
-data as JSON so a decoupled web frontend can render it. Everything here is
-read-only; the trading floor writes the database out of band.
+The trading floor persists its state out of band and this serves it as JSON.
+Account mutation is limited to explicit approval of policy-gated paper orders.
 
 Run it from the 6_mcp directory so it shares the engine's accounts.db:
 
     uv run uvicorn backend.api:app --port 8000
 """
 
+from datetime import datetime, timezone
 from uuid import uuid4
 
 from fastapi import FastAPI, HTTPException
@@ -17,6 +17,8 @@ from backend import market
 from backend.accounts import Account
 from backend.database import read_log, write_market_observation
 from backend.trading_floor import names, lastnames, short_model_names
+from backend.decisions import ExecutionService, RiskPolicy
+from backend.decisions.repository import DecisionRepository, ExecutionConflict
 
 # Mirrors the log colours in demo/ so the frontend reproduces the same panel.
 LOG_COLORS = {
@@ -37,6 +39,7 @@ roster_by_name = {trader["name"].lower(): trader for trader in roster}
 
 app = FastAPI(title="Trading Floor")
 market_service = market.get_market_service()  # Fail startup on invalid capability config.
+decision_repository = DecisionRepository()
 
 
 def average_cost(account: Account, symbol: str) -> float:
@@ -124,3 +127,32 @@ def get_trader_logs(name: str, last_n: int = 13) -> list[dict]:
         {"datetime": ts, "type": kind, "message": message, "color": LOG_COLORS.get(kind, DEFAULT_LOG_COLOR)}
         for ts, kind, message in rows
     ]
+
+
+@app.get("/api/traders/{name}/decisions")
+def get_trader_decisions(name: str) -> list[dict]:
+    """Auditable proposal → risk → paper-order → execution chains."""
+    require_trader(name)
+    return decision_repository.audit_chain(name)
+
+
+@app.post("/api/decisions/{decision_id}/approve")
+def approve_high_risk_decision(decision_id: str) -> dict:
+    """Explicitly approve and execute a pending high-risk paper proposal."""
+    policy = RiskPolicy.from_env()
+    if not policy.human_approval_enabled or policy.automated_replay:
+        raise HTTPException(status_code=409, detail="human approval policy is not active")
+    try:
+        decision = decision_repository.approve_human(
+            decision_id, datetime.now(timezone.utc)
+        )
+        proposal = decision_repository.load_proposal(str(decision.proposal_id))
+        execution = ExecutionService(decision_repository).execute(proposal, decision)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ExecutionConflict as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    return {
+        "risk_decision": decision.model_dump(mode="json"),
+        "execution": execution.model_dump(mode="json") if execution else None,
+    }

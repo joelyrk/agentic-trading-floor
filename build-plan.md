@@ -78,9 +78,9 @@ Given any portfolio value or order, a reviewer can identify the exact price, sou
 
 ### Deliverables
 
-- [ ] Define typed `ResearchBrief`, `TradeProposal`, `RiskDecision`, `PaperOrder`, and `ExecutionResult` schemas.
-- [ ] Make trader agents return structured proposals instead of directly calling buy/sell account tools.
-- [ ] Add a deterministic risk engine with configurable rules:
+- [x] Define typed `ResearchBrief`, `TradeProposal`, `RiskDecision`, `PaperOrder`, and `ExecutionResult` schemas.
+- [x] Make trader agents return structured proposals instead of directly calling buy/sell account tools.
+- [x] Add a deterministic risk engine with configurable rules:
   - maximum position percentage
   - maximum symbol and sector concentration
   - minimum cash reserve
@@ -88,18 +88,18 @@ Given any portfolio value or order, a reviewer can identify the exact price, sou
   - maximum drawdown / kill switch
   - stale or incompatible market-data rejection
   - allowed universe and positive integral quantity validation
-- [ ] Separate proposal, approval, and execution services.
-- [ ] Assign stable decision and order IDs; make execution idempotent.
-- [ ] Wrap balance, holdings, observation, and transaction writes in one atomic database transaction.
-- [ ] Record every approval and rejection with rule-level reasons.
-- [ ] Add human approval as a configurable policy for high-risk proposals, disabled by default in automated replay.
+- [x] Separate proposal, approval, and execution services.
+- [x] Assign stable decision and order IDs; make execution idempotent.
+- [x] Wrap balance, holdings, observation, and transaction writes in one atomic database transaction.
+- [x] Record every approval and rejection with rule-level reasons.
+- [x] Add human approval as a configurable policy for high-risk proposals, disabled by default in automated replay.
 
 ### Tests
 
-- [ ] Boundary/property tests for every risk rule.
-- [ ] Insufficient cash, overselling, duplicate IDs, concurrent attempts, and rollback after failure.
-- [ ] Agent output validation and safe rejection of malformed proposals.
-- [ ] No execution occurs without a persisted approval and market observation.
+- [x] Boundary/property tests for every risk rule.
+- [x] Insufficient cash, overselling, duplicate IDs, concurrent attempts, and rollback after failure.
+- [x] Agent output validation and safe rejection of malformed proposals.
+- [x] No execution occurs without a persisted approval and market observation.
 
 ### Acceptance gate
 
@@ -268,3 +268,5 @@ Record material architecture decisions here as short dated entries or replace th
 - **2026-08-13:** Python is pinned to 3.12. Trading agents use only the project-owned typed market MCP server; Massive's generic MCP package is no longer exposed or launched.
 - **2026-08-13:** Market-data integrity and point-in-time correctness precede strategy claims, UI expansion, and deployment.
 - **2026-08-13:** Phase 1 supports Massive previous-close EOD and deterministic simulation. Fail-closed is the default; simulator fallback must be explicit and is always surfaced as degraded simulated data.
+- **2026-08-13:** Trader agents return structured proposals and have no account-mutation MCP tools. Deterministic services persist proposal observations, evaluate configurable rule-level risk policy, and execute approved paper orders atomically with stable idempotency keys.
+- **2026-08-13:** Sector concentration uses configured classifications rather than model claims; unmapped symbols share a conservative `unclassified` sector. High-risk human approval is opt-in and disabled during automated replay.

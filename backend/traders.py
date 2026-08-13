@@ -6,6 +6,7 @@ from openai import AsyncOpenAI
 from dotenv import load_dotenv
 import os
 import json
+from functools import lru_cache
 from .templates import (
     researcher_instructions,
     trader_instructions,
@@ -14,6 +15,18 @@ from .templates import (
     research_tool,
 )
 from .mcp_servers import trader_mcp_servers, researcher_mcp_servers
+from .market import get_market_observation
+from .decisions import (
+    DecisionPipeline,
+    ExecutionService,
+    ProposalService,
+    ResearchBrief,
+    RiskEngine,
+    RiskPolicy,
+    RiskService,
+    TradingDecision,
+)
+from .decisions.repository import DecisionRepository
 
 load_dotenv(override=True)
 
@@ -29,21 +42,29 @@ OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 
 MAX_TURNS = 30
 
-openrouter_client = AsyncOpenAI(base_url=OPENROUTER_BASE_URL, api_key=openrouter_api_key)
-deepseek_client = AsyncOpenAI(base_url=DEEPSEEK_BASE_URL, api_key=deepseek_api_key)
-grok_client = AsyncOpenAI(base_url=GROK_BASE_URL, api_key=grok_api_key)
-gemini_client = AsyncOpenAI(base_url=GEMINI_BASE_URL, api_key=google_api_key)
+@lru_cache(maxsize=4)
+def _optional_client(provider: str) -> AsyncOpenAI:
+    settings = {
+        "openrouter": (OPENROUTER_BASE_URL, openrouter_api_key),
+        "deepseek": (DEEPSEEK_BASE_URL, deepseek_api_key),
+        "grok": (GROK_BASE_URL, grok_api_key),
+        "gemini": (GEMINI_BASE_URL, google_api_key),
+    }
+    base_url, api_key = settings[provider]
+    if not api_key:
+        raise ValueError(f"{provider} model selected but its API key is not configured")
+    return AsyncOpenAI(base_url=base_url, api_key=api_key)
 
 
 def get_model(model_name: str):
     if "/" in model_name:
-        return OpenAIChatCompletionsModel(model=model_name, openai_client=openrouter_client)
+        return OpenAIChatCompletionsModel(model=model_name, openai_client=_optional_client("openrouter"))
     elif "deepseek" in model_name:
-        return OpenAIChatCompletionsModel(model=model_name, openai_client=deepseek_client)
+        return OpenAIChatCompletionsModel(model=model_name, openai_client=_optional_client("deepseek"))
     elif "grok" in model_name:
-        return OpenAIChatCompletionsModel(model=model_name, openai_client=grok_client)
+        return OpenAIChatCompletionsModel(model=model_name, openai_client=_optional_client("grok"))
     elif "gemini" in model_name:
-        return OpenAIChatCompletionsModel(model=model_name, openai_client=gemini_client)
+        return OpenAIChatCompletionsModel(model=model_name, openai_client=_optional_client("gemini"))
     else:
         return model_name
 
@@ -54,6 +75,7 @@ async def get_researcher(mcp_servers, model_name) -> Agent:
         instructions=researcher_instructions(),
         model=get_model(model_name),
         mcp_servers=mcp_servers,
+        output_type=ResearchBrief,
     )
     return researcher
 
@@ -79,6 +101,7 @@ class Trader:
             model=get_model(self.model_name),
             tools=[tool],
             mcp_servers=trader_mcp_servers,
+            output_type=TradingDecision,
         )
         return self.agent
 
@@ -97,7 +120,15 @@ class Trader:
             if self.do_trade
             else rebalance_message(self.name, strategy, account)
         )
-        await Runner.run(self.agent, message, max_turns=MAX_TURNS)
+        result = await Runner.run(self.agent, message, max_turns=MAX_TURNS)
+        repository = DecisionRepository()
+        proposal_service = ProposalService(repository, get_market_observation)
+        risk_service = RiskService(repository, RiskEngine(RiskPolicy.from_env()), get_market_observation)
+        pipeline = DecisionPipeline(proposal_service, risk_service, ExecutionService(repository))
+        processed, error = pipeline.safely_process(self.name, result.final_output)
+        if error:
+            raise ValueError(error)
+        return processed
 
     async def run_with_mcp_servers(self):
         async with AsyncExitStack() as stack:

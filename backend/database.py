@@ -42,6 +42,50 @@ def initialize_database(path: str | None = None) -> None:
         CREATE INDEX IF NOT EXISTS idx_market_observations_account_usage
         ON market_observations(account_name, usage_kind, recorded_at)
         ''')
+        cursor.execute('''
+        CREATE TABLE IF NOT EXISTS trade_proposals (
+            proposal_id TEXT PRIMARY KEY,
+            account_name TEXT NOT NULL,
+            proposal TEXT NOT NULL,
+            created_at TEXT NOT NULL
+        )
+        ''')
+        cursor.execute('''
+        CREATE TABLE IF NOT EXISTS risk_decisions (
+            decision_id TEXT PRIMARY KEY,
+            proposal_id TEXT NOT NULL UNIQUE,
+            account_name TEXT NOT NULL,
+            outcome TEXT NOT NULL,
+            decision TEXT NOT NULL,
+            evaluated_at TEXT NOT NULL,
+            FOREIGN KEY(proposal_id) REFERENCES trade_proposals(proposal_id)
+        )
+        ''')
+        cursor.execute('''
+        CREATE TABLE IF NOT EXISTS paper_orders (
+            order_id TEXT PRIMARY KEY,
+            decision_id TEXT NOT NULL UNIQUE,
+            proposal_id TEXT NOT NULL UNIQUE,
+            account_name TEXT NOT NULL,
+            order_payload TEXT NOT NULL,
+            status TEXT NOT NULL,
+            submitted_at TEXT NOT NULL,
+            FOREIGN KEY(decision_id) REFERENCES risk_decisions(decision_id)
+        )
+        ''')
+        cursor.execute('''
+        CREATE TABLE IF NOT EXISTS execution_results (
+            execution_id TEXT PRIMARY KEY,
+            order_id TEXT NOT NULL UNIQUE,
+            result TEXT NOT NULL,
+            executed_at TEXT NOT NULL,
+            FOREIGN KEY(order_id) REFERENCES paper_orders(order_id)
+        )
+        ''')
+        cursor.execute('''
+        CREATE INDEX IF NOT EXISTS idx_orders_account_submitted
+        ON paper_orders(account_name, submitted_at)
+        ''')
         conn.commit()
 
 
