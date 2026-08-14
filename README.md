@@ -151,6 +151,8 @@ Every observation includes `symbol`, `price`, `currency`, `market_timestamp`, `r
 
 `GET /api/health` returns the current cycle ID, per-server state, last success/error, safe diagnostic summary, latency, circuit state, market-data freshness, request/token usage, estimated cost, MCP failure rate, and cycle success rate. The dashboard sidebar presents the same attributable service view; each completed decision's evidence drill-down includes its trace ID, model, prompt version, market mode, latency, tokens, and estimated cost.
 
+The Phase 6 decision console organizes the same records around portfolio versus starting value, drawdown, turnover, risk-limit utilization, evidence, approved and rejected proposals, attributable service health, and cycle cost/latency. It includes explicit loading, empty, and error states, keyboard-operable native controls, responsive layouts, and contrast-aware light and dark themes. The API publishes a versioned OpenAPI contract (`1.0.0`), and a test verifies every literal frontend API method/path against it to prevent route drift.
+
 Massive credentialed tests are not part of the default suite. Provider behavior is tested with deterministic fakes for success, authentication failure, entitlement failure, timeout, malformed responses, empty market days, and weekend previous-close handling.
 
 ## Replay evaluation
@@ -168,3 +170,12 @@ concise Markdown report, and an idempotent retry checkpoint are written below
 `evals/results/`. See [`evals/README.md`](evals/README.md) for schemas,
 methodology, metric definitions, provenance, and limitations. This offline
 evaluation tests replay infrastructure; it does not establish investment merit.
+
+The Replay Lab consumes the same immutable fixtures. `GET /api/replay/scenarios`
+contains decision-time inputs only. `POST /api/replays` persists a completed
+decision while keeping `outcome=null`; only the separate
+`POST /api/replays/{replay_id}/reveal` action exposes the outcome. Replay IDs are
+stable and retries cannot erase an already revealed record. The Experiments
+screen runs and compares versioned reports across model labels, prompt versions,
+and single-agent/multi-agent architecture proxies, including benchmark-relative
+return, drawdown, turnover, estimated cost, and latency.

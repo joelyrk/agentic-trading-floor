@@ -185,7 +185,7 @@ A failed service is attributable within one dashboard/API view, cycles fail or d
 
 ### Deliverables
 
-- [ ] Replace decorative-first views with decision transparency:
+- [x] Replace decorative-first views with decision transparency:
   - portfolio versus benchmark
   - drawdown and turnover
   - data mode/freshness
@@ -194,10 +194,10 @@ A failed service is attributable within one dashboard/API view, cycles fail or d
   - risk utilization
   - service health
   - run cost and latency
-- [ ] Add a replay screen to select a scenario, execute it, inspect decisions, and reveal outcomes only after decision completion.
-- [ ] Add experiment comparison across models, prompts, and agent architectures.
-- [ ] Ensure accessible color contrast, keyboard navigation, empty/error/loading states, and responsive layouts.
-- [ ] Generate API types from a versioned OpenAPI schema or add a contract test preventing backend/frontend drift.
+- [x] Add a replay screen to select a scenario, execute it, inspect decisions, and reveal outcomes only after decision completion.
+- [x] Add experiment comparison across models, prompts, and agent architectures.
+- [x] Ensure accessible color contrast, keyboard navigation, empty/error/loading states, and responsive layouts.
+- [x] Generate API types from a versioned OpenAPI schema or add a contract test preventing backend/frontend drift.
 
 ### Acceptance gate
 
@@ -273,3 +273,4 @@ Record material architecture decisions here as short dated entries or replace th
 - **2026-08-13:** Phase 3 uses a versioned, citation-linked research graph persisted with each run in SQLite. Canonical URL/content deduplication, domain policy, and publication cutoffs are deterministic gates; prompt versions and concise evidence are persisted without chain-of-thought.
 - **2026-08-13:** Phase 4 uses hashed, physically separated decision/outcome fixtures and an injected monotonic simulation clock. The credential-free default evaluator compares five deterministic baselines plus single-agent/multi-agent workflow proxies, checkpoints by stable scenario keys and order IDs, and emits versioned JSON/Markdown reports. Its 30-scenario historical fixture and derived benchmark proxy are explicitly limited to replay-system validation, not investment-strategy claims.
 - **2026-08-14:** Phase 5 supervises stable logical MCP services with bounded startup probes, request retries, redacted stderr diagnostics, persisted circuit state, and explicit healthy/degraded/unavailable transitions. Per-trader cycles enforce turn/token/wall-time/spend budgets, disable sensitive trace payload capture, and persist provider-reported usage, configurable cost estimates, latency, trace/run/prompt/market metadata, and decision links for the health API and dashboard.
+- **2026-08-14:** Phase 6 replaces the quadrant-first demo with an accessible decision console centered on portfolio/risk metrics, evidence and control outcomes, data provenance, service health, and cost/latency. Replay sessions persist a decision before allowing a separate idempotent outcome reveal; experiment reports compare model/prompt labels and deterministic single/multi-agent architecture proxies. FastAPI's versioned OpenAPI document is guarded by a frontend route-contract test.

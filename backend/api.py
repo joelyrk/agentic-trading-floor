@@ -1,7 +1,8 @@
 """HTTP API over the trading floor, for a separate frontend to consume.
 
 The trading floor persists its state out of band and this serves it as JSON.
-Account mutation is limited to explicit approval of policy-gated paper orders.
+Account mutation is limited to explicit approval of policy-gated paper orders;
+replay and experiment writes affect only offline evaluation records.
 
 Run it from the 6_mcp directory so it shares the engine's accounts.db:
 
@@ -20,6 +21,7 @@ from backend.trading_floor import names, lastnames, short_model_names
 from backend.decisions import ExecutionService, RiskPolicy
 from backend.decisions.repository import DecisionRepository, ExecutionConflict
 from backend.observability import TelemetryRepository
+from backend.product import ExperimentRequest, ProductService, ReplayRequest
 
 # Mirrors the log colours in demo/ so the frontend reproduces the same panel.
 LOG_COLORS = {
@@ -38,10 +40,18 @@ roster = [
 ]
 roster_by_name = {trader["name"].lower(): trader for trader in roster}
 
-app = FastAPI(title="Trading Floor")
+app = FastAPI(
+    title="Agentic Trading Floor API",
+    version="1.0.0",
+    description=(
+        "Auditable paper-trading and point-in-time evaluation API. "
+        "No endpoint places real trades."
+    ),
+)
 market_service = market.get_market_service()  # Fail startup on invalid capability config.
 decision_repository = DecisionRepository()
 telemetry_repository = TelemetryRepository()
+product_service = ProductService()
 
 
 def average_cost(account: Account, symbol: str) -> float:
@@ -101,6 +111,12 @@ def get_health() -> dict:
     """One credential-safe view of service, cycle, freshness, latency, and cost health."""
     market_status = market_service.status().model_dump(mode="json")
     return telemetry_repository.health_payload(market_status)
+
+
+@app.get("/api/risk")
+def get_risk_policy() -> dict:
+    """Return deterministic policy limits used to calculate UI utilization."""
+    return RiskPolicy.from_env().model_dump(mode="json")
 
 
 @app.get("/api/traders/{name}")
@@ -180,3 +196,47 @@ def approve_high_risk_decision(decision_id: str) -> dict:
         "risk_decision": decision.model_dump(mode="json"),
         "execution": execution.model_dump(mode="json") if execution else None,
     }
+
+
+@app.get("/api/replay/scenarios")
+def get_replay_scenarios() -> dict:
+    """List point-in-time inputs; outcome fields are deliberately absent."""
+    return product_service.scenarios()
+
+
+@app.post("/api/replays")
+def create_replay(request: ReplayRequest) -> dict:
+    """Execute and persist one offline decision without revealing its outcome."""
+    try:
+        return product_service.create_replay(request)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@app.get("/api/replays/{replay_id}")
+def get_replay(replay_id: str) -> dict:
+    try:
+        return product_service.replay(replay_id)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@app.post("/api/replays/{replay_id}/reveal")
+def reveal_replay_outcome(replay_id: str) -> dict:
+    """Reveal fixture outcomes only after a persisted decision is complete."""
+    try:
+        return product_service.reveal(replay_id)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@app.get("/api/experiments")
+def get_experiments() -> list[dict]:
+    """Return versioned offline evaluation reports for comparison."""
+    return product_service.experiments()
+
+
+@app.post("/api/experiments")
+def create_experiment(request: ExperimentRequest) -> dict:
+    """Run a credential-free evaluation across baselines and architectures."""
+    return product_service.run_experiment(request)

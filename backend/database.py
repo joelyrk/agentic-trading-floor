@@ -166,6 +166,23 @@ def initialize_database(path: str | None = None) -> None:
             FOREIGN KEY(cycle_id) REFERENCES cycle_metrics(cycle_id)
         )
         ''')
+        cursor.execute('''
+        CREATE TABLE IF NOT EXISTS replay_sessions (
+            replay_id TEXT PRIMARY KEY,
+            scenario_id TEXT NOT NULL,
+            strategy TEXT NOT NULL,
+            seed INTEGER NOT NULL,
+            status TEXT NOT NULL CHECK (status IN ('decision_complete', 'outcome_revealed')),
+            decision_payload TEXT NOT NULL,
+            outcome_payload TEXT,
+            created_at TEXT NOT NULL,
+            revealed_at TEXT
+        )
+        ''')
+        cursor.execute('''
+        CREATE INDEX IF NOT EXISTS idx_replay_sessions_created
+        ON replay_sessions(created_at)
+        ''')
         conn.commit()
 
 

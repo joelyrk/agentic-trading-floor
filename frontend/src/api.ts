@@ -107,6 +107,17 @@ export interface HealthInfo {
   };
 }
 
+export interface RiskPolicyInfo {
+  max_position_percentage: string;
+  max_symbol_concentration: string;
+  max_sector_concentration: string;
+  minimum_cash_reserve: string;
+  maximum_order_notional: string;
+  maximum_daily_turnover: string;
+  maximum_drawdown: string;
+  human_approval_enabled: boolean;
+}
+
 export type EvidenceStance = "supports" | "opposes" | "mixed" | "context";
 
 export interface SourceRecord {
@@ -188,6 +199,19 @@ async function get<T>(path: string): Promise<T> {
   return r.json() as Promise<T>;
 }
 
+async function post<T>(path: string, body?: unknown): Promise<T> {
+  const r = await fetch(path, {
+    method: "POST",
+    headers: body === undefined ? undefined : { "Content-Type": "application/json" },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+  if (!r.ok) {
+    const payload = await r.json().catch(() => null) as { detail?: string } | null;
+    throw new Error(payload?.detail ?? `${path} failed: ${r.status}`);
+  }
+  return r.json() as Promise<T>;
+}
+
 export function getTraders(): Promise<TraderInfo[]> {
   return get("/api/traders");
 }
@@ -208,10 +232,99 @@ export function getHealth(): Promise<HealthInfo> {
   return get("/api/health");
 }
 
+export function getRiskPolicy(): Promise<RiskPolicyInfo> {
+  return get("/api/risk");
+}
+
 export function getTraderDecisions(name: string): Promise<DecisionAudit[]> {
   return get(`/api/traders/${encodeURIComponent(name)}/decisions`);
 }
 
 export function getEvidence(proposalId: string): Promise<EvidenceChain> {
   return get(`/api/evidence/${encodeURIComponent(proposalId)}`);
+}
+
+export interface ReplayScenario {
+  scenario_id: string;
+  decision_at: string;
+  market_timestamp: string;
+  retrieved_at: string;
+  symbols: string[];
+  benchmark_symbol: string;
+  source_count: number;
+  outcome_available: false;
+}
+
+export interface ReplayCatalog {
+  dataset: { dataset_id: string; dataset_version: string; scenario_count: number; description: string };
+  strategies: string[];
+  scenarios: ReplayScenario[];
+  notice: string;
+}
+
+export interface ReplaySession {
+  replay_id: string;
+  scenario_id: string;
+  strategy: string;
+  seed: number;
+  status: "decision_complete" | "outcome_revealed";
+  decision_at: string;
+  market_timestamp: string;
+  inputs: {
+    prices: Record<string, string>;
+    trailing_returns: Record<string, string>;
+    sources: Array<{ source_id: string; published_at: string; sentiment: string }>;
+  };
+  decision: { weights: Record<string, string>; latency_ms: number; model_cost_usd: string };
+  outcome: null | {
+    outcome_at: string;
+    prices: Record<string, string>;
+    portfolio_return: string;
+    benchmark_return: string;
+    benchmark_relative_return: string;
+  };
+  paper_trading_only: true;
+}
+
+export interface AggregateMetrics {
+  total_return: string;
+  benchmark_return: string;
+  benchmark_relative_return: string;
+  annualized_volatility: string;
+  sharpe: string | null;
+  max_drawdown: string;
+  turnover: string;
+  win_rate: string;
+  decision_validity: string;
+  citation_validity: string;
+  tool_success_rate: string;
+  average_latency_ms: string;
+  model_api_cost_usd: string;
+}
+
+export interface ExperimentReport {
+  schema_version: "1.0";
+  metadata: {
+    run_id: string;
+    dataset_id: string;
+    dataset_version: string;
+    model: string;
+    prompt_version: string;
+    seed: number;
+    completed_at: string;
+  };
+  results: Array<{ strategy: string; metrics: AggregateMetrics }>;
+  leakage_checks_passed: boolean;
+}
+
+export function getReplayCatalog(): Promise<ReplayCatalog> { return get("/api/replay/scenarios"); }
+export function createReplay(scenario_id: string, strategy: string): Promise<ReplaySession> {
+  return post("/api/replays", { scenario_id, strategy, seed: 7 });
+}
+export function revealReplay(replayId: string): Promise<ReplaySession> {
+  return post(`/api/replays/${encodeURIComponent(replayId)}/reveal`);
+}
+export function getExperiments(): Promise<ExperimentReport[]> { return get("/api/experiments"); }
+export function createExperiment(model: string, prompt_version: string): Promise<ExperimentReport> {
+  return post("/api/experiments", { model, prompt_version, seed: 7 });
 }

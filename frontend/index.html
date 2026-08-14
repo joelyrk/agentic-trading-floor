@@ -3,45 +3,57 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Autonomous Traders</title>
+    <meta name="description" content="Auditable paper-trading decisions and point-in-time evaluation." />
+    <title>Trading Floor — Decision Console</title>
     <link rel="stylesheet" href="/src/styles.css" />
   </head>
   <body>
-    <aside class="sidebar">
-      <div class="brand-block">
-        <h1 class="brand">Autonomous Traders</h1>
-        <p class="brand-sub">MCP trading floor</p>
+    <a class="skip-link" href="#content">Skip to content</a>
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Agentic trading floor</p>
+        <h1>Decision console</h1>
       </div>
-      <div class="market">
-        <span class="market-label">Market data</span>
-        <div class="market-badge" id="market-badge">
-          <span class="market-dot"></span>
-          <span id="market-source">Connecting</span>
+      <div class="topbar-status" aria-live="polite">
+        <span id="market-badge" class="badge">Connecting</span>
+        <span id="health-badge" class="badge">Health pending</span>
+        <button id="btn-theme" class="icon-button" type="button" aria-label="Toggle color theme">◐</button>
+      </div>
+    </header>
+    <nav class="tabs" aria-label="Primary navigation">
+      <button class="tab is-active" data-view="overview" aria-selected="true">Overview</button>
+      <button class="tab" data-view="replay" aria-selected="false">Replay lab</button>
+      <button class="tab" data-view="experiments" aria-selected="false">Experiments</button>
+    </nav>
+    <main id="content">
+      <div id="global-error" class="notice error" role="alert" hidden></div>
+      <section id="overview-view" class="view" aria-labelledby="overview-heading">
+        <div class="section-head">
+          <div><p class="eyebrow">Live paper accounts</p><h2 id="overview-heading">Controls before performance</h2></div>
+          <p id="freshness-copy" class="context-copy">Loading data provenance…</p>
         </div>
-        <span class="market-status" id="market-status"></span>
-      </div>
-      <div class="returns">
-        <span class="returns-label">Returns</span>
-        <ul class="returns-list" id="returns-list"></ul>
-      </div>
-      <div class="health">
-        <span class="returns-label">System health</span>
-        <div class="health-summary" id="health-summary">Connecting</div>
-        <div class="health-services" id="health-services"></div>
-        <div class="health-metrics" id="health-metrics"></div>
-      </div>
-      <div class="sidebar-spacer"></div>
-      <button class="theme-toggle" id="btn-theme" aria-label="Toggle theme">
-        <svg class="theme-icon icon-moon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>
-        </svg>
-        <svg class="theme-icon icon-sun" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="4"/>
-          <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>
-        </svg>
-      </button>
-    </aside>
-    <main id="panels" class="panels"></main>
+        <div id="overview-metrics" class="metric-grid" aria-live="polite"></div>
+        <div class="dashboard-grid">
+          <section class="card span-2"><div class="card-head"><h3>Portfolio &amp; risk utilization</h3><span>Paper accounts</span></div><div id="portfolio-table" class="table-wrap loading">Loading portfolios…</div></section>
+          <section class="card"><div class="card-head"><h3>Service health</h3><span id="service-summary"></span></div><div id="service-list" class="stack loading">Loading services…</div></section>
+          <section class="card span-2"><div class="card-head"><h3>Evidence &amp; recommendation timeline</h3><span>Newest first</span></div><div id="decision-list" class="timeline loading">Loading decisions…</div></section>
+          <section class="card"><div class="card-head"><h3>Run cost &amp; latency</h3><span>Observed cycles</span></div><div id="cost-panel" class="stack loading">Loading telemetry…</div></section>
+        </div>
+      </section>
+      <section id="replay-view" class="view" aria-labelledby="replay-heading" hidden>
+        <div class="section-head"><div><p class="eyebrow">Point-in-time inspection</p><h2 id="replay-heading">Replay lab</h2></div><p class="context-copy">Outcomes stay sealed until the decision is complete.</p></div>
+        <div class="lab-grid">
+          <form id="replay-form" class="card controls"><h3>Configure replay</h3><label>Scenario<select id="scenario-select"></select></label><label>Decision architecture<select id="strategy-select"></select></label><button class="primary" type="submit">Run paper decision</button><p id="dataset-note" class="fine-print"></p></form>
+          <section class="card result-card" aria-live="polite"><div class="card-head"><h3>Decision record</h3><span id="replay-state">Awaiting selection</span></div><div id="replay-result" class="empty-state">Choose a scenario to inspect only the information available at decision time.</div></section>
+        </div>
+      </section>
+      <section id="experiments-view" class="view" aria-labelledby="experiments-heading" hidden>
+        <div class="section-head"><div><p class="eyebrow">Controlled comparisons</p><h2 id="experiments-heading">Experiment registry</h2></div><p class="context-copy">Offline evaluation validates the replay system—not investment merit.</p></div>
+        <form id="experiment-form" class="experiment-bar"><label>Model label<input id="model-input" value="offline-deterministic-proxy" maxlength="120" required /></label><label>Prompt version<input id="prompt-input" value="eval-agent-v1" maxlength="120" required /></label><button class="primary" type="submit">Run experiment</button></form>
+        <div id="experiments-list" class="card table-wrap loading" aria-live="polite">Loading experiment registry…</div>
+      </section>
+    </main>
+    <footer>Paper trading only · No broker execution · Results are not investment advice</footer>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
