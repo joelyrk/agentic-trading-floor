@@ -4,7 +4,6 @@ from pathlib import Path
 from backend.api import app
 from backend.product import ExperimentRequest, ProductService, ReplayRequest
 
-
 DATASET = Path("evals/datasets/historical-v1")
 
 
@@ -35,7 +34,10 @@ def test_replay_requires_separate_reveal_and_retry_preserves_reveal(tmp_path) ->
     revealed = product.reveal(decision["replay_id"])
     assert revealed["status"] == "outcome_revealed"
     assert set(revealed["outcome"]) >= {
-        "outcome_at", "portfolio_return", "benchmark_return", "benchmark_relative_return"
+        "outcome_at",
+        "portfolio_return",
+        "benchmark_return",
+        "benchmark_relative_return",
     }
     retry = product.create_replay(request)
     assert retry == revealed
@@ -47,7 +49,10 @@ def test_experiments_compare_prompts_models_and_architectures(tmp_path) -> None:
     product.run_experiment(ExperimentRequest(model="model-b", prompt_version="prompt-b"))
     reports = product.experiments()
     assert {report["metadata"]["model"] for report in reports} == {"model-a", "model-b"}
-    assert {report["metadata"]["prompt_version"] for report in reports} == {"prompt-a", "prompt-b"}
+    assert {report["metadata"]["prompt_version"] for report in reports} == {
+        "prompt-a",
+        "prompt-b",
+    }
     assert all(
         {"single_agent", "multi_agent"} <= {result["strategy"] for result in report["results"]}
         for report in reports
@@ -65,10 +70,13 @@ def test_frontend_api_routes_match_versioned_openapi_contract() -> None:
     for method, client_path in calls:
         normalized = re.sub(r"\$\{[^}]+\}", "{parameter}", client_path)
         matching_paths = [
-            route for route in schema["paths"]
+            route
+            for route in schema["paths"]
             if re.sub(r"\{[^}]+\}", "{parameter}", route) == normalized
         ]
-        assert matching_paths, f"frontend route missing from OpenAPI: {method.upper()} {client_path}"
+        assert matching_paths, (
+            f"frontend route missing from OpenAPI: {method.upper()} {client_path}"
+        )
         assert method in schema["paths"][matching_paths[0]], (
             f"frontend method missing from OpenAPI: {method.upper()} {client_path}"
         )

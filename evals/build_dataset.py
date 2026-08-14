@@ -13,7 +13,6 @@ from datetime import datetime, time, timedelta, timezone
 from decimal import Decimal
 from pathlib import Path
 
-
 SYMBOLS = ("AAPL", "MSFT", "NVDA", "XOM")
 
 
@@ -26,7 +25,9 @@ def _dump(path: Path, value) -> str:
 def build(source: Path, output: Path) -> None:
     with source.open(newline="") as handle:
         rows = list(csv.DictReader(handle))
-    usable = [row for row in rows if row["Date"].startswith("2014-") and all(row[s] for s in SYMBOLS)]
+    usable = [
+        row for row in rows if row["Date"].startswith("2014-") and all(row[s] for s in SYMBOLS)
+    ]
     usable.sort(key=lambda row: row["Date"])
     selected = usable[-36:]
     if len(selected) != 36:
@@ -50,30 +51,38 @@ def build(source: Path, output: Path) -> None:
             for symbol in prices[index]
         }
         price_payload = {symbol: str(value) for symbol, value in prices[index].items()}
-        decisions.append({
-            "schema_version": "1.0",
-            "scenario_id": scenario_id,
-            "decision_at": decision_at.isoformat(),
-            "market_timestamp": market_at.isoformat(),
-            "retrieved_at": (market_at + timedelta(minutes=1)).isoformat(),
-            "prices": price_payload,
-            "trailing_returns": trailing,
-            "sources": [{
-                "source_id": f"{scenario_id}-price-trend",
-                "published_at": market_at.isoformat(),
+        decisions.append(
+            {
+                "schema_version": "1.0",
+                "scenario_id": scenario_id,
+                "decision_at": decision_at.isoformat(),
+                "market_timestamp": market_at.isoformat(),
                 "retrieved_at": (market_at + timedelta(minutes=1)).isoformat(),
-                "sentiment": str(sum(Decimal(trailing[s]) for s in SYMBOLS) / Decimal(len(SYMBOLS))),
-            }],
-            "benchmark_symbol": "SPX",
-        })
+                "prices": price_payload,
+                "trailing_returns": trailing,
+                "sources": [
+                    {
+                        "source_id": f"{scenario_id}-price-trend",
+                        "published_at": market_at.isoformat(),
+                        "retrieved_at": (market_at + timedelta(minutes=1)).isoformat(),
+                        "sentiment": str(
+                            sum(Decimal(trailing[s]) for s in SYMBOLS) / Decimal(len(SYMBOLS))
+                        ),
+                    }
+                ],
+                "benchmark_symbol": "SPX",
+            }
+        )
         next_row = selected[index + 1]
         next_day = datetime.strptime(next_row["Date"], "%Y-%m-%d").date()
-        outcomes.append({
-            "schema_version": "1.0",
-            "scenario_id": scenario_id,
-            "outcome_at": datetime.combine(next_day, time(21), tzinfo=timezone.utc).isoformat(),
-            "prices": {symbol: str(value) for symbol, value in prices[index + 1].items()},
-        })
+        outcomes.append(
+            {
+                "schema_version": "1.0",
+                "scenario_id": scenario_id,
+                "outcome_at": datetime.combine(next_day, time(21), tzinfo=timezone.utc).isoformat(),
+                "prices": {symbol: str(value) for symbol, value in prices[index + 1].items()},
+            }
+        )
 
     output.mkdir(parents=True, exist_ok=True)
     decision_hash = _dump(output / "decision_fixtures.json", decisions)
@@ -85,7 +94,10 @@ def build(source: Path, output: Path) -> None:
         "description": "Thirty one-session historical replay scenarios from adjusted 2014 closes; SPX is an explicitly derived equal-weight proxy, not the S&P 500 index.",
         "scenario_count": 30,
         "symbols": [*SYMBOLS, "SPX"],
-        "decision_fixtures": {"path": "decision_fixtures.json", "sha256": decision_hash},
+        "decision_fixtures": {
+            "path": "decision_fixtures.json",
+            "sha256": decision_hash,
+        },
         "outcome_fixtures": {"path": "outcome_fixtures.json", "sha256": outcome_hash},
     }
     _dump(output / "manifest.json", manifest)

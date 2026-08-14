@@ -1,14 +1,15 @@
+import json
+import sqlite3
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from decimal import Decimal
-import json
-import sqlite3
 
 import pytest
 from pydantic import ValidationError
 
 from backend.decisions import (
     DecisionPipeline,
+    EvidenceClaim,
     ExecutionService,
     ExecutionStatus,
     OrderSide,
@@ -18,9 +19,8 @@ from backend.decisions import (
     RiskOutcome,
     RiskPolicy,
     RiskService,
-    TradingDecision,
-    EvidenceClaim,
     SourceRecord,
+    TradingDecision,
 )
 from backend.decisions.models import ProposedTrade
 from backend.decisions.repository import DecisionRepository, ExecutionConflict
@@ -31,17 +31,26 @@ NOW = datetime(2026, 8, 13, 12, tzinfo=timezone.utc)
 
 def observe(symbol: str) -> MarketObservation:
     return MarketObservation(
-        symbol=symbol, price=Decimal("100"), currency="USD", market_timestamp=NOW,
-        retrieved_at=NOW, source=ObservationSource.SIMULATOR, mode=DataMode.SIMULATED,
-        is_stale=False, provider_endpoint="test/v1",
+        symbol=symbol,
+        price=Decimal("100"),
+        currency="USD",
+        market_timestamp=NOW,
+        retrieved_at=NOW,
+        source=ObservationSource.SIMULATOR,
+        mode=DataMode.SIMULATED,
+        is_stale=False,
+        provider_endpoint="test/v1",
     )
 
 
 def policy(**updates) -> RiskPolicy:
     data = dict(
-        max_position_percentage=Decimal("1"), max_symbol_concentration=Decimal("1"),
-        max_sector_concentration=Decimal("1"), minimum_cash_reserve=Decimal("0"),
-        maximum_order_notional=Decimal("100000"), maximum_daily_turnover=Decimal("100000"),
+        max_position_percentage=Decimal("1"),
+        max_symbol_concentration=Decimal("1"),
+        max_sector_concentration=Decimal("1"),
+        minimum_cash_reserve=Decimal("0"),
+        maximum_order_notional=Decimal("100000"),
+        maximum_daily_turnover=Decimal("100000"),
         maximum_drawdown=Decimal("1"),
     )
     data.update(updates)
@@ -50,21 +59,34 @@ def policy(**updates) -> RiskPolicy:
 
 def output(quantity=2, side=OrderSide.BUY) -> TradingDecision:
     source = SourceRecord(
-        source_id="source-1", canonical_url="https://example.com/aapl?utm_source=test",
-        publisher="Example News", title="Apple update", published_at=NOW,
-        retrieved_at=NOW, supporting_excerpt="Apple published a relevant operating update.",
+        source_id="source-1",
+        canonical_url="https://example.com/aapl?utm_source=test",
+        publisher="Example News",
+        title="Apple update",
+        published_at=NOW,
+        retrieved_at=NOW,
+        supporting_excerpt="Apple published a relevant operating update.",
     )
     claim = EvidenceClaim(
-        claim_id="claim-1", claim="Apple has a current operating update.",
-        source_ids=[source.source_id], stance="supports", confidence=Decimal("0.8"),
+        claim_id="claim-1",
+        claim="Apple has a current operating update.",
+        source_ids=[source.source_id],
+        stance="supports",
+        confidence=Decimal("0.8"),
     )
     return TradingDecision(
         research=ResearchBrief(summary="evidence", as_of=NOW, sources=[source], claims=[claim]),
         appraisal="paper proposal only",
-        proposals=[ProposedTrade(
-            symbol="AAPL", side=side, quantity=quantity, sector="Technology",
-            rationale="test", evidence_claim_ids=[claim.claim_id],
-        )],
+        proposals=[
+            ProposedTrade(
+                symbol="AAPL",
+                side=side,
+                quantity=quantity,
+                sector="Technology",
+                rationale="test",
+                evidence_claim_ids=[claim.claim_id],
+            )
+        ],
     )
 
 
@@ -88,7 +110,9 @@ def test_pipeline_persists_auditable_chain_and_exact_observation(tmp_path) -> No
     assert chain[0]["risk_decision"]["decision_id"] == str(decision.decision_id)
     assert chain[0]["execution"]["order_id"] == str(execution.order_id)
     with sqlite3.connect(repo.db_path) as conn:
-        usages = conn.execute("SELECT usage_kind FROM market_observations ORDER BY usage_kind").fetchall()
+        usages = conn.execute(
+            "SELECT usage_kind FROM market_observations ORDER BY usage_kind"
+        ).fetchall()
     assert usages == [("order",), ("proposal",)]
     account = repo.load_account_data("alice")
     assert account["holdings"] == {"AAPL": 2}
@@ -97,7 +121,9 @@ def test_pipeline_persists_auditable_chain_and_exact_observation(tmp_path) -> No
 
 def test_rejection_is_persisted_and_never_executes(tmp_path) -> None:
     repo, proposals, risks, executions = services(tmp_path, policy(allowed_universe={"MSFT"}))
-    proposal, decision, execution = DecisionPipeline(proposals, risks, executions).process("Alice", output())[0]
+    proposal, decision, execution = DecisionPipeline(proposals, risks, executions).process(
+        "Alice", output()
+    )[0]
     assert decision.outcome == RiskOutcome.REJECTED
     assert execution is None
     chain = repo.audit_chain("alice")[0]
@@ -112,7 +138,10 @@ def test_duplicate_and_concurrent_execution_are_idempotent(tmp_path) -> None:
     decision = risks.evaluate(proposal)
     with ThreadPoolExecutor(max_workers=2) as pool:
         results = list(pool.map(lambda _: executions.execute(proposal, decision), range(2)))
-    assert {result.status for result in results if result} == {ExecutionStatus.EXECUTED, ExecutionStatus.DUPLICATE}
+    assert {result.status for result in results if result} == {
+        ExecutionStatus.EXECUTED,
+        ExecutionStatus.DUPLICATE,
+    }
     assert repo.load_account_data("alice")["holdings"] == {"AAPL": 2}
     assert len(repo.audit_chain("alice")) == 1
 
@@ -122,11 +151,19 @@ def test_atomic_rollback_after_account_write(tmp_path) -> None:
     proposal = proposals.create("Alice", output().proposals[0], output().research)
     decision = risks.evaluate(proposal)
     from uuid import NAMESPACE_URL, uuid5
+
     from backend.decisions import PaperOrder
+
     order = PaperOrder(
-        order_id=uuid5(NAMESPACE_URL, f"order:{decision.decision_id}"), decision_id=decision.decision_id,
-        proposal_id=proposal.proposal_id, account_name="alice", symbol="AAPL", side=OrderSide.BUY,
-        quantity=2, observation=proposal.market_observation, submitted_at=NOW,
+        order_id=uuid5(NAMESPACE_URL, f"order:{decision.decision_id}"),
+        decision_id=decision.decision_id,
+        proposal_id=proposal.proposal_id,
+        account_name="alice",
+        symbol="AAPL",
+        side=OrderSide.BUY,
+        quantity=2,
+        observation=proposal.market_observation,
+        submitted_at=NOW,
     )
     with pytest.raises(RuntimeError, match="injected"):
         repo.execute_atomic(order, "test", fail_after_account_write=True)
@@ -142,9 +179,13 @@ def test_execution_requires_persisted_approval(tmp_path) -> None:
     assert executions.execute(proposal, decision) is None
 
 
-def test_human_approval_is_explicit_and_disabled_for_execution_until_recorded(tmp_path) -> None:
+def test_human_approval_is_explicit_and_disabled_for_execution_until_recorded(
+    tmp_path,
+) -> None:
     human_policy = policy(
-        human_approval_enabled=True, human_approval_notional=Decimal("100"), automated_replay=False,
+        human_approval_enabled=True,
+        human_approval_notional=Decimal("100"),
+        automated_replay=False,
     )
     repo, proposals, risks, executions = services(tmp_path, human_policy)
     proposal = proposals.create("Alice", output().proposals[0], output().research)
@@ -165,7 +206,10 @@ def test_execution_rechecks_cash_and_holdings_after_approval(tmp_path, race) -> 
     if side == OrderSide.SELL:
         initial["holdings"] = {"AAPL": 2}
     with sqlite3.connect(repo.db_path) as conn:
-        conn.execute("INSERT INTO accounts(name, account) VALUES ('alice', ?)", (json.dumps(initial),))
+        conn.execute(
+            "INSERT INTO accounts(name, account) VALUES ('alice', ?)",
+            (json.dumps(initial),),
+        )
     proposal = proposals.create("Alice", output(side=side).proposals[0], output(side=side).research)
     decision = risks.evaluate(proposal)
     assert decision.outcome == RiskOutcome.APPROVED
@@ -186,7 +230,10 @@ def test_execution_requires_persisted_market_observation(tmp_path) -> None:
     proposal = proposals.create("Alice", output().proposals[0], output().research)
     decision = risks.evaluate(proposal)
     with sqlite3.connect(repo.db_path) as conn:
-        conn.execute("DELETE FROM market_observations WHERE related_id = ?", (str(proposal.proposal_id),))
+        conn.execute(
+            "DELETE FROM market_observations WHERE related_id = ?",
+            (str(proposal.proposal_id),),
+        )
     with pytest.raises(ExecutionConflict, match="persisted proposal observation"):
         executions.execute(proposal, decision)
 
@@ -194,9 +241,21 @@ def test_execution_requires_persisted_market_observation(tmp_path) -> None:
 def test_malformed_agent_output_is_safely_rejected(tmp_path) -> None:
     repo, proposals, risks, executions = services(tmp_path)
     processed, error = DecisionPipeline(proposals, risks, executions).safely_process(
-        "Alice", {"research": {"summary": "x", "as_of": NOW}, "appraisal": "x",
-                  "proposals": [{"symbol": "AAPL", "side": "buy", "quantity": 1.5,
-                                 "sector": "tech", "rationale": "x", "evidence_claim_ids": ["missing"]}]},
+        "Alice",
+        {
+            "research": {"summary": "x", "as_of": NOW},
+            "appraisal": "x",
+            "proposals": [
+                {
+                    "symbol": "AAPL",
+                    "side": "buy",
+                    "quantity": 1.5,
+                    "sector": "tech",
+                    "rationale": "x",
+                    "evidence_claim_ids": ["missing"],
+                }
+            ],
+        },
     )
     assert processed == []
     assert error and error.startswith("invalid_agent_output")
@@ -206,6 +265,10 @@ def test_malformed_agent_output_is_safely_rejected(tmp_path) -> None:
 def test_positive_integral_quantity_schema() -> None:
     with pytest.raises(ValidationError):
         ProposedTrade(
-            symbol="AAPL", side="buy", quantity=1.5, sector="tech",
-            rationale="x", evidence_claim_ids=["claim-1"],
+            symbol="AAPL",
+            side="buy",
+            quantity=1.5,
+            sector="tech",
+            rationale="x",
+            evidence_claim_ids=["claim-1"],
         )

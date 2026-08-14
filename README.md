@@ -10,6 +10,8 @@ This is an educational simulation. It does not place real orders and is not fina
 - `frontend/`: Vite/TypeScript dashboard
 - `memory/`: runtime location for per-agent MCP memory databases
 - `evals/`: immutable replay fixtures, deterministic baselines, metrics, and reports
+- `backend/migrations.py`: transactional SQLite schema history
+- `SECURITY.md`: threat model, access controls, backup/restore, and retention
 - `build-plan.md`: priority-ordered roadmap and acceptance gates
 
 All agents use the project-owned typed market MCP server. Behind it, the configured provider is either Massive's previous-close endpoint (`end_of_day`) or the deterministic simulator (`simulated`). The application never probes progressively more privileged Massive endpoints and never silently changes to synthetic prices.
@@ -112,6 +114,11 @@ MODEL_INPUT_COST_PER_MILLION=0
 MODEL_OUTPUT_COST_PER_MILLION=0
 ```
 
+`SHUTDOWN_GRACE_SECONDS` defaults to 30. SIGINT/SIGTERM stops new scheduler
+cycles, gives the active cycle that bounded grace period, then cancels it and
+persists an `interrupted` status. Startup also closes orphaned `running` cycle
+records left by a prior process failure.
+
 Token and request counts come from the model provider's usage response. Cost is estimated from the configured per-million-token rates because this project can route to several providers and models; rates default to zero instead of embedding prices that may become stale. The token/spend hook stops before another model request once a budget is exhausted, the final response is checked again before any proposal reaches deterministic execution, and the wall-time budget encloses MCP startup and the full agent run.
 
 ## Run
@@ -151,6 +158,12 @@ Every observation includes `symbol`, `price`, `currency`, `market_timestamp`, `r
 
 `GET /api/health` returns the current cycle ID, per-server state, last success/error, safe diagnostic summary, latency, circuit state, market-data freshness, request/token usage, estimated cost, MCP failure rate, and cycle success rate. The dashboard sidebar presents the same attributable service view; each completed decision's evidence drill-down includes its trace ID, model, prompt version, market mode, latency, tokens, and estimated cost.
 
+The API defaults to `API_ACCESS_MODE=local`. If it is deliberately made public,
+startup requires a 32-character-or-longer `API_AUTH_TOKEN`; mutating requests
+require Bearer authentication and all requests are rate-limited per direct
+client. Public deployment also requires TLS and an edge rate limiter. See
+[`SECURITY.md`](SECURITY.md) for the threat model and operational limits.
+
 The Phase 6 decision console organizes the same records around portfolio versus starting value, drawdown, turnover, risk-limit utilization, evidence, approved and rejected proposals, attributable service health, and cycle cost/latency. It includes explicit loading, empty, and error states, keyboard-operable native controls, responsive layouts, and contrast-aware light and dark themes. The API publishes a versioned OpenAPI contract (`1.0.0`), and a test verifies every literal frontend API method/path against it to prevent route drift.
 
 Massive credentialed tests are not part of the default suite. Provider behavior is tested with deterministic fakes for success, authentication failure, entitlement failure, timeout, malformed responses, empty market days, and weekend previous-close handling.
@@ -179,3 +192,24 @@ stable and retries cannot erase an already revealed record. The Experiments
 screen runs and compares versioned reports across model labels, prompt versions,
 and single-agent/multi-agent architecture proxies, including benchmark-relative
 return, drawdown, turnover, estimated cost, and latency.
+
+## Reliability and quality gates
+
+Every database is advanced through numbered, transactional migrations. The
+supported integrity, online backup, atomic restore, corruption recovery, and
+retention workflows are documented in [`SECURITY.md`](SECURITY.md). Database
+and backup files remain untracked runtime artifacts.
+
+GitHub Actions runs the default credential-free test suite, Python compilation,
+Ruff format/lint checks, the frontend unit checks, TypeScript checking and
+production build, a tracked-source secret scan, and locked Python/npm dependency
+audits. Local equivalents are:
+
+```bash
+uv run ruff format --check backend evals tests scripts
+uv run ruff check backend evals tests scripts
+uv run pytest
+uv run python -m compileall -q backend
+uv run python scripts/check_secrets.py
+cd frontend && npm test && npm run typecheck && npm run build
+```

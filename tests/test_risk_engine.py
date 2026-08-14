@@ -4,15 +4,15 @@ from decimal import Decimal
 import pytest
 
 from backend.decisions import (
+    EvidenceClaim,
     OrderSide,
     PortfolioSnapshot,
     ResearchBrief,
     RiskEngine,
     RiskOutcome,
     RiskPolicy,
-    TradeProposal,
-    EvidenceClaim,
     SourceRecord,
+    TradeProposal,
 )
 from backend.market.models import DataMode, MarketObservation, ObservationSource
 
@@ -21,27 +21,47 @@ NOW = datetime(2026, 8, 13, 12, tzinfo=timezone.utc)
 
 def observation(*, stale=False, mode=DataMode.SIMULATED, price="100") -> MarketObservation:
     return MarketObservation(
-        symbol="AAPL", price=Decimal(price), currency="USD", market_timestamp=NOW,
-        retrieved_at=NOW, source=ObservationSource.SIMULATOR, mode=mode,
-        is_stale=stale, provider_endpoint="test/v1",
+        symbol="AAPL",
+        price=Decimal(price),
+        currency="USD",
+        market_timestamp=NOW,
+        retrieved_at=NOW,
+        source=ObservationSource.SIMULATOR,
+        mode=mode,
+        is_stale=stale,
+        provider_endpoint="test/v1",
     )
 
 
 def proposal(**updates) -> TradeProposal:
     source = SourceRecord(
-        source_id="source-1", canonical_url="https://example.com/aapl",
-        publisher="Example News", title="Apple update", published_at=NOW,
-        retrieved_at=NOW, supporting_excerpt="A concise supporting excerpt.",
+        source_id="source-1",
+        canonical_url="https://example.com/aapl",
+        publisher="Example News",
+        title="Apple update",
+        published_at=NOW,
+        retrieved_at=NOW,
+        supporting_excerpt="A concise supporting excerpt.",
     )
     claim = EvidenceClaim(
-        claim_id="claim-1", claim="A supported material claim", source_ids=["source-1"],
-        stance="supports", confidence=Decimal("0.75"),
+        claim_id="claim-1",
+        claim="A supported material claim",
+        source_ids=["source-1"],
+        stance="supports",
+        confidence=Decimal("0.75"),
     )
     data = dict(
-        account_name="risk", symbol="AAPL", side=OrderSide.BUY, quantity=1,
-        sector="technology", rationale="bounded test", created_at=NOW,
+        account_name="risk",
+        symbol="AAPL",
+        side=OrderSide.BUY,
+        quantity=1,
+        sector="technology",
+        rationale="bounded test",
+        created_at=NOW,
         evidence_claim_ids=["claim-1"],
-        research=ResearchBrief(summary="test evidence", as_of=NOW, sources=[source], claims=[claim]),
+        research=ResearchBrief(
+            summary="test evidence", as_of=NOW, sources=[source], claims=[claim]
+        ),
         market_observation=observation(),
     )
     data.update(updates)
@@ -50,8 +70,11 @@ def proposal(**updates) -> TradeProposal:
 
 def snapshot(**updates) -> PortfolioSnapshot:
     data = dict(
-        cash=Decimal("10000"), holdings={}, prices={"AAPL": Decimal("100")},
-        sectors={"AAPL": "technology"}, daily_turnover=Decimal("0"),
+        cash=Decimal("10000"),
+        holdings={},
+        prices={"AAPL": Decimal("100")},
+        sectors={"AAPL": "technology"},
+        daily_turnover=Decimal("0"),
         peak_value=Decimal("10000"),
     )
     data.update(updates)
@@ -60,9 +83,12 @@ def snapshot(**updates) -> PortfolioSnapshot:
 
 def generous_policy(**updates) -> RiskPolicy:
     data = dict(
-        max_position_percentage=Decimal("1"), max_symbol_concentration=Decimal("1"),
-        max_sector_concentration=Decimal("1"), minimum_cash_reserve=Decimal("0"),
-        maximum_order_notional=Decimal("100000"), maximum_daily_turnover=Decimal("100000"),
+        max_position_percentage=Decimal("1"),
+        max_symbol_concentration=Decimal("1"),
+        max_sector_concentration=Decimal("1"),
+        minimum_cash_reserve=Decimal("0"),
+        maximum_order_notional=Decimal("100000"),
+        maximum_daily_turnover=Decimal("100000"),
         maximum_drawdown=Decimal("1"),
     )
     data.update(updates)
@@ -76,17 +102,72 @@ def failed_rules(decision) -> set[str]:
 @pytest.mark.parametrize(
     ("policy", "trade", "portfolio", "rule"),
     [
-        (generous_policy(allowed_universe=frozenset({"MSFT"})), proposal(), snapshot(), "allowed_universe"),
-        (generous_policy(), proposal(market_observation=observation(stale=True)), snapshot(), "market_data_freshness"),
-        (generous_policy(allowed_market_modes=frozenset({DataMode.END_OF_DAY})), proposal(), snapshot(), "market_data_mode"),
-        (generous_policy(maximum_order_notional=Decimal("100")), proposal(), snapshot(), "maximum_order_notional"),
-        (generous_policy(maximum_daily_turnover=Decimal("200")), proposal(), snapshot(daily_turnover=Decimal("150")), "maximum_daily_turnover"),
-        (generous_policy(), proposal(side=OrderSide.SELL, quantity=2), snapshot(holdings={"AAPL": 1}), "sufficient_holdings"),
-        (generous_policy(minimum_cash_reserve=Decimal("9950")), proposal(), snapshot(), "minimum_cash_reserve"),
-        (generous_policy(max_position_percentage=Decimal("0.009")), proposal(), snapshot(), "maximum_position_percentage"),
-        (generous_policy(max_symbol_concentration=Decimal("0.009")), proposal(), snapshot(), "maximum_symbol_concentration"),
-        (generous_policy(max_sector_concentration=Decimal("0.009")), proposal(), snapshot(), "maximum_sector_concentration"),
-        (generous_policy(maximum_drawdown=Decimal("0.20")), proposal(), snapshot(cash=Decimal("7000"), peak_value=Decimal("10000")), "maximum_drawdown_kill_switch"),
+        (
+            generous_policy(allowed_universe=frozenset({"MSFT"})),
+            proposal(),
+            snapshot(),
+            "allowed_universe",
+        ),
+        (
+            generous_policy(),
+            proposal(market_observation=observation(stale=True)),
+            snapshot(),
+            "market_data_freshness",
+        ),
+        (
+            generous_policy(allowed_market_modes=frozenset({DataMode.END_OF_DAY})),
+            proposal(),
+            snapshot(),
+            "market_data_mode",
+        ),
+        (
+            generous_policy(maximum_order_notional=Decimal("100")),
+            proposal(),
+            snapshot(),
+            "maximum_order_notional",
+        ),
+        (
+            generous_policy(maximum_daily_turnover=Decimal("200")),
+            proposal(),
+            snapshot(daily_turnover=Decimal("150")),
+            "maximum_daily_turnover",
+        ),
+        (
+            generous_policy(),
+            proposal(side=OrderSide.SELL, quantity=2),
+            snapshot(holdings={"AAPL": 1}),
+            "sufficient_holdings",
+        ),
+        (
+            generous_policy(minimum_cash_reserve=Decimal("9950")),
+            proposal(),
+            snapshot(),
+            "minimum_cash_reserve",
+        ),
+        (
+            generous_policy(max_position_percentage=Decimal("0.009")),
+            proposal(),
+            snapshot(),
+            "maximum_position_percentage",
+        ),
+        (
+            generous_policy(max_symbol_concentration=Decimal("0.009")),
+            proposal(),
+            snapshot(),
+            "maximum_symbol_concentration",
+        ),
+        (
+            generous_policy(max_sector_concentration=Decimal("0.009")),
+            proposal(),
+            snapshot(),
+            "maximum_sector_concentration",
+        ),
+        (
+            generous_policy(maximum_drawdown=Decimal("0.20")),
+            proposal(),
+            snapshot(cash=Decimal("7000"), peak_value=Decimal("10000")),
+            "maximum_drawdown_kill_switch",
+        ),
     ],
 )
 def test_each_risk_rule_rejects_at_boundary(policy, trade, portfolio, rule) -> None:
@@ -96,7 +177,9 @@ def test_each_risk_rule_rejects_at_boundary(policy, trade, portfolio, rule) -> N
 
 
 def test_exact_limits_pass_and_stable_decision_id() -> None:
-    policy = generous_policy(maximum_order_notional=Decimal("100.2"), maximum_daily_turnover=Decimal("200.2"))
+    policy = generous_policy(
+        maximum_order_notional=Decimal("100.2"), maximum_daily_turnover=Decimal("200.2")
+    )
     trade = proposal()
     portfolio = snapshot(daily_turnover=Decimal("100"))
     first = RiskEngine(policy).evaluate(trade, portfolio, NOW)
@@ -107,11 +190,19 @@ def test_exact_limits_pass_and_stable_decision_id() -> None:
 
 def test_human_approval_policy_and_replay_override() -> None:
     trade = proposal()
-    pending = RiskEngine(generous_policy(
-        human_approval_enabled=True, human_approval_notional=Decimal("100"), automated_replay=False,
-    )).evaluate(trade, snapshot(), NOW)
-    replay = RiskEngine(generous_policy(
-        human_approval_enabled=True, human_approval_notional=Decimal("100"), automated_replay=True,
-    )).evaluate(trade, snapshot(), NOW)
+    pending = RiskEngine(
+        generous_policy(
+            human_approval_enabled=True,
+            human_approval_notional=Decimal("100"),
+            automated_replay=False,
+        )
+    ).evaluate(trade, snapshot(), NOW)
+    replay = RiskEngine(
+        generous_policy(
+            human_approval_enabled=True,
+            human_approval_notional=Decimal("100"),
+            automated_replay=True,
+        )
+    ).evaluate(trade, snapshot(), NOW)
     assert pending.outcome == RiskOutcome.PENDING_HUMAN
     assert replay.outcome == RiskOutcome.APPROVED

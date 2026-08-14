@@ -1,10 +1,11 @@
 import os
-from dotenv import load_dotenv
-import requests
-from pydantic import BaseModel, Field
-from mcp.server.fastmcp import FastMCP
 
-load_dotenv(override=True)
+import requests
+from dotenv import load_dotenv
+from mcp.server.fastmcp import FastMCP
+from pydantic import BaseModel, Field
+
+load_dotenv()
 
 pushover_user = os.getenv("PUSHOVER_USER")
 pushover_token = os.getenv("PUSHOVER_TOKEN")
@@ -22,8 +23,11 @@ class PushModelArgs(BaseModel):
 def push(args: PushModelArgs):
     """Send a push notification with this brief message"""
     print(f"Push: {args.message}")
+    if not pushover_user or not pushover_token:
+        return "Push notification disabled: credentials are not configured"
     payload = {"user": pushover_user, "token": pushover_token, "message": args.message}
-    requests.post(pushover_url, data=payload)
+    response = requests.post(pushover_url, data=payload, timeout=10)
+    response.raise_for_status()
     return "Push notification sent"
 
 

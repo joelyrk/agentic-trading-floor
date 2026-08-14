@@ -1,7 +1,7 @@
-from datetime import datetime, timedelta, timezone
-from decimal import Decimal
 import json
 import sqlite3
+from datetime import datetime, timedelta, timezone
+from decimal import Decimal
 
 import pytest
 from pydantic import ValidationError
@@ -29,9 +29,12 @@ NOW = datetime(2026, 8, 13, 12, tzinfo=timezone.utc)
 
 def source(**updates) -> SourceRecord:
     values = dict(
-        source_id="s1", canonical_url="https://news.example.com/story?utm_source=feed#top",
-        publisher="Example News", title="Company reports results",
-        published_at=NOW - timedelta(hours=2), retrieved_at=NOW - timedelta(hours=1),
+        source_id="s1",
+        canonical_url="https://news.example.com/story?utm_source=feed#top",
+        publisher="Example News",
+        title="Company reports results",
+        published_at=NOW - timedelta(hours=2),
+        retrieved_at=NOW - timedelta(hours=1),
         supporting_excerpt="The company reported revenue and operating results.",
     )
     values.update(updates)
@@ -40,15 +43,23 @@ def source(**updates) -> SourceRecord:
 
 def claim(**updates) -> EvidenceClaim:
     values = dict(
-        claim_id="c1", claim="The company reported current operating results.",
-        source_ids=["s1"], stance="supports", confidence=Decimal("0.80"),
+        claim_id="c1",
+        claim="The company reported current operating results.",
+        source_ids=["s1"],
+        stance="supports",
+        confidence=Decimal("0.80"),
     )
     values.update(updates)
     return EvidenceClaim(**values)
 
 
 def brief(**updates) -> ResearchBrief:
-    values = dict(summary="Concise cited findings.", as_of=NOW, sources=[source()], claims=[claim()])
+    values = dict(
+        summary="Concise cited findings.",
+        as_of=NOW,
+        sources=[source()],
+        claims=[claim()],
+    )
     values.update(updates)
     return ResearchBrief(**values)
 
@@ -67,7 +78,8 @@ def test_missing_and_broken_citations_are_rejected(claims) -> None:
 
 def test_duplicate_url_is_canonicalized_and_rejected() -> None:
     duplicate = source(
-        source_id="s2", canonical_url="https://NEWS.example.com/story/",
+        source_id="s2",
+        canonical_url="https://NEWS.example.com/story/",
         supporting_excerpt="A distinct excerpt from the same article.",
     )
     with pytest.raises(ValidationError, match="duplicate article"):
@@ -76,10 +88,17 @@ def test_duplicate_url_is_canonicalized_and_rejected() -> None:
 
 def test_duplicate_content_and_conflicting_publication_dates_are_rejected() -> None:
     with pytest.raises(ValidationError, match="duplicate article content"):
-        brief(sources=[source(), source(source_id="s2", canonical_url="https://example.org/other")])
+        brief(
+            sources=[
+                source(),
+                source(source_id="s2", canonical_url="https://example.org/other"),
+            ]
+        )
     conflicting = source(
-        source_id="s2", canonical_url="https://news.example.com/story",
-        published_at=NOW - timedelta(hours=3), supporting_excerpt="Different excerpt.",
+        source_id="s2",
+        canonical_url="https://news.example.com/story",
+        published_at=NOW - timedelta(hours=3),
+        supporting_excerpt="Different excerpt.",
     )
     with pytest.raises(ValidationError, match="conflicting publication dates"):
         brief(sources=[source(), conflicting])
@@ -93,21 +112,35 @@ def test_future_dated_source_and_unsupported_proposal_are_rejected() -> None:
         brief(sources=[future])
     with pytest.raises(ValidationError, match="unknown evidence claim"):
         TradingDecision(
-            research=brief(), appraisal="No private reasoning.",
-            proposals=[ProposedTrade(
-                symbol="AAPL", side="buy", quantity=1, sector="technology",
-                rationale="Unsupported recommendation", evidence_claim_ids=["missing"],
-            )],
+            research=brief(),
+            appraisal="No private reasoning.",
+            proposals=[
+                ProposedTrade(
+                    symbol="AAPL",
+                    side="buy",
+                    quantity=1,
+                    sector="technology",
+                    rationale="Unsupported recommendation",
+                    evidence_claim_ids=["missing"],
+                )
+            ],
         )
 
     unsupported = claim(material=False, source_ids=[])
     with pytest.raises(ValidationError, match="unsupported evidence"):
         TradingDecision(
-            research=brief(claims=[unsupported]), appraisal="No private reasoning.",
-            proposals=[ProposedTrade(
-                symbol="AAPL", side="buy", quantity=1, sector="technology",
-                rationale="Unsupported recommendation", evidence_claim_ids=["c1"],
-            )],
+            research=brief(claims=[unsupported]),
+            appraisal="No private reasoning.",
+            proposals=[
+                ProposedTrade(
+                    symbol="AAPL",
+                    side="buy",
+                    quantity=1,
+                    sector="technology",
+                    rationale="Unsupported recommendation",
+                    evidence_claim_ids=["c1"],
+                )
+            ],
         )
 
 
@@ -119,25 +152,44 @@ def test_domain_allow_and_deny_policy() -> None:
         ResearchPolicy(allowed_domains=frozenset({"trusted.test"})).validate(brief())
 
 
-def test_research_schema_and_database_round_trip_with_full_evidence_chain(tmp_path) -> None:
+def test_research_schema_and_database_round_trip_with_full_evidence_chain(
+    tmp_path,
+) -> None:
     repo = DecisionRepository(str(tmp_path / "evidence.db"))
     observation = MarketObservation(
-        symbol="AAPL", price=Decimal("100"), currency="USD", market_timestamp=NOW,
-        retrieved_at=NOW, source=ObservationSource.SIMULATOR, mode=DataMode.SIMULATED,
-        is_stale=False, provider_endpoint="test/v1",
+        symbol="AAPL",
+        price=Decimal("100"),
+        currency="USD",
+        market_timestamp=NOW,
+        retrieved_at=NOW,
+        source=ObservationSource.SIMULATOR,
+        mode=DataMode.SIMULATED,
+        is_stale=False,
+        provider_endpoint="test/v1",
     )
     policy = RiskPolicy(
-        max_position_percentage=Decimal("1"), max_symbol_concentration=Decimal("1"),
-        max_sector_concentration=Decimal("1"), minimum_cash_reserve=Decimal("0"),
-        maximum_order_notional=Decimal("100000"), maximum_daily_turnover=Decimal("100000"),
+        max_position_percentage=Decimal("1"),
+        max_symbol_concentration=Decimal("1"),
+        max_sector_concentration=Decimal("1"),
+        minimum_cash_reserve=Decimal("0"),
+        maximum_order_notional=Decimal("100000"),
+        maximum_daily_turnover=Decimal("100000"),
         maximum_drawdown=Decimal("1"),
     )
     output = TradingDecision(
-        research=brief(), appraisal="Cited paper proposal.", trader_prompt_version="trader-test-v2",
-        proposals=[ProposedTrade(
-            symbol="AAPL", side=OrderSide.BUY, quantity=1, sector="technology",
-            rationale="The cited update supports review.", evidence_claim_ids=["c1"],
-        )],
+        research=brief(),
+        appraisal="Cited paper proposal.",
+        trader_prompt_version="trader-test-v2",
+        proposals=[
+            ProposedTrade(
+                symbol="AAPL",
+                side=OrderSide.BUY,
+                quantity=1,
+                sector="technology",
+                rationale="The cited update supports review.",
+                evidence_claim_ids=["c1"],
+            )
+        ],
     )
     proposal, _, _ = DecisionPipeline(
         ProposalService(repo, lambda _: observation, clock=lambda: NOW),
@@ -148,18 +200,25 @@ def test_research_schema_and_database_round_trip_with_full_evidence_chain(tmp_pa
     assert ResearchBrief.model_validate(evidence["research"]) == output.research
     assert evidence["research"]["schema_version"] == "1.0"
     assert evidence["proposal"]["evidence_claim_ids"] == ["c1"]
-    assert evidence["prompt_versions"] == {"researcher": "researcher-v1", "trader": "trader-test-v2"}
+    assert evidence["prompt_versions"] == {
+        "researcher": "researcher-v1",
+        "trader": "trader-test-v2",
+    }
     assert evidence["market_observation"]["source"] == "simulator"
     with sqlite3.connect(repo.db_path) as conn:
         stored = conn.execute("SELECT brief FROM research_briefs").fetchone()[0]
     assert json.loads(stored)["sources"][0]["content_hash"]
 
 
-def test_zero_proposal_run_still_persists_research_and_prompt_versions(tmp_path) -> None:
+def test_zero_proposal_run_still_persists_research_and_prompt_versions(
+    tmp_path,
+) -> None:
     repo = DecisionRepository(str(tmp_path / "no-trade.db"))
     service = ProposalService(repo, lambda _: None, clock=lambda: NOW)
     output = TradingDecision(research=brief(), proposals=[], appraisal="No trade warranted.")
-    DecisionPipeline(service, None, None).process("Alice", output)  # unused services for a no-trade run
+    DecisionPipeline(service, None, None).process(
+        "Alice", output
+    )  # unused services for a no-trade run
     with sqlite3.connect(repo.db_path) as conn:
         row = conn.execute(
             "SELECT researcher_prompt_version, trader_prompt_version FROM research_briefs"

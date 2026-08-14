@@ -57,7 +57,8 @@ class RiskPolicy(BaseModel):
             allowed_universe=frozenset(universe),
             allowed_market_modes=frozenset(modes),
             sector_by_symbol=sector_map,
-            human_approval_enabled=os.getenv("RISK_HUMAN_APPROVAL_ENABLED", "false").lower() in truthy,
+            human_approval_enabled=os.getenv("RISK_HUMAN_APPROVAL_ENABLED", "false").lower()
+            in truthy,
             human_approval_notional=os.getenv("RISK_HUMAN_APPROVAL_NOTIONAL", "2000"),
             automated_replay=os.getenv("AUTOMATED_REPLAY", "false").lower() in truthy,
         )

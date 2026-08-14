@@ -24,7 +24,6 @@ from .models import (
 from .repository import DecisionRepository, ExecutionConflict
 from .risk import PortfolioSnapshot, RiskEngine
 
-
 Clock = Callable[[], datetime]
 Observe = Callable[[str], MarketObservation]
 
@@ -53,8 +52,11 @@ class ProposalService:
         observation = self.observe(proposed.symbol)
         now = self.clock()
         proposal = TradeProposal(
-            **proposed.model_dump(), account_name=account_name, created_at=now,
-            research=research, market_observation=observation,
+            **proposed.model_dump(),
+            account_name=account_name,
+            created_at=now,
+            research=research,
+            market_observation=observation,
         )
         self.repository.save_proposal(proposal)
         return proposal
@@ -72,7 +74,13 @@ class ProposalService:
 
 
 class RiskService:
-    def __init__(self, repository: DecisionRepository, engine: RiskEngine, observe: Observe, clock: Clock | None = None):
+    def __init__(
+        self,
+        repository: DecisionRepository,
+        engine: RiskEngine,
+        observe: Observe,
+        clock: Clock | None = None,
+    ):
         self.repository = repository
         self.engine = engine
         self.observe = observe
@@ -82,7 +90,11 @@ class RiskService:
         data = self.repository.load_account_data(proposal.account_name)
         prices: dict[str, Decimal] = {}
         for symbol in data["holdings"]:
-            prices[symbol] = proposal.market_observation.price if symbol == proposal.symbol else self.observe(symbol).price
+            prices[symbol] = (
+                proposal.market_observation.price
+                if symbol == proposal.symbol
+                else self.observe(symbol).price
+            )
         prices.setdefault(proposal.symbol, proposal.market_observation.price)
         series = data.get("portfolio_value_time_series", [])
         historic_values = [Decimal(str(item[1])) for item in series]
@@ -95,9 +107,13 @@ class RiskService:
             for symbol in set(data["holdings"]) | {proposal.symbol}
         }
         return PortfolioSnapshot(
-            cash=Decimal(str(data["balance"])), holdings=dict(data["holdings"]), prices=prices,
+            cash=Decimal(str(data["balance"])),
+            holdings=dict(data["holdings"]),
+            prices=prices,
             sectors=sector_map,
-            daily_turnover=self.repository.daily_turnover(proposal.account_name, self.clock().date().isoformat()),
+            daily_turnover=self.repository.daily_turnover(
+                proposal.account_name, self.clock().date().isoformat()
+            ),
             peak_value=peak,
         )
 
@@ -121,20 +137,33 @@ class ExecutionService:
             return None
         order_id = uuid5(NAMESPACE_URL, f"order:{decision.decision_id}")
         order = PaperOrder(
-            order_id=order_id, decision_id=decision.decision_id, proposal_id=proposal.proposal_id,
-            account_name=proposal.account_name, symbol=proposal.symbol, side=proposal.side,
-            quantity=proposal.quantity, observation=proposal.market_observation, submitted_at=self.clock(),
+            order_id=order_id,
+            decision_id=decision.decision_id,
+            proposal_id=proposal.proposal_id,
+            account_name=proposal.account_name,
+            symbol=proposal.symbol,
+            side=proposal.side,
+            quantity=proposal.quantity,
+            observation=proposal.market_observation,
+            submitted_at=self.clock(),
         )
         return self.repository.execute_atomic(order, proposal.rationale, executed_at=self.clock())
 
 
 class DecisionPipeline:
-    def __init__(self, proposal_service: ProposalService, risk_service: RiskService, execution_service: ExecutionService):
+    def __init__(
+        self,
+        proposal_service: ProposalService,
+        risk_service: RiskService,
+        execution_service: ExecutionService,
+    ):
         self.proposal_service = proposal_service
         self.risk_service = risk_service
         self.execution_service = execution_service
 
-    def process(self, account_name: str, output: TradingDecision) -> list[tuple[TradeProposal, RiskDecision, ExecutionResult | None]]:
+    def process(
+        self, account_name: str, output: TradingDecision
+    ) -> list[tuple[TradeProposal, RiskDecision, ExecutionResult | None]]:
         results = []
         if not output.proposals:
             self.proposal_service.record_research(
@@ -152,7 +181,11 @@ class DecisionPipeline:
     def safely_process(self, account_name: str, raw_output) -> tuple[list, str | None]:
         """Validate untrusted agent output; malformed output never reaches execution."""
         try:
-            output = raw_output if isinstance(raw_output, TradingDecision) else TradingDecision.model_validate(raw_output)
+            output = (
+                raw_output
+                if isinstance(raw_output, TradingDecision)
+                else TradingDecision.model_validate(raw_output)
+            )
         except (ValidationError, TypeError, ValueError, ResearchPolicyError) as exc:
             return [], f"invalid_agent_output: {exc}"
         try:

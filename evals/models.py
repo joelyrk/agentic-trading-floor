@@ -136,7 +136,11 @@ class ReplayTiming(StrictModel):
     executed_at: datetime
 
     @field_validator(
-        "research_cutoff", "market_timestamp", "market_retrieved_at", "decided_at", "executed_at"
+        "research_cutoff",
+        "market_timestamp",
+        "market_retrieved_at",
+        "decided_at",
+        "executed_at",
     )
     @classmethod
     def require_aware(cls, value):
@@ -149,7 +153,9 @@ class ReplayTiming(StrictModel):
             and self.decided_at == self.research_cutoff
             and self.executed_at == self.decided_at
         ):
-            raise ValueError("research, market, decision, and execution must share the replay cutoff")
+            raise ValueError(
+                "research, market, decision, and execution must share the replay cutoff"
+            )
         return self
 
 

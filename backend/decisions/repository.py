@@ -49,9 +49,13 @@ class DecisionRepository:
                    VALUES (?, ?, ?, ?, ?, ?, ?)
                    ON CONFLICT(research_id) DO NOTHING""",
                 (
-                    str(brief.research_id), account_name.lower(), brief.model_dump_json(),
-                    brief.as_of.isoformat(), brief.researcher_prompt_version,
-                    trader_prompt_version, created_at.isoformat(),
+                    str(brief.research_id),
+                    account_name.lower(),
+                    brief.model_dump_json(),
+                    brief.as_of.isoformat(),
+                    brief.researcher_prompt_version,
+                    trader_prompt_version,
+                    created_at.isoformat(),
                 ),
             )
             stored = conn.execute(
@@ -60,11 +64,15 @@ class DecisionRepository:
                 (str(brief.research_id),),
             ).fetchone()
             expected = (
-                account_name.lower(), brief.model_dump_json(),
-                brief.researcher_prompt_version, trader_prompt_version,
+                account_name.lower(),
+                brief.model_dump_json(),
+                brief.researcher_prompt_version,
+                trader_prompt_version,
             )
             if stored != expected:
-                raise ExecutionConflict("research_id already exists with different evidence or prompt versions")
+                raise ExecutionConflict(
+                    "research_id already exists with different evidence or prompt versions"
+                )
 
     def save_proposal(self, proposal: TradeProposal) -> None:
         observation_id = f"proposal:{proposal.proposal_id}"
@@ -76,16 +84,25 @@ class DecisionRepository:
                    (proposal_id, account_name, proposal, created_at, research_id)
                    VALUES (?, ?, ?, ?, ?)""",
                 (
-                    str(proposal.proposal_id), proposal.account_name, proposal.model_dump_json(),
-                    proposal.created_at.isoformat(), str(proposal.research.research_id),
+                    str(proposal.proposal_id),
+                    proposal.account_name,
+                    proposal.model_dump_json(),
+                    proposal.created_at.isoformat(),
+                    str(proposal.research.research_id),
                 ),
             )
             conn.execute(
                 """INSERT INTO market_observations
                    (id, account_name, usage_kind, related_id, symbol, observation, recorded_at)
                    VALUES (?, ?, 'proposal', ?, ?, ?, ?)""",
-                (observation_id, proposal.account_name, str(proposal.proposal_id), proposal.symbol,
-                 proposal.market_observation.model_dump_json(), proposal.created_at.isoformat()),
+                (
+                    observation_id,
+                    proposal.account_name,
+                    str(proposal.proposal_id),
+                    proposal.symbol,
+                    proposal.market_observation.model_dump_json(),
+                    proposal.created_at.isoformat(),
+                ),
             )
 
     def save_risk_decision(self, decision: RiskDecision) -> None:
@@ -93,20 +110,34 @@ class DecisionRepository:
             conn.execute("PRAGMA foreign_keys = ON")
             conn.execute(
                 "INSERT INTO risk_decisions VALUES (?, ?, ?, ?, ?, ?)",
-                (str(decision.decision_id), str(decision.proposal_id), decision.account_name,
-                 decision.outcome.value, decision.model_dump_json(), decision.evaluated_at.isoformat()),
+                (
+                    str(decision.decision_id),
+                    str(decision.proposal_id),
+                    decision.account_name,
+                    decision.outcome.value,
+                    decision.model_dump_json(),
+                    decision.evaluated_at.isoformat(),
+                ),
             )
 
     def approve_human(self, decision_id: str, approved_at: datetime) -> RiskDecision:
         with sqlite3.connect(self.db_path) as conn:
             conn.execute("BEGIN IMMEDIATE")
-            row = conn.execute("SELECT decision FROM risk_decisions WHERE decision_id = ?", (decision_id,)).fetchone()
+            row = conn.execute(
+                "SELECT decision FROM risk_decisions WHERE decision_id = ?",
+                (decision_id,),
+            ).fetchone()
             if row is None:
                 raise KeyError(f"unknown decision {decision_id}")
             decision = RiskDecision.model_validate_json(row[0])
             if decision.outcome != RiskOutcome.PENDING_HUMAN:
                 raise ExecutionConflict("decision is not awaiting human approval")
-            decision = decision.model_copy(update={"outcome": RiskOutcome.APPROVED, "human_approved_at": approved_at})
+            decision = decision.model_copy(
+                update={
+                    "outcome": RiskOutcome.APPROVED,
+                    "human_approved_at": approved_at,
+                }
+            )
             conn.execute(
                 "UPDATE risk_decisions SET outcome = ?, decision = ? WHERE decision_id = ?",
                 (decision.outcome.value, decision.model_dump_json(), decision_id),
@@ -129,14 +160,20 @@ class DecisionRepository:
 
     def load_proposal(self, proposal_id: str) -> TradeProposal:
         with sqlite3.connect(self.db_path) as conn:
-            row = conn.execute("SELECT proposal FROM trade_proposals WHERE proposal_id = ?", (proposal_id,)).fetchone()
+            row = conn.execute(
+                "SELECT proposal FROM trade_proposals WHERE proposal_id = ?",
+                (proposal_id,),
+            ).fetchone()
         if row is None:
             raise KeyError(f"unknown proposal {proposal_id}")
         return TradeProposal.model_validate_json(row[0])
 
     def load_risk_decision(self, decision_id: str) -> RiskDecision:
         with sqlite3.connect(self.db_path) as conn:
-            row = conn.execute("SELECT decision FROM risk_decisions WHERE decision_id = ?", (decision_id,)).fetchone()
+            row = conn.execute(
+                "SELECT decision FROM risk_decisions WHERE decision_id = ?",
+                (decision_id,),
+            ).fetchone()
         if row is None:
             raise KeyError(f"unknown decision {decision_id}")
         return RiskDecision.model_validate_json(row[0])
@@ -170,11 +207,21 @@ class DecisionRepository:
 
     def load_account_data(self, account_name: str) -> dict:
         with sqlite3.connect(self.db_path) as conn:
-            row = conn.execute("SELECT account FROM accounts WHERE name = ?", (account_name.lower(),)).fetchone()
-        return json.loads(row[0]) if row else {
-            "name": account_name.lower(), "balance": INITIAL_BALANCE, "strategy": "", "holdings": {},
-            "transactions": [], "portfolio_value_time_series": [],
-        }
+            row = conn.execute(
+                "SELECT account FROM accounts WHERE name = ?", (account_name.lower(),)
+            ).fetchone()
+        return (
+            json.loads(row[0])
+            if row
+            else {
+                "name": account_name.lower(),
+                "balance": INITIAL_BALANCE,
+                "strategy": "",
+                "holdings": {},
+                "transactions": [],
+                "portfolio_value_time_series": [],
+            }
+        )
 
     def execute_atomic(
         self,
@@ -189,11 +236,17 @@ class DecisionRepository:
             conn.execute("PRAGMA foreign_keys = ON")
             conn.execute("BEGIN IMMEDIATE")
             duplicate = conn.execute(
-                "SELECT result FROM execution_results WHERE order_id = ?", (str(order.order_id),)
+                "SELECT result FROM execution_results WHERE order_id = ?",
+                (str(order.order_id),),
             ).fetchone()
             if duplicate:
                 existing = ExecutionResult.model_validate_json(duplicate[0])
-                return existing.model_copy(update={"status": ExecutionStatus.DUPLICATE, "message": "order already executed"})
+                return existing.model_copy(
+                    update={
+                        "status": ExecutionStatus.DUPLICATE,
+                        "message": "order already executed",
+                    }
+                )
             decision_row = conn.execute(
                 "SELECT outcome, decision FROM risk_decisions WHERE decision_id = ? AND proposal_id = ?",
                 (str(order.decision_id), str(order.proposal_id)),
@@ -204,7 +257,8 @@ class DecisionRepository:
             if decision.outcome != RiskOutcome.APPROVED:
                 raise ExecutionConflict("execution requires a persisted approval")
             proposal_row = conn.execute(
-                "SELECT proposal FROM trade_proposals WHERE proposal_id = ?", (str(order.proposal_id),)
+                "SELECT proposal FROM trade_proposals WHERE proposal_id = ?",
+                (str(order.proposal_id),),
             ).fetchone()
             if proposal_row is None:
                 raise ExecutionConflict("no persisted proposal for order")
@@ -214,7 +268,11 @@ class DecisionRepository:
                    WHERE usage_kind = 'proposal' AND related_id = ?""",
                 (str(order.proposal_id),),
             ).fetchone()
-            if observation_row is None or MarketObservation.model_validate_json(observation_row[0]) != proposal.market_observation:
+            if (
+                observation_row is None
+                or MarketObservation.model_validate_json(observation_row[0])
+                != proposal.market_observation
+            ):
                 raise ExecutionConflict("execution requires the persisted proposal observation")
             if order.observation != proposal.market_observation:
                 raise ExecutionConflict("order observation differs from approved proposal")
@@ -226,13 +284,27 @@ class DecisionRepository:
             ):
                 raise ExecutionConflict("order terms differ from approved proposal")
 
-            account_row = conn.execute("SELECT account FROM accounts WHERE name = ?", (order.account_name,)).fetchone()
-            account = json.loads(account_row[0]) if account_row else {
-                "name": order.account_name, "balance": INITIAL_BALANCE, "strategy": "", "holdings": {},
-                "transactions": [], "portfolio_value_time_series": [],
-            }
+            account_row = conn.execute(
+                "SELECT account FROM accounts WHERE name = ?", (order.account_name,)
+            ).fetchone()
+            account = (
+                json.loads(account_row[0])
+                if account_row
+                else {
+                    "name": order.account_name,
+                    "balance": INITIAL_BALANCE,
+                    "strategy": "",
+                    "holdings": {},
+                    "transactions": [],
+                    "portfolio_value_time_series": [],
+                }
+            )
             cash = Decimal(str(account["balance"]))
-            price = order.observation.price * (Decimal("1") + Decimal(str(SPREAD))) if order.side == OrderSide.BUY else order.observation.price * (Decimal("1") - Decimal(str(SPREAD)))
+            price = (
+                order.observation.price * (Decimal("1") + Decimal(str(SPREAD)))
+                if order.side == OrderSide.BUY
+                else order.observation.price * (Decimal("1") - Decimal(str(SPREAD)))
+            )
             total = price * order.quantity
             held = int(account["holdings"].get(order.symbol, 0))
             if order.side == OrderSide.BUY:
@@ -253,8 +325,13 @@ class DecisionRepository:
                 signed_quantity = -order.quantity
             observation_id = f"order:{order.order_id}"
             transaction = Transaction(
-                symbol=order.symbol, quantity=signed_quantity, price=float(price), timestamp=now.isoformat(),
-                rationale=rationale, market_observation_id=observation_id, market_observation=order.observation,
+                symbol=order.symbol,
+                quantity=signed_quantity,
+                price=float(price),
+                timestamp=now.isoformat(),
+                rationale=rationale,
+                market_observation_id=observation_id,
+                market_observation=order.observation,
             )
             account["balance"] = float(cash)
             account["transactions"].append(transaction.model_dump(mode="json"))
@@ -269,26 +346,53 @@ class DecisionRepository:
                 """INSERT INTO market_observations
                    (id, account_name, usage_kind, related_id, symbol, observation, recorded_at)
                    VALUES (?, ?, 'order', ?, ?, ?, ?)""",
-                (observation_id, order.account_name, str(order.order_id), order.symbol,
-                 order.observation.model_dump_json(), now.isoformat()),
+                (
+                    observation_id,
+                    order.account_name,
+                    str(order.order_id),
+                    order.symbol,
+                    order.observation.model_dump_json(),
+                    now.isoformat(),
+                ),
             )
             conn.execute(
                 "INSERT INTO paper_orders VALUES (?, ?, ?, ?, ?, ?, ?)",
-                (str(order.order_id), str(order.decision_id), str(order.proposal_id), order.account_name,
-                 order.model_dump_json(), ExecutionStatus.EXECUTED.value, order.submitted_at.isoformat()),
+                (
+                    str(order.order_id),
+                    str(order.decision_id),
+                    str(order.proposal_id),
+                    order.account_name,
+                    order.model_dump_json(),
+                    ExecutionStatus.EXECUTED.value,
+                    order.submitted_at.isoformat(),
+                ),
             )
             result = ExecutionResult(
-                execution_id=order.order_id, order_id=order.order_id, status=ExecutionStatus.EXECUTED,
-                executed_at=now, quantity=order.quantity, execution_price=price, cash_after=cash,
+                execution_id=order.order_id,
+                order_id=order.order_id,
+                status=ExecutionStatus.EXECUTED,
+                executed_at=now,
+                quantity=order.quantity,
+                execution_price=price,
+                cash_after=cash,
                 message="paper order executed",
             )
             conn.execute(
                 "INSERT INTO execution_results VALUES (?, ?, ?, ?)",
-                (str(result.execution_id), str(order.order_id), result.model_dump_json(), now.isoformat()),
+                (
+                    str(result.execution_id),
+                    str(order.order_id),
+                    result.model_dump_json(),
+                    now.isoformat(),
+                ),
             )
             conn.execute(
                 "INSERT INTO logs(name, datetime, type, message) VALUES (?, ?, 'account', ?)",
-                (order.account_name, now.isoformat(), f"{order.side.value.title()} {order.quantity} of {order.symbol} (paper)"),
+                (
+                    order.account_name,
+                    now.isoformat(),
+                    f"{order.side.value.title()} {order.quantity} of {order.symbol} (paper)",
+                ),
             )
             return result
 
@@ -304,7 +408,11 @@ class DecisionRepository:
                 (account_name.lower(),),
             ).fetchall()
         return [
-            {"proposal": json.loads(row[0]), "risk_decision": json.loads(row[1]) if row[1] else None,
-             "order": json.loads(row[2]) if row[2] else None, "execution": json.loads(row[3]) if row[3] else None}
+            {
+                "proposal": json.loads(row[0]),
+                "risk_decision": json.loads(row[1]) if row[1] else None,
+                "order": json.loads(row[2]) if row[2] else None,
+                "execution": json.loads(row[3]) if row[3] else None,
+            }
             for row in rows
         ]

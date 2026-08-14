@@ -9,7 +9,7 @@ from uuid import UUID, uuid4
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from backend.market.models import MarketObservation, normalize_symbol
-from backend.research.models import ResearchBrief, TRADER_PROMPT_VERSION
+from backend.research.models import TRADER_PROMPT_VERSION, ResearchBrief
 
 
 class StrictModel(BaseModel):

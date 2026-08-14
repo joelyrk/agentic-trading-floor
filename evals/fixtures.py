@@ -12,7 +12,12 @@ class FixtureIntegrityError(ValueError):
 
 
 class FixtureSet:
-    def __init__(self, manifest: DatasetManifest, decisions: list[DecisionFixture], outcomes: dict[str, OutcomeFixture]):
+    def __init__(
+        self,
+        manifest: DatasetManifest,
+        decisions: list[DecisionFixture],
+        outcomes: dict[str, OutcomeFixture],
+    ):
         self.manifest = manifest
         self.decisions = decisions
         self._outcomes = outcomes
@@ -21,7 +26,9 @@ class FixtureSet:
         outcome = self._outcomes[scenario_id]
         decision = next(item for item in self.decisions if item.scenario_id == scenario_id)
         if after < decision.decision_at:
-            raise FixtureIntegrityError("outcome cannot be revealed before the decision is complete")
+            raise FixtureIntegrityError(
+                "outcome cannot be revealed before the decision is complete"
+            )
         return outcome
 
 
@@ -35,8 +42,14 @@ def _read_verified(root: Path, spec) -> list[dict]:
 
 def load_dataset(root: Path) -> FixtureSet:
     manifest = DatasetManifest.model_validate_json((root / "manifest.json").read_text())
-    decisions = [DecisionFixture.model_validate(item) for item in _read_verified(root, manifest.decision_fixtures)]
-    outcomes_list = [OutcomeFixture.model_validate(item) for item in _read_verified(root, manifest.outcome_fixtures)]
+    decisions = [
+        DecisionFixture.model_validate(item)
+        for item in _read_verified(root, manifest.decision_fixtures)
+    ]
+    outcomes_list = [
+        OutcomeFixture.model_validate(item)
+        for item in _read_verified(root, manifest.outcome_fixtures)
+    ]
     decision_ids = [item.scenario_id for item in decisions]
     outcome_ids = [item.scenario_id for item in outcomes_list]
     if len(decision_ids) != manifest.scenario_count or len(set(decision_ids)) != len(decision_ids):
@@ -47,7 +60,9 @@ def load_dataset(root: Path) -> FixtureSet:
     for decision in decisions:
         outcome = outcomes[decision.scenario_id]
         if outcome.outcome_at <= decision.decision_at:
-            raise FixtureIntegrityError(f"outcome for {decision.scenario_id} is not after its cutoff")
+            raise FixtureIntegrityError(
+                f"outcome for {decision.scenario_id} is not after its cutoff"
+            )
         if set(outcome.prices) != set(decision.prices):
             raise FixtureIntegrityError(f"outcome symbols differ for {decision.scenario_id}")
     return FixtureSet(manifest, decisions, outcomes)

@@ -8,7 +8,7 @@ from pydantic import BaseModel, Field, model_validator
 
 from .models import DataMode, FallbackPolicy
 
-load_dotenv(override=True)
+load_dotenv()
 
 
 class MarketSettings(BaseModel):
@@ -35,8 +35,10 @@ class MarketSettings(BaseModel):
     def from_env(cls) -> "MarketSettings":
         key = os.getenv("MASSIVE_API_KEY", "").strip() or None
         mode_text = os.getenv("MARKET_DATA_MODE", "").strip().lower()
-        mode = DataMode(mode_text) if mode_text else (
-            DataMode.END_OF_DAY if key else DataMode.SIMULATED
+        mode = (
+            DataMode(mode_text)
+            if mode_text
+            else (DataMode.END_OF_DAY if key else DataMode.SIMULATED)
         )
         fallback_text = os.getenv("MARKET_DATA_FALLBACK", "").strip().lower()
         fallback = FallbackPolicy(fallback_text or FallbackPolicy.FAIL_CLOSED.value)

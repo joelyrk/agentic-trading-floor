@@ -1,25 +1,16 @@
-from contextlib import AsyncExitStack
 import asyncio
-from .accounts_client import read_accounts_resource, read_strategy_resource
-from .tracers import make_trace_id
-from agents import Agent, Tool, Runner, OpenAIChatCompletionsModel, trace
-from openai import AsyncOpenAI
-from dotenv import load_dotenv
-import os
 import json
+import os
+from contextlib import AsyncExitStack
 from datetime import datetime, timezone
 from functools import lru_cache
 from time import monotonic
-from .templates import (
-    researcher_instructions,
-    trader_instructions,
-    trade_message,
-    rebalance_message,
-    research_tool,
-)
-from .mcp_servers import attribute_runtime_failure, trader_mcp_servers, researcher_mcp_servers
-from .market import get_market_observation, get_market_service
-from .observability import BudgetExceeded, BudgetHooks, CycleBudget, CycleContext, TelemetryRepository
+
+from agents import Agent, OpenAIChatCompletionsModel, Runner, Tool, trace
+from dotenv import load_dotenv
+from openai import AsyncOpenAI
+
+from .accounts_client import read_accounts_resource, read_strategy_resource
 from .decisions import (
     DecisionPipeline,
     ExecutionService,
@@ -31,9 +22,30 @@ from .decisions import (
     TradingDecision,
 )
 from .decisions.repository import DecisionRepository
+from .market import get_market_observation, get_market_service
+from .mcp_servers import (
+    attribute_runtime_failure,
+    researcher_mcp_servers,
+    trader_mcp_servers,
+)
+from .observability import (
+    BudgetExceeded,
+    BudgetHooks,
+    CycleBudget,
+    CycleContext,
+    TelemetryRepository,
+)
 from .research import RESEARCHER_PROMPT_VERSION, TRADER_PROMPT_VERSION
+from .templates import (
+    rebalance_message,
+    research_tool,
+    researcher_instructions,
+    trade_message,
+    trader_instructions,
+)
+from .tracers import make_trace_id
 
-load_dotenv(override=True)
+load_dotenv()
 
 deepseek_api_key = os.getenv("DEEPSEEK_API_KEY")
 google_api_key = os.getenv("GOOGLE_API_KEY")
@@ -44,6 +56,7 @@ DEEPSEEK_BASE_URL = "https://api.deepseek.com/v1"
 GROK_BASE_URL = "https://api.x.ai/v1"
 GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/openai/"
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
+
 
 @lru_cache(maxsize=4)
 def _optional_client(provider: str) -> AsyncOpenAI:
@@ -61,13 +74,19 @@ def _optional_client(provider: str) -> AsyncOpenAI:
 
 def get_model(model_name: str):
     if "/" in model_name:
-        return OpenAIChatCompletionsModel(model=model_name, openai_client=_optional_client("openrouter"))
+        return OpenAIChatCompletionsModel(
+            model=model_name, openai_client=_optional_client("openrouter")
+        )
     elif "deepseek" in model_name:
-        return OpenAIChatCompletionsModel(model=model_name, openai_client=_optional_client("deepseek"))
+        return OpenAIChatCompletionsModel(
+            model=model_name, openai_client=_optional_client("deepseek")
+        )
     elif "grok" in model_name:
         return OpenAIChatCompletionsModel(model=model_name, openai_client=_optional_client("grok"))
     elif "gemini" in model_name:
-        return OpenAIChatCompletionsModel(model=model_name, openai_client=_optional_client("gemini"))
+        return OpenAIChatCompletionsModel(
+            model=model_name, openai_client=_optional_client("gemini")
+        )
     else:
         return model_name
 
@@ -98,7 +117,9 @@ class Trader:
         self._budget_hooks = None
         self._last_usage = None
 
-    async def create_agent(self, trader_mcp_servers, researcher_mcp_servers, decision_cutoff: datetime) -> Agent:
+    async def create_agent(
+        self, trader_mcp_servers, researcher_mcp_servers, decision_cutoff: datetime
+    ) -> Agent:
         tool = await get_researcher_tool(researcher_mcp_servers, self.model_name, decision_cutoff)
         self.agent = Agent(
             name=self.name,
@@ -118,7 +139,9 @@ class Trader:
 
     async def run_agent(self, trader_mcp_servers, researcher_mcp_servers, budget: CycleBudget):
         decision_cutoff = datetime.now(timezone.utc)
-        self.agent = await self.create_agent(trader_mcp_servers, researcher_mcp_servers, decision_cutoff)
+        self.agent = await self.create_agent(
+            trader_mcp_servers, researcher_mcp_servers, decision_cutoff
+        )
         account = await self.get_account_report()
         strategy = await read_strategy_resource(self.name)
         message = (
@@ -147,7 +170,9 @@ class Trader:
             )
         repository = DecisionRepository()
         proposal_service = ProposalService(repository, get_market_observation)
-        risk_service = RiskService(repository, RiskEngine(RiskPolicy.from_env()), get_market_observation)
+        risk_service = RiskService(
+            repository, RiskEngine(RiskPolicy.from_env()), get_market_observation
+        )
         pipeline = DecisionPipeline(proposal_service, risk_service, ExecutionService(repository))
         output = result.final_output
         if isinstance(output, TradingDecision):
@@ -188,7 +213,9 @@ class Trader:
             "decision_ids": [],
             "sensitive_payload_capture": False,
         }
-        with trace(trace_name, trace_id=trace_id, group_id=context.run_id, metadata=metadata) as current_trace:
+        with trace(
+            trace_name, trace_id=trace_id, group_id=context.run_id, metadata=metadata
+        ) as current_trace:
             processed, usage = await self.run_with_mcp_servers(budget)
             decision_ids = [str(decision.decision_id) for _, decision, _ in processed]
             if hasattr(current_trace, "metadata"):
@@ -200,12 +227,18 @@ class Trader:
         self._last_usage = None
         budget = CycleBudget.from_env()
         context = CycleContext.create(
-            run_id=os.getenv("EVALUATION_RUN_ID"), scenario_id=os.getenv("EVALUATION_SCENARIO_ID")
+            run_id=os.getenv("EVALUATION_RUN_ID"),
+            scenario_id=os.getenv("EVALUATION_SCENARIO_ID"),
         )
         telemetry = TelemetryRepository()
         market_mode = get_market_service().status().mode.value
         telemetry.start_cycle(
-            context, self.name, self.model_name, TRADER_PROMPT_VERSION, market_mode, budget
+            context,
+            self.name,
+            self.model_name,
+            TRADER_PROMPT_VERSION,
+            market_mode,
+            budget,
         )
         started = monotonic()
         usage = None
@@ -214,11 +247,30 @@ class Trader:
                 processed, usage, trace_id = await self.run_with_trace(context, budget)
             cost = budget.estimate_cost(usage.input_tokens, usage.output_tokens)
             telemetry.finish_cycle(
-                context.cycle_id, status="succeeded", usage=usage,
-                latency_ms=(monotonic() - started) * 1000, estimated_cost=cost,
+                context.cycle_id,
+                status="succeeded",
+                usage=usage,
+                latency_ms=(monotonic() - started) * 1000,
+                estimated_cost=cost,
                 decision_ids=[str(decision.decision_id) for _, decision, _ in processed],
                 trace_id=trace_id,
             )
+        except asyncio.CancelledError:
+            usage = self._last_usage or (
+                self._budget_hooks.usage if self._budget_hooks is not None else None
+            )
+            cost = budget.estimate_cost(
+                getattr(usage, "input_tokens", 0), getattr(usage, "output_tokens", 0)
+            )
+            telemetry.finish_cycle(
+                context.cycle_id,
+                status="interrupted",
+                usage=usage,
+                latency_ms=(monotonic() - started) * 1000,
+                estimated_cost=cost,
+                error="scheduler shutdown interrupted cycle",
+            )
+            raise
         except Exception as e:
             usage = self._last_usage or (
                 self._budget_hooks.usage if self._budget_hooks is not None else None
@@ -228,8 +280,12 @@ class Trader:
                 getattr(usage, "input_tokens", 0), getattr(usage, "output_tokens", 0)
             )
             telemetry.finish_cycle(
-                context.cycle_id, status="failed", usage=usage,
-                latency_ms=(monotonic() - started) * 1000, estimated_cost=cost, error=e,
+                context.cycle_id,
+                status="failed",
+                usage=usage,
+                latency_ms=(monotonic() - started) * 1000,
+                estimated_cost=cost,
+                error=e,
             )
             print(f"Error running trader {self.name}: {e}")
         self.do_trade = not self.do_trade

@@ -1,5 +1,7 @@
 """Structured proposal, deterministic risk, and paper-execution domain."""
 
+from backend.research import EvidenceClaim, EvidenceStance, ResearchBrief, SourceRecord
+
 from .config import RiskPolicy
 from .models import (
     ExecutionResult,
@@ -12,7 +14,6 @@ from .models import (
     TradeProposal,
     TradingDecision,
 )
-from backend.research import EvidenceClaim, EvidenceStance, ResearchBrief, SourceRecord
 from .risk import PortfolioSnapshot, RiskEngine
 from .services import DecisionPipeline, ExecutionService, ProposalService, RiskService
 

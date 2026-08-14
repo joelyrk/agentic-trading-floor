@@ -21,7 +21,6 @@ from evals.fixtures import FixtureSet, load_dataset
 from evals.runner import run_evaluation
 from evals.strategies import default_strategies
 
-
 DATASET_ROOT = Path("evals/datasets/historical-v1")
 RESULTS_ROOT = Path("evals/results")
 
@@ -85,7 +84,8 @@ class ProductService:
     def create_replay(self, request: ReplayRequest) -> dict:
         fixtures = self._fixtures()
         fixture = next(
-            (item for item in fixtures.decisions if item.scenario_id == request.scenario_id), None
+            (item for item in fixtures.decisions if item.scenario_id == request.scenario_id),
+            None,
         )
         if fixture is None:
             raise KeyError(f"unknown scenario {request.scenario_id}")

@@ -209,14 +209,14 @@ A reviewer can understand data quality, evidence, controls, system health, and b
 
 ### Deliverables
 
-- [ ] Add unit, integration, API contract, and frontend tests to CI.
-- [ ] Add formatting, linting, type checking, secret scanning, and dependency auditing.
-- [ ] Validate configuration at startup with actionable errors.
-- [ ] Add database migrations, backup/restore guidance, retention rules, and corruption recovery.
-- [ ] Add rate limits and authentication if the API becomes publicly writable.
-- [ ] Threat-model prompt injection, malicious web content, tool abuse, SSRF, MCP supply-chain risk, and trace leakage.
-- [ ] Pin or verify external MCP packages; replace git-based runtime installs with controlled versions where practical.
-- [ ] Add graceful shutdown and recovery tests for interrupted cycles.
+- [x] Add unit, integration, API contract, and frontend tests to CI.
+- [x] Add formatting, linting, type checking, secret scanning, and dependency auditing.
+- [x] Validate configuration at startup with actionable errors.
+- [x] Add database migrations, backup/restore guidance, retention rules, and corruption recovery.
+- [x] Add rate limits and authentication if the API becomes publicly writable.
+- [x] Threat-model prompt injection, malicious web content, tool abuse, SSRF, MCP supply-chain risk, and trace leakage.
+- [x] Pin or verify external MCP packages; replace git-based runtime installs with controlled versions where practical.
+- [x] Add graceful shutdown and recovery tests for interrupted cycles.
 
 ### Acceptance gate
 
@@ -254,11 +254,11 @@ cd frontend && npm run build
 
 Also verify:
 
-- [ ] `.env`, database files, generated assets, and sensitive traces are not tracked.
-- [ ] API/schema changes are reflected in frontend types and documentation.
-- [ ] New external calls have mocked default tests and explicit timeouts.
-- [ ] Claims in the UI/README match the actual market-data mode and evaluation evidence.
-- [ ] `AGENTS.md` remains consistent with the implemented architecture.
+- [x] `.env`, database files, generated assets, and sensitive traces are not tracked.
+- [x] API/schema changes are reflected in frontend types and documentation.
+- [x] New external calls have mocked default tests and explicit timeouts.
+- [x] Claims in the UI/README match the actual market-data mode and evaluation evidence.
+- [x] `AGENTS.md` remains consistent with the implemented architecture.
 
 ## Decision log
 
@@ -274,3 +274,4 @@ Record material architecture decisions here as short dated entries or replace th
 - **2026-08-13:** Phase 4 uses hashed, physically separated decision/outcome fixtures and an injected monotonic simulation clock. The credential-free default evaluator compares five deterministic baselines plus single-agent/multi-agent workflow proxies, checkpoints by stable scenario keys and order IDs, and emits versioned JSON/Markdown reports. Its 30-scenario historical fixture and derived benchmark proxy are explicitly limited to replay-system validation, not investment-strategy claims.
 - **2026-08-14:** Phase 5 supervises stable logical MCP services with bounded startup probes, request retries, redacted stderr diagnostics, persisted circuit state, and explicit healthy/degraded/unavailable transitions. Per-trader cycles enforce turn/token/wall-time/spend budgets, disable sensitive trace payload capture, and persist provider-reported usage, configurable cost estimates, latency, trace/run/prompt/market metadata, and decision links for the health API and dashboard.
 - **2026-08-14:** Phase 6 replaces the quadrant-first demo with an accessible decision console centered on portfolio/risk metrics, evidence and control outcomes, data provenance, service health, and cost/latency. Replay sessions persist a decision before allowing a separate idempotent outcome reveal; experiment reports compare model/prompt labels and deterministic single/multi-agent architecture proxies. FastAPI's versioned OpenAPI document is guarded by a frontend route-contract test.
+- **2026-08-14:** Phase 7 makes SQLite evolution transactional and versioned, adds verified backup/restore and bounded retention tools, and records orphaned or shutdown-cancelled cycles as interrupted. Public API mode is opt-in and requires Bearer authentication plus per-client rate limits. The generic fetch MCP is replaced by a bounded public-network-only server; remaining npm MCP packages are exact-pinned. CI enforces tests, formatting, linting, TypeScript checking, secret scanning, builds, and locked dependency audits, with the threat model and recovery procedures recorded in `SECURITY.md`.

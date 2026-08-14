@@ -8,10 +8,8 @@ import pytest
 from evals.clock import SimulationClock
 from evals.fixtures import FixtureIntegrityError, load_dataset
 from evals.metrics import aggregate
-from evals.models import ScenarioMetrics
+from evals.models import ScenarioMetrics, StrategyDecision
 from evals.runner import CheckpointStore, run_evaluation
-from evals.models import StrategyDecision
-
 
 DATASET = Path("evals/datasets/historical-v1")
 NOW = datetime(2026, 8, 13, 12, tzinfo=timezone.utc)
@@ -39,7 +37,10 @@ def test_historical_manifest_and_no_lookahead_boundaries() -> None:
     assert not hasattr(fixtures.decisions[0], "outcome_at")
     for decision in fixtures.decisions:
         assert decision.market_timestamp <= decision.retrieved_at <= decision.decision_at
-        assert all(source.published_at <= source.retrieved_at <= decision.decision_at for source in decision.sources)
+        assert all(
+            source.published_at <= source.retrieved_at <= decision.decision_at
+            for source in decision.sources
+        )
         outcome = fixtures.reveal_outcome(decision.scenario_id, decision.decision_at)
         assert outcome.outcome_at > decision.decision_at
 
@@ -48,7 +49,9 @@ def test_outcome_cannot_be_revealed_before_cutoff() -> None:
     fixtures = load_dataset(DATASET)
     decision = fixtures.decisions[0]
     with pytest.raises(FixtureIntegrityError, match="before the decision"):
-        fixtures.reveal_outcome(decision.scenario_id, decision.decision_at - timedelta(microseconds=1))
+        fixtures.reveal_outcome(
+            decision.scenario_id, decision.decision_at - timedelta(microseconds=1)
+        )
 
 
 def test_fixture_hash_prevents_mutation(tmp_path) -> None:
@@ -91,11 +94,17 @@ def test_replay_is_deterministic_and_generates_both_reports(tmp_path, monkeypatc
     assert first == second
     assert len(first.results) == 7
     assert all(len(result.scenarios) == 30 for result in first.results)
-    order_ids = [order_id for result in first.results for scenario in result.scenarios for order_id in scenario.order_ids]
+    order_ids = [
+        order_id
+        for result in first.results
+        for scenario in result.scenarios
+        for order_id in scenario.order_ids
+    ]
     assert len(order_ids) == len(set(order_ids))
     assert all(
         scenario.timing.decided_at == scenario.timing.research_cutoff == scenario.timing.executed_at
-        for result in first.results for scenario in result.scenarios
+        for result in first.results
+        for scenario in result.scenarios
     )
     run_dir = tmp_path / "one" / first.metadata.run_id
     assert (run_dir / "report.json").exists()
@@ -113,7 +122,9 @@ def test_checkpoint_retry_replaces_same_order_key_without_duplicates(tmp_path) -
     assert store.get("known:scenario-1") == retried
 
 
-def test_interrupted_run_resumes_without_repeating_scenarios_or_orders(tmp_path, monkeypatch) -> None:
+def test_interrupted_run_resumes_without_repeating_scenarios_or_orders(
+    tmp_path, monkeypatch
+) -> None:
     monkeypatch.setenv("EVAL_GIT_SHA", "resume-sha")
     fixtures = load_dataset(DATASET)
 

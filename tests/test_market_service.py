@@ -4,7 +4,12 @@ from decimal import Decimal
 import pytest
 
 from backend.market.config import MarketSettings
-from backend.market.models import DataMode, FallbackPolicy, MarketObservation, ObservationSource
+from backend.market.models import (
+    DataMode,
+    FallbackPolicy,
+    MarketObservation,
+    ObservationSource,
+)
 from backend.market.provider import EntitlementError
 from backend.market.service import MarketDataError, MarketService
 
@@ -101,9 +106,7 @@ def test_explicit_simulator_fallback_is_visible_in_status_and_observation() -> N
         EntitlementError("denied"),
     )
     simulator = StubProvider(ObservationSource.SIMULATOR, DataMode.SIMULATED, clock)
-    service = MarketService(
-        settings(FallbackPolicy.EXPLICIT_SIMULATOR), massive, clock, simulator
-    )
+    service = MarketService(settings(FallbackPolicy.EXPLICIT_SIMULATOR), massive, clock, simulator)
 
     result = service.observe("AAPL")
     status = service.status()

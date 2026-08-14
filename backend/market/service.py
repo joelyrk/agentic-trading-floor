@@ -8,7 +8,13 @@ from pydantic import ValidationError
 from .clock import Clock, UtcClock
 from .config import MarketSettings, get_market_settings
 from .massive import MassiveEodProvider
-from .models import DataMode, FallbackPolicy, MarketObservation, MarketStatus, normalize_symbol
+from .models import (
+    DataMode,
+    FallbackPolicy,
+    MarketObservation,
+    MarketStatus,
+    normalize_symbol,
+)
 from .provider import MarketProvider, MarketProviderError
 from .simulator import SimulatorProvider
 

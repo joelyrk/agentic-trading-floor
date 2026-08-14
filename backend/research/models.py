@@ -108,7 +108,9 @@ class ResearchBrief(StrictModel):
     sources: list[SourceRecord] = Field(default_factory=list, max_length=50)
     claims: list[EvidenceClaim] = Field(default_factory=list, max_length=50)
     caveats: list[str] = Field(default_factory=list, max_length=20)
-    researcher_prompt_version: str = Field(default=RESEARCHER_PROMPT_VERSION, min_length=1, max_length=100)
+    researcher_prompt_version: str = Field(
+        default=RESEARCHER_PROMPT_VERSION, min_length=1, max_length=100
+    )
 
     @field_validator("as_of")
     @classmethod
@@ -145,5 +147,7 @@ class ResearchBrief(StrictModel):
             urls[source.canonical_url] = source.published_at
             hashes.add(source.content_hash or "")
             if source.published_at > self.as_of:
-                raise ValueError(f"future-dated source {source.source_id} was published after decision cutoff")
+                raise ValueError(
+                    f"future-dated source {source.source_id} was published after decision cutoff"
+                )
         return self

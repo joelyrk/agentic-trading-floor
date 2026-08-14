@@ -13,22 +13,31 @@ from agents.mcp import MCPServerStdio, create_static_tool_filter
 from dotenv import load_dotenv
 from mcp.client.stdio import stdio_client
 
+from .config import RuntimeSettings
 from .observability import TelemetryRepository, measured, safe_error
 
-load_dotenv(override=True)
+load_dotenv()
 
 PROJECT_DIR = str(Path(__file__).resolve().parent.parent)
-TIMEOUT = float(os.getenv("MCP_REQUEST_TIMEOUT_SECONDS", "30"))
-STARTUP_TIMEOUT = float(os.getenv("MCP_STARTUP_TIMEOUT_SECONDS", "20"))
-RETRIES = int(os.getenv("MCP_MAX_RETRIES", "2"))
-BACKOFF = float(os.getenv("MCP_RETRY_BACKOFF_SECONDS", "0.5"))
-CIRCUIT_THRESHOLD = int(os.getenv("MCP_CIRCUIT_FAILURE_THRESHOLD", "3"))
-CIRCUIT_RESET_SECONDS = float(os.getenv("MCP_CIRCUIT_RESET_SECONDS", "60"))
+_runtime = RuntimeSettings.from_env()
+TIMEOUT = _runtime.mcp_request_timeout_seconds
+STARTUP_TIMEOUT = _runtime.mcp_startup_timeout_seconds
+RETRIES = _runtime.mcp_max_retries
+BACKOFF = _runtime.mcp_retry_backoff_seconds
+CIRCUIT_THRESHOLD = _runtime.mcp_circuit_failure_threshold
+CIRCUIT_RESET_SECONDS = _runtime.mcp_circuit_reset_seconds
 
 telemetry = TelemetryRepository()
 for _service_name in (
-    "paper-accounts", "notifications", "market-data", "research-fetch", "research-search",
-    "memory-warren", "memory-george", "memory-ray", "memory-cathie",
+    "paper-accounts",
+    "notifications",
+    "market-data",
+    "research-fetch",
+    "research-search",
+    "memory-warren",
+    "memory-george",
+    "memory-ray",
+    "memory-cathie",
 ):
     telemetry.register_service(_service_name, required=True)
 
@@ -89,11 +98,12 @@ class ObservedMCPServerStdio(MCPServerStdio):
             except Exception as exc:
                 last_error = exc
                 diagnostic = (
-                    f"{exc}; subprocess: {self._last_diagnostic}"
-                    if self._last_diagnostic else exc
+                    f"{exc}; subprocess: {self._last_diagnostic}" if self._last_diagnostic else exc
                 )
                 self.telemetry.mark_failure(
-                    self.name, diagnostic, threshold=CIRCUIT_THRESHOLD,
+                    self.name,
+                    diagnostic,
+                    threshold=CIRCUIT_THRESHOLD,
                     reset_seconds=CIRCUIT_RESET_SECONDS,
                 )
                 try:
@@ -111,7 +121,9 @@ class ObservedMCPServerStdio(MCPServerStdio):
             result = await super().list_tools(run_context, agent)
         except Exception as exc:
             self.telemetry.mark_failure(
-                self.name, exc, threshold=CIRCUIT_THRESHOLD,
+                self.name,
+                exc,
+                threshold=CIRCUIT_THRESHOLD,
                 reset_seconds=CIRCUIT_RESET_SECONDS,
             )
             raise
@@ -126,15 +138,19 @@ class ObservedMCPServerStdio(MCPServerStdio):
             result = await super().call_tool(tool_name, arguments, meta)
             if getattr(result, "isError", False):
                 self.telemetry.mark_failure(
-                    self.name, f"tool {tool_name} returned an error",
-                    threshold=CIRCUIT_THRESHOLD, reset_seconds=CIRCUIT_RESET_SECONDS,
+                    self.name,
+                    f"tool {tool_name} returned an error",
+                    threshold=CIRCUIT_THRESHOLD,
+                    reset_seconds=CIRCUIT_RESET_SECONDS,
                 )
             else:
                 self.telemetry.mark_success(self.name, (monotonic() - started) * 1000)
             return result
         except Exception as exc:
             self.telemetry.mark_failure(
-                self.name, exc, threshold=CIRCUIT_THRESHOLD,
+                self.name,
+                exc,
+                threshold=CIRCUIT_THRESHOLD,
                 reset_seconds=CIRCUIT_RESET_SECONDS,
             )
             raise
@@ -147,7 +163,9 @@ class ObservedMCPServerStdio(MCPServerStdio):
             result = await super().read_resource(uri)
         except Exception as exc:
             self.telemetry.mark_failure(
-                self.name, exc, threshold=CIRCUIT_THRESHOLD,
+                self.name,
+                exc,
+                threshold=CIRCUIT_THRESHOLD,
                 reset_seconds=CIRCUIT_RESET_SECONDS,
             )
             raise
@@ -189,17 +207,20 @@ def researcher_mcp_servers(name: str) -> list[ObservedMCPServerStdio]:
         tavily_env["TAVILY_API_KEY"] = os.environ["TAVILY_API_KEY"]
     return [
         _server(
-            {"command": "uvx", "args": ["--with", "mcp<2", "mcp-server-fetch"]},
+            local_server_params("backend.research_fetch_server"),
             "research-fetch",
         ),
         _server(
-            {"command": "npx", "args": ["-y", "tavily-mcp@latest"], "env": tavily_env},
+            {"command": "npx", "args": ["-y", "tavily-mcp@0.2.21"], "env": tavily_env},
             "research-search",
             tool_filter=create_static_tool_filter(allowed_tool_names=["tavily_search"]),
         ),
         _server(
-            {"command": "npx", "args": ["-y", "mcp-memory-libsql"],
-             "env": {"LIBSQL_URL": f"file:./memory/{name}.db"}},
+            {
+                "command": "npx",
+                "args": ["-y", "mcp-memory-libsql@0.0.17"],
+                "env": {"LIBSQL_URL": f"file:./memory/{name}.db"},
+            },
             f"memory-{name.lower()}",
         ),
     ]
@@ -211,6 +232,8 @@ def attribute_runtime_failure(error: object) -> None:
     for health in telemetry.services():
         if health.name.lower() in message:
             telemetry.mark_failure(
-                health.name, error, threshold=CIRCUIT_THRESHOLD,
+                health.name,
+                error,
+                threshold=CIRCUIT_THRESHOLD,
                 reset_seconds=CIRCUIT_RESET_SECONDS,
             )

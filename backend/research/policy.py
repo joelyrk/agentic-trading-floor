@@ -14,7 +14,9 @@ class ResearchPolicyError(ValueError):
 
 
 def _domains(value: str | None) -> frozenset[str]:
-    return frozenset(item.strip().lower().lstrip(".") for item in (value or "").split(",") if item.strip())
+    return frozenset(
+        item.strip().lower().lstrip(".") for item in (value or "").split(",") if item.strip()
+    )
 
 
 def _matches(domain: str, configured: str) -> bool:
@@ -38,5 +40,7 @@ class ResearchPolicy:
             domain = (urlsplit(source.canonical_url).hostname or "").lower()
             if any(_matches(domain, denied) for denied in self.denied_domains):
                 raise ResearchPolicyError(f"source domain is denied: {domain}")
-            if self.allowed_domains and not any(_matches(domain, allowed) for allowed in self.allowed_domains):
+            if self.allowed_domains and not any(
+                _matches(domain, allowed) for allowed in self.allowed_domains
+            ):
                 raise ResearchPolicyError(f"source domain is not allowed: {domain}")

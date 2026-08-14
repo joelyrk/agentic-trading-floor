@@ -14,14 +14,17 @@ from uuid import uuid4
 
 from fastapi import FastAPI, HTTPException
 
+import backend.startup as startup
 from backend import market
+from backend.access import AccessControlMiddleware
 from backend.accounts import Account
+from backend.config import validate_startup
 from backend.database import read_log, write_market_observation
-from backend.trading_floor import names, lastnames, short_model_names
 from backend.decisions import ExecutionService, RiskPolicy
 from backend.decisions.repository import DecisionRepository, ExecutionConflict
 from backend.observability import TelemetryRepository
 from backend.product import ExperimentRequest, ProductService, ReplayRequest
+from backend.trading_floor import lastnames, names, short_model_names
 
 # Mirrors the log colours in demo/ so the frontend reproduces the same panel.
 LOG_COLORS = {
@@ -40,14 +43,15 @@ roster = [
 ]
 roster_by_name = {trader["name"].lower(): trader for trader in roster}
 
+validate_startup("api")
 app = FastAPI(
     title="Agentic Trading Floor API",
     version="1.0.0",
     description=(
-        "Auditable paper-trading and point-in-time evaluation API. "
-        "No endpoint places real trades."
+        "Auditable paper-trading and point-in-time evaluation API. No endpoint places real trades."
     ),
 )
+app.add_middleware(AccessControlMiddleware, settings=startup.api_access_settings)
 market_service = market.get_market_service()  # Fail startup on invalid capability config.
 decision_repository = DecisionRepository()
 telemetry_repository = TelemetryRepository()
@@ -56,7 +60,9 @@ product_service = ProductService()
 
 def average_cost(account: Account, symbol: str) -> float:
     """Average price paid across this symbol's buys, for per-holding profit."""
-    spend = sum(t.price * t.quantity for t in account.transactions if t.symbol == symbol and t.quantity > 0)
+    spend = sum(
+        t.price * t.quantity for t in account.transactions if t.symbol == symbol and t.quantity > 0
+    )
     bought = sum(t.quantity for t in account.transactions if t.symbol == symbol and t.quantity > 0)
     return spend / bought if bought else 0.0
 
@@ -139,7 +145,9 @@ def get_trader(name: str) -> dict:
         "pnl": account.calculate_profit_loss(portfolio_value),
         "holdings": holdings,
         "transactions": account.list_transactions(),
-        "time_series": [{"datetime": ts, "value": value} for ts, value in account.portfolio_value_time_series],
+        "time_series": [
+            {"datetime": ts, "value": value} for ts, value in account.portfolio_value_time_series
+        ],
     }
 
 
@@ -149,7 +157,12 @@ def get_trader_logs(name: str, last_n: int = 13) -> list[dict]:
     require_trader(name)
     rows = list(read_log(name, last_n))
     return [
-        {"datetime": ts, "type": kind, "message": message, "color": LOG_COLORS.get(kind, DEFAULT_LOG_COLOR)}
+        {
+            "datetime": ts,
+            "type": kind,
+            "message": message,
+            "color": LOG_COLORS.get(kind, DEFAULT_LOG_COLOR),
+        }
         for ts, kind, message in rows
     ]
 
@@ -168,8 +181,7 @@ def get_decision_evidence(proposal_id: str) -> dict:
         evidence = decision_repository.evidence_chain(proposal_id)
         decision = evidence.get("risk_decision")
         evidence["telemetry"] = (
-            telemetry_repository.decision_metadata(decision["decision_id"])
-            if decision else None
+            telemetry_repository.decision_metadata(decision["decision_id"]) if decision else None
         )
         return evidence
     except KeyError as exc:
@@ -183,9 +195,7 @@ def approve_high_risk_decision(decision_id: str) -> dict:
     if not policy.human_approval_enabled or policy.automated_replay:
         raise HTTPException(status_code=409, detail="human approval policy is not active")
     try:
-        decision = decision_repository.approve_human(
-            decision_id, datetime.now(timezone.utc)
-        )
+        decision = decision_repository.approve_human(decision_id, datetime.now(timezone.utc))
         proposal = decision_repository.load_proposal(str(decision.proposal_id))
         execution = ExecutionService(decision_repository).execute(proposal, decision)
     except KeyError as exc:

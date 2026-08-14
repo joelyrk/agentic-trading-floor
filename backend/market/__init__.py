@@ -8,7 +8,12 @@ from .models import (
     MarketStatus,
     ObservationSource,
 )
-from .service import MarketDataError, MarketService, build_market_service, get_market_service
+from .service import (
+    MarketDataError,
+    MarketService,
+    build_market_service,
+    get_market_service,
+)
 
 
 def get_market_observation(symbol: str) -> MarketObservation:

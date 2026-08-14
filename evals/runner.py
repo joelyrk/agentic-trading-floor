@@ -16,9 +16,9 @@ from .fixtures import FixtureSet, load_dataset
 from .metrics import aggregate
 from .models import (
     EvaluationReport,
+    ReplayTiming,
     RunMetadata,
     ScenarioMetrics,
-    ReplayTiming,
     StrategyResult,
 )
 from .strategies import Strategy, default_strategies
@@ -30,7 +30,11 @@ def _git_sha() -> str:
         return configured
     try:
         return subprocess.run(
-            ["git", "rev-parse", "HEAD"], check=True, capture_output=True, text=True, timeout=2
+            ["git", "rev-parse", "HEAD"],
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=2,
         ).stdout.strip()
     except (OSError, subprocess.SubprocessError):
         return "unknown"
@@ -59,15 +63,14 @@ class CheckpointStore:
         temporary.replace(self.path)
 
 
-def _score(strategy_name: str, fixture, outcome, decision, seed: int, clock: SimulationClock) -> ScenarioMetrics:
+def _score(
+    strategy_name: str, fixture, outcome, decision, seed: int, clock: SimulationClock
+) -> ScenarioMetrics:
     unknown = set(decision.weights) - set(fixture.prices)
     if unknown:
         raise ValueError(f"{strategy_name} selected unknown symbols: {sorted(unknown)}")
     portfolio_return = sum(
-        (
-            weight
-            * ((outcome.prices[symbol] / fixture.prices[symbol]) - Decimal("1"))
-        )
+        (weight * ((outcome.prices[symbol] / fixture.prices[symbol]) - Decimal("1")))
         for symbol, weight in decision.weights.items()
     )
     benchmark_return = (
@@ -86,8 +89,14 @@ def _score(strategy_name: str, fixture, outcome, decision, seed: int, clock: Sim
         latency_ms=decision.latency_ms,
         model_cost_usd=decision.model_cost_usd,
         order_ids=[
-            str(uuid5(NAMESPACE_URL, f"eval-order:{seed}:{strategy_name}:{fixture.scenario_id}:{symbol}"))
-            for symbol, weight in sorted(decision.weights.items()) if weight > 0
+            str(
+                uuid5(
+                    NAMESPACE_URL,
+                    f"eval-order:{seed}:{strategy_name}:{fixture.scenario_id}:{symbol}",
+                )
+            )
+            for symbol, weight in sorted(decision.weights.items())
+            if weight > 0
         ],
         timing=ReplayTiming(
             research_cutoff=clock.now(),
@@ -142,7 +151,9 @@ def run_evaluation(
             clock.advance_to(outcome.outcome_at)
             store.put(row)
             rows.append(row)
-        results.append(StrategyResult(strategy=strategy.name, metrics=aggregate(rows), scenarios=rows))
+        results.append(
+            StrategyResult(strategy=strategy.name, metrics=aggregate(rows), scenarios=rows)
+        )
     by_name = {item.strategy: item.metrics for item in results}
     ablation = {}
     if {"multi_agent", "single_agent"} <= by_name.keys():
@@ -151,10 +162,12 @@ def run_evaluation(
                 by_name["multi_agent"].total_return - by_name["single_agent"].total_return
             ),
             "multi_minus_single_cost_usd": (
-                by_name["multi_agent"].model_api_cost_usd - by_name["single_agent"].model_api_cost_usd
+                by_name["multi_agent"].model_api_cost_usd
+                - by_name["single_agent"].model_api_cost_usd
             ),
             "multi_minus_single_latency_ms": (
-                by_name["multi_agent"].average_latency_ms - by_name["single_agent"].average_latency_ms
+                by_name["multi_agent"].average_latency_ms
+                - by_name["single_agent"].average_latency_ms
             ),
         }
     completed_at = now()
@@ -213,24 +226,30 @@ def render_markdown(report: EvaluationReport) -> str:
             f"{m.model_api_cost_usd:.4f} | {m.average_latency_ms:.0f} |"
         )
     if report.ablation:
-        lines.extend([
+        lines.extend(
+            [
+                "",
+                "## Ablation",
+                "",
+                f"Multi-agent minus single-agent total return: {_percent(report.ablation['multi_minus_single_total_return'])}. "
+                f"Incremental fixture-estimated cost: ${report.ablation['multi_minus_single_cost_usd']:.4f}; "
+                f"incremental latency: {report.ablation['multi_minus_single_latency_ms']:.0f} ms.",
+            ]
+        )
+    lines.extend(
+        [
             "",
-            "## Ablation",
+            "All fixture hashes and point-in-time checks passed. Outcome records were withheld until each decision completed.",
             "",
-            f"Multi-agent minus single-agent total return: {_percent(report.ablation['multi_minus_single_total_return'])}. "
-            f"Incremental fixture-estimated cost: ${report.ablation['multi_minus_single_cost_usd']:.4f}; "
-            f"incremental latency: {report.ablation['multi_minus_single_latency_ms']:.0f} ms.",
-        ])
-    lines.extend([
-        "",
-        "All fixture hashes and point-in-time checks passed. Outcome records were withheld until each decision completed.",
-        "",
-    ])
+        ]
+    )
     return "\n".join(lines)
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Run deterministic point-in-time paper-trading evaluation")
+    parser = argparse.ArgumentParser(
+        description="Run deterministic point-in-time paper-trading evaluation"
+    )
     parser.add_argument("--dataset", type=Path, default=Path("evals/datasets/historical-v1"))
     parser.add_argument("--output", type=Path, default=Path("evals/results"))
     parser.add_argument("--seed", type=int, default=7)
@@ -238,8 +257,11 @@ def main() -> None:
     parser.add_argument("--prompt-version", default="eval-agent-v1")
     args = parser.parse_args()
     report = run_evaluation(
-        load_dataset(args.dataset), args.output, seed=args.seed,
-        model=args.model, prompt_version=args.prompt_version,
+        load_dataset(args.dataset),
+        args.output,
+        seed=args.seed,
+        model=args.model,
+        prompt_version=args.prompt_version,
     )
     print(args.output / report.metadata.run_id / "report.md")
 

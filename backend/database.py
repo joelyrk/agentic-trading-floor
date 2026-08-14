@@ -1,228 +1,68 @@
-import sqlite3
 import json
 import os
+import sqlite3
 from datetime import datetime, timezone
 from uuid import uuid4
 
 from dotenv import load_dotenv
 
 from backend.market.models import MarketObservation
+from backend.migrations import migrate
 
-load_dotenv(override=True)
+load_dotenv()
 
 DB = os.getenv("ACCOUNTS_DB", "accounts.db")
 
 
 def initialize_database(path: str | None = None) -> None:
-    """Create additive tables/indexes for a new or existing paper-account DB."""
-    with sqlite3.connect(path or DB) as conn:
-        cursor = conn.cursor()
-        cursor.execute('CREATE TABLE IF NOT EXISTS accounts (name TEXT PRIMARY KEY, account TEXT)')
-        cursor.execute('''
-        CREATE TABLE IF NOT EXISTS logs (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT,
-            datetime DATETIME,
-            type TEXT,
-            message TEXT
-        )
-        ''')
-        cursor.execute('''
-        CREATE TABLE IF NOT EXISTS market_observations (
-            id TEXT PRIMARY KEY,
-            account_name TEXT NOT NULL,
-            usage_kind TEXT NOT NULL CHECK (usage_kind IN ('valuation', 'order', 'proposal')),
-            related_id TEXT NOT NULL,
-            symbol TEXT NOT NULL,
-            observation TEXT NOT NULL,
-            recorded_at TEXT NOT NULL
-        )
-        ''')
-        cursor.execute('''
-        CREATE INDEX IF NOT EXISTS idx_market_observations_account_usage
-        ON market_observations(account_name, usage_kind, recorded_at)
-        ''')
-        cursor.execute('''
-        CREATE TABLE IF NOT EXISTS research_briefs (
-            research_id TEXT PRIMARY KEY,
-            account_name TEXT NOT NULL,
-            brief TEXT NOT NULL,
-            decision_cutoff TEXT NOT NULL,
-            researcher_prompt_version TEXT NOT NULL,
-            trader_prompt_version TEXT NOT NULL,
-            created_at TEXT NOT NULL
-        )
-        ''')
-        cursor.execute('''
-        CREATE TABLE IF NOT EXISTS trade_proposals (
-            proposal_id TEXT PRIMARY KEY,
-            account_name TEXT NOT NULL,
-            proposal TEXT NOT NULL,
-            created_at TEXT NOT NULL,
-            research_id TEXT,
-            FOREIGN KEY(research_id) REFERENCES research_briefs(research_id)
-        )
-        ''')
-        proposal_columns = {
-            row[1] for row in cursor.execute("PRAGMA table_info(trade_proposals)").fetchall()
-        }
-        if "research_id" not in proposal_columns:
-            cursor.execute("ALTER TABLE trade_proposals ADD COLUMN research_id TEXT")
-        cursor.execute('''
-        CREATE INDEX IF NOT EXISTS idx_research_account_cutoff
-        ON research_briefs(account_name, decision_cutoff)
-        ''')
-        cursor.execute('''
-        CREATE TABLE IF NOT EXISTS risk_decisions (
-            decision_id TEXT PRIMARY KEY,
-            proposal_id TEXT NOT NULL UNIQUE,
-            account_name TEXT NOT NULL,
-            outcome TEXT NOT NULL,
-            decision TEXT NOT NULL,
-            evaluated_at TEXT NOT NULL,
-            FOREIGN KEY(proposal_id) REFERENCES trade_proposals(proposal_id)
-        )
-        ''')
-        cursor.execute('''
-        CREATE TABLE IF NOT EXISTS paper_orders (
-            order_id TEXT PRIMARY KEY,
-            decision_id TEXT NOT NULL UNIQUE,
-            proposal_id TEXT NOT NULL UNIQUE,
-            account_name TEXT NOT NULL,
-            order_payload TEXT NOT NULL,
-            status TEXT NOT NULL,
-            submitted_at TEXT NOT NULL,
-            FOREIGN KEY(decision_id) REFERENCES risk_decisions(decision_id)
-        )
-        ''')
-        cursor.execute('''
-        CREATE TABLE IF NOT EXISTS execution_results (
-            execution_id TEXT PRIMARY KEY,
-            order_id TEXT NOT NULL UNIQUE,
-            result TEXT NOT NULL,
-            executed_at TEXT NOT NULL,
-            FOREIGN KEY(order_id) REFERENCES paper_orders(order_id)
-        )
-        ''')
-        cursor.execute('''
-        CREATE INDEX IF NOT EXISTS idx_orders_account_submitted
-        ON paper_orders(account_name, submitted_at)
-        ''')
-        cursor.execute('''
-        CREATE TABLE IF NOT EXISTS service_health (
-            name TEXT PRIMARY KEY,
-            state TEXT NOT NULL,
-            required INTEGER NOT NULL,
-            last_success TEXT,
-            last_error TEXT,
-            error_summary TEXT,
-            latency_ms REAL,
-            consecutive_failures INTEGER NOT NULL DEFAULT 0,
-            circuit_open_until TEXT,
-            attempt_count INTEGER NOT NULL DEFAULT 0,
-            failure_count INTEGER NOT NULL DEFAULT 0
-        )
-        ''')
-        health_columns = {
-            row[1] for row in cursor.execute("PRAGMA table_info(service_health)").fetchall()
-        }
-        if "attempt_count" not in health_columns:
-            cursor.execute("ALTER TABLE service_health ADD COLUMN attempt_count INTEGER NOT NULL DEFAULT 0")
-        if "failure_count" not in health_columns:
-            cursor.execute("ALTER TABLE service_health ADD COLUMN failure_count INTEGER NOT NULL DEFAULT 0")
-        cursor.execute('''
-        CREATE TABLE IF NOT EXISTS cycle_metrics (
-            cycle_id TEXT PRIMARY KEY,
-            account_name TEXT NOT NULL,
-            run_id TEXT,
-            scenario_id TEXT,
-            model TEXT NOT NULL,
-            prompt_version TEXT NOT NULL,
-            market_mode TEXT NOT NULL,
-            started_at TEXT NOT NULL,
-            completed_at TEXT,
-            status TEXT NOT NULL,
-            requests INTEGER NOT NULL DEFAULT 0,
-            input_tokens INTEGER NOT NULL DEFAULT 0,
-            output_tokens INTEGER NOT NULL DEFAULT 0,
-            total_tokens INTEGER NOT NULL DEFAULT 0,
-            estimated_cost_usd TEXT NOT NULL DEFAULT '0',
-            latency_ms REAL,
-            error_summary TEXT,
-            decision_ids TEXT NOT NULL DEFAULT '[]',
-            budget TEXT NOT NULL
-        )
-        ''')
-        cursor.execute('''
-        CREATE INDEX IF NOT EXISTS idx_cycle_metrics_started
-        ON cycle_metrics(started_at)
-        ''')
-        cursor.execute('''
-        CREATE TABLE IF NOT EXISTS decision_telemetry (
-            decision_id TEXT PRIMARY KEY,
-            cycle_id TEXT NOT NULL,
-            trace_id TEXT NOT NULL,
-            recorded_at TEXT NOT NULL,
-            FOREIGN KEY(cycle_id) REFERENCES cycle_metrics(cycle_id)
-        )
-        ''')
-        cursor.execute('''
-        CREATE TABLE IF NOT EXISTS replay_sessions (
-            replay_id TEXT PRIMARY KEY,
-            scenario_id TEXT NOT NULL,
-            strategy TEXT NOT NULL,
-            seed INTEGER NOT NULL,
-            status TEXT NOT NULL CHECK (status IN ('decision_complete', 'outcome_revealed')),
-            decision_payload TEXT NOT NULL,
-            outcome_payload TEXT,
-            created_at TEXT NOT NULL,
-            revealed_at TEXT
-        )
-        ''')
-        cursor.execute('''
-        CREATE INDEX IF NOT EXISTS idx_replay_sessions_created
-        ON replay_sessions(created_at)
-        ''')
-        conn.commit()
+    """Apply all pending schema migrations to a new or existing account DB."""
+    migrate(path or DB)
 
 
 initialize_database()
+
 
 def write_account(name, account_dict):
     json_data = json.dumps(account_dict)
     with sqlite3.connect(DB) as conn:
         cursor = conn.cursor()
-        cursor.execute('''
+        cursor.execute(
+            """
             INSERT INTO accounts (name, account)
             VALUES (?, ?)
             ON CONFLICT(name) DO UPDATE SET account=excluded.account
-        ''', (name.lower(), json_data))
+        """,
+            (name.lower(), json_data),
+        )
         conn.commit()
+
 
 def read_account(name):
     with sqlite3.connect(DB) as conn:
         cursor = conn.cursor()
-        cursor.execute('SELECT account FROM accounts WHERE name = ?', (name.lower(),))
+        cursor.execute("SELECT account FROM accounts WHERE name = ?", (name.lower(),))
         row = cursor.fetchone()
         return json.loads(row[0]) if row else None
-    
+
+
 def write_log(name: str, type: str, message: str):
     """
     Write a log entry to the logs table.
-    
+
     Args:
         name (str): The name associated with the log
         type (str): The type of log entry
         message (str): The log message
     """
-    now = datetime.now().isoformat()
-    
     with sqlite3.connect(DB) as conn:
         cursor = conn.cursor()
-        cursor.execute('''
+        cursor.execute(
+            """
             INSERT INTO logs (name, datetime, type, message)
             VALUES (?, datetime('now'), ?, ?)
-        ''', (name.lower(), type, message))
+        """,
+            (name.lower(), type, message),
+        )
         conn.commit()
 
 
@@ -238,11 +78,11 @@ def write_market_observation(
     recorded_at = datetime.now(timezone.utc).isoformat()
     with sqlite3.connect(DB) as conn:
         conn.execute(
-            '''
+            """
             INSERT INTO market_observations
                 (id, account_name, usage_kind, related_id, symbol, observation, recorded_at)
             VALUES (?, ?, ?, ?, ?, ?, ?)
-            ''',
+            """,
             (
                 observation_id,
                 account_name.lower(),
@@ -273,9 +113,7 @@ def read_market_observations(
         params.append(related_id)
     query = (
         "SELECT id, usage_kind, related_id, observation, recorded_at "
-        "FROM market_observations WHERE "
-        + " AND ".join(clauses)
-        + " ORDER BY recorded_at"
+        "FROM market_observations WHERE " + " AND ".join(clauses) + " ORDER BY recorded_at"
     )
     with sqlite3.connect(DB) as conn:
         rows = conn.execute(query, params).fetchall()
@@ -290,24 +128,28 @@ def read_market_observations(
         for row in rows
     ]
 
+
 def read_log(name: str, last_n=10):
     """
     Read the most recent log entries for a given name.
-    
+
     Args:
         name (str): The name to retrieve logs for
         last_n (int): Number of most recent entries to retrieve
-        
+
     Returns:
         list: A list of tuples containing (datetime, type, message)
     """
     with sqlite3.connect(DB) as conn:
         cursor = conn.cursor()
-        cursor.execute('''
+        cursor.execute(
+            """
             SELECT datetime, type, message FROM logs 
             WHERE name = ? 
             ORDER BY datetime DESC
             LIMIT ?
-        ''', (name.lower(), last_n))
-        
+        """,
+            (name.lower(), last_n),
+        )
+
         return reversed(cursor.fetchall())

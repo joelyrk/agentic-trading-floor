@@ -1,16 +1,23 @@
-from .traders import Trader
-from typing import List
 import asyncio
-from .tracers import LogTracer
-from agents import add_trace_processor
-from .market import is_market_open
-from dotenv import load_dotenv
 import os
 import re
+import signal
+from typing import List
 
-load_dotenv(override=True)
+from agents import add_trace_processor
+from dotenv import load_dotenv
 
-RUN_EVERY_N_MINUTES = int(os.getenv("RUN_EVERY_N_MINUTES", "60"))
+import backend.startup as startup
+
+from .config import validate_startup
+from .market import is_market_open
+from .observability import TelemetryRepository
+from .tracers import LogTracer
+from .traders import Trader
+
+load_dotenv()
+
+RUN_EVERY_N_MINUTES = startup.runtime_settings.scheduler_interval_minutes
 RUN_EVEN_WHEN_MARKET_IS_CLOSED = (
     os.getenv("RUN_EVEN_WHEN_MARKET_IS_CLOSED", "false").strip().lower() == "true"
 )
@@ -55,17 +62,69 @@ def create_traders() -> List[Trader]:
     return traders
 
 
-async def run_every_n_minutes():
+async def _run_cycle(traders: list[Trader]) -> None:
+    await asyncio.gather(*(trader.run() for trader in traders))
+
+
+async def run_every_n_minutes(
+    stop_event: asyncio.Event | None = None,
+    traders: list[Trader] | None = None,
+    *,
+    interval_seconds: float | None = None,
+    shutdown_grace_seconds: float | None = None,
+):
+    """Run cycles until stopped, allowing bounded completion of in-flight work."""
+    runtime = validate_startup("scheduler")
     add_trace_processor(LogTracer())
-    traders = create_traders()
-    while True:
+    traders = traders or create_traders()
+    stop_event = stop_event or asyncio.Event()
+    interval = (
+        interval_seconds
+        if interval_seconds is not None
+        else runtime.scheduler_interval_minutes * 60
+    )
+    grace = (
+        shutdown_grace_seconds
+        if shutdown_grace_seconds is not None
+        else runtime.shutdown_grace_seconds
+    )
+    TelemetryRepository().recover_interrupted_cycles()
+    while not stop_event.is_set():
         if RUN_EVEN_WHEN_MARKET_IS_CLOSED or is_market_open():
-            await asyncio.gather(*[trader.run() for trader in traders])
+            cycle_task = asyncio.create_task(_run_cycle(traders))
+            stop_task = asyncio.create_task(stop_event.wait())
+            done, _ = await asyncio.wait(
+                {cycle_task, stop_task}, return_when=asyncio.FIRST_COMPLETED
+            )
+            if stop_task in done and not cycle_task.done():
+                try:
+                    await asyncio.wait_for(cycle_task, timeout=grace)
+                except TimeoutError:
+                    cycle_task.cancel()
+                    await asyncio.gather(cycle_task, return_exceptions=True)
+                return
+            stop_task.cancel()
+            await asyncio.gather(stop_task, return_exceptions=True)
+            await cycle_task
         else:
             print("Market is closed, skipping run")
-        await asyncio.sleep(RUN_EVERY_N_MINUTES * 60)
+        try:
+            await asyncio.wait_for(stop_event.wait(), timeout=interval)
+        except TimeoutError:
+            pass
+
+
+async def scheduler_main() -> None:
+    stop_event = asyncio.Event()
+    loop = asyncio.get_running_loop()
+    for signum in (signal.SIGINT, signal.SIGTERM):
+        try:
+            loop.add_signal_handler(signum, stop_event.set)
+        except NotImplementedError:  # pragma: no cover - Windows event loops
+            pass
+    await run_every_n_minutes(stop_event)
 
 
 if __name__ == "__main__":
     print(f"Starting scheduler to run every {RUN_EVERY_N_MINUTES} minutes")
-    asyncio.run(run_every_n_minutes())
+    asyncio.run(scheduler_main())

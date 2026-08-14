@@ -31,9 +31,7 @@ def test_market_mcp_schema_and_full_stdio_handshake(tmp_path) -> None:
                 schema = tools["lookup_market_observation"].outputSchema
                 assert schema is not None
                 assert "symbol" in schema["properties"]
-                result = await session.call_tool(
-                    "lookup_market_observation", {"symbol": "aapl"}
-                )
+                result = await session.call_tool("lookup_market_observation", {"symbol": "aapl"})
                 assert result.isError is False
                 assert result.structuredContent["source"] == "simulator"
                 assert result.structuredContent["mode"] == "simulated"

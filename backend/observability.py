@@ -35,7 +35,10 @@ def safe_error(error: object, limit: int = 500) -> str:
     """Return an attributable diagnostic without credentials or sprawling payloads."""
     text = " ".join(str(error).split())
     for pattern in _SECRET_PATTERNS:
-        text = pattern.sub(lambda match: f"{match.group(1) if match.lastindex else 'secret'}=[REDACTED]", text)
+        text = pattern.sub(
+            lambda match: f"{match.group(1) if match.lastindex else 'secret'}=[REDACTED]",
+            text,
+        )
     return (text or type(error).__name__)[:limit]
 
 
@@ -104,9 +107,13 @@ class BudgetHooks(RunHooks):
         self.usage = usage
         cost = self.budget.estimate_cost(usage.input_tokens, usage.output_tokens)
         if usage.total_tokens >= self.budget.max_tokens:
-            raise BudgetExceeded(f"cycle token budget exceeded ({usage.total_tokens}/{self.budget.max_tokens})")
+            raise BudgetExceeded(
+                f"cycle token budget exceeded ({usage.total_tokens}/{self.budget.max_tokens})"
+            )
         if cost >= self.budget.max_spend_usd:
-            raise BudgetExceeded(f"cycle spend budget exceeded ({cost}/{self.budget.max_spend_usd} USD)")
+            raise BudgetExceeded(
+                f"cycle spend budget exceeded ({cost}/{self.budget.max_spend_usd} USD)"
+            )
 
     async def on_llm_end(self, context, agent, response) -> None:
         self.usage = context.usage
@@ -163,7 +170,9 @@ class TelemetryRepository:
                 (utc_now().isoformat(), latency_ms, name),
             )
 
-    def mark_failure(self, name: str, error: object, *, threshold: int, reset_seconds: float) -> None:
+    def mark_failure(
+        self, name: str, error: object, *, threshold: int, reset_seconds: float
+    ) -> None:
         current = self.service(name)
         failures = (current.consecutive_failures if current else 0) + 1
         opened = utc_now() + timedelta(seconds=reset_seconds) if failures >= threshold else None
@@ -173,29 +182,70 @@ class TelemetryRepository:
                 """UPDATE service_health SET state=?, last_error=?, error_summary=?,
                    consecutive_failures=?, circuit_open_until=?, attempt_count=attempt_count+1,
                    failure_count=failure_count+1 WHERE name=?""",
-                (state, utc_now().isoformat(), safe_error(error), failures,
-                 opened.isoformat() if opened else None, name),
+                (
+                    state,
+                    utc_now().isoformat(),
+                    safe_error(error),
+                    failures,
+                    opened.isoformat() if opened else None,
+                    name,
+                ),
             )
 
     def circuit_is_open(self, name: str) -> bool:
         health = self.service(name)
         return bool(health and health.circuit_open_until and health.circuit_open_until > utc_now())
 
-    def start_cycle(self, context: CycleContext, account_name: str, model: str, prompt_version: str,
-                    market_mode: str, budget: CycleBudget) -> None:
+    def start_cycle(
+        self,
+        context: CycleContext,
+        account_name: str,
+        model: str,
+        prompt_version: str,
+        market_mode: str,
+        budget: CycleBudget,
+    ) -> None:
         with sqlite3.connect(self.path) as conn:
             conn.execute(
                 """INSERT INTO cycle_metrics
                    (cycle_id, account_name, run_id, scenario_id, model, prompt_version, market_mode,
                     started_at, status, budget)
                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'running', ?)""",
-                (context.cycle_id, account_name.lower(), context.run_id, context.scenario_id, model,
-                 prompt_version, market_mode, context.started_at.isoformat(), budget.model_dump_json()),
+                (
+                    context.cycle_id,
+                    account_name.lower(),
+                    context.run_id,
+                    context.scenario_id,
+                    model,
+                    prompt_version,
+                    market_mode,
+                    context.started_at.isoformat(),
+                    budget.model_dump_json(),
+                ),
             )
 
-    def finish_cycle(self, cycle_id: str, *, status: str, usage: Any | None, latency_ms: float,
-                     estimated_cost: Decimal, error: object | None = None,
-                     decision_ids: list[str] | None = None, trace_id: str | None = None) -> None:
+    def recover_interrupted_cycles(self, reason: str = "process restarted during cycle") -> int:
+        """Close orphaned running cycles before a scheduler begins new work."""
+        with sqlite3.connect(self.path) as conn:
+            cursor = conn.execute(
+                """UPDATE cycle_metrics SET completed_at=?, status='interrupted', error_summary=?
+                   WHERE status='running'""",
+                (utc_now().isoformat(), safe_error(reason)),
+            )
+        return cursor.rowcount
+
+    def finish_cycle(
+        self,
+        cycle_id: str,
+        *,
+        status: str,
+        usage: Any | None,
+        latency_ms: float,
+        estimated_cost: Decimal,
+        error: object | None = None,
+        decision_ids: list[str] | None = None,
+        trace_id: str | None = None,
+    ) -> None:
         requests = int(getattr(usage, "requests", 0)) if usage else 0
         input_tokens = int(getattr(usage, "input_tokens", 0)) if usage else 0
         output_tokens = int(getattr(usage, "output_tokens", 0)) if usage else 0
@@ -205,16 +255,28 @@ class TelemetryRepository:
                 """UPDATE cycle_metrics SET completed_at=?, status=?, requests=?, input_tokens=?,
                    output_tokens=?, total_tokens=?, estimated_cost_usd=?, latency_ms=?, error_summary=?,
                    decision_ids=? WHERE cycle_id=?""",
-                (utc_now().isoformat(), status, requests, input_tokens, output_tokens, total_tokens,
-                 str(estimated_cost), latency_ms, safe_error(error) if error else None,
-                 json.dumps(decision_ids or []), cycle_id),
+                (
+                    utc_now().isoformat(),
+                    status,
+                    requests,
+                    input_tokens,
+                    output_tokens,
+                    total_tokens,
+                    str(estimated_cost),
+                    latency_ms,
+                    safe_error(error) if error else None,
+                    json.dumps(decision_ids or []),
+                    cycle_id,
+                ),
             )
             if trace_id:
                 conn.executemany(
                     """INSERT OR REPLACE INTO decision_telemetry
                        (decision_id, cycle_id, trace_id, recorded_at) VALUES (?, ?, ?, ?)""",
-                    [(decision_id, cycle_id, trace_id, utc_now().isoformat())
-                     for decision_id in decision_ids or []],
+                    [
+                        (decision_id, cycle_id, trace_id, utc_now().isoformat())
+                        for decision_id in decision_ids or []
+                    ],
                 )
 
     def decision_metadata(self, decision_id: str) -> dict[str, Any] | None:
@@ -251,8 +313,12 @@ class TelemetryRepository:
         service_failures = sum(item["failure_count"] for item in services)
         service_attempts = sum(item["attempt_count"] for item in services)
         return {
-            "status": "degraded" if market_status.get("degraded") or any(s["state"] != "healthy" for s in services) else "healthy",
-            "current_cycle_id": current["cycle_id"] if current and current["status"] == "running" else None,
+            "status": "degraded"
+            if market_status.get("degraded") or any(s["state"] != "healthy" for s in services)
+            else "healthy",
+            "current_cycle_id": current["cycle_id"]
+            if current and current["status"] == "running"
+            else None,
             "latest_cycle": dict(current) if current else None,
             "services": services,
             "data_freshness": {
@@ -262,8 +328,10 @@ class TelemetryRepository:
                 "last_observation": market_status.get("last_successful_observation"),
             },
             "metrics": {
-                "request_count": totals["requests"], "token_count": totals["tokens"],
-                "estimated_cost_usd": totals["cost"], "average_cycle_latency_ms": totals["latency"],
+                "request_count": totals["requests"],
+                "token_count": totals["tokens"],
+                "estimated_cost_usd": totals["cost"],
+                "average_cycle_latency_ms": totals["latency"],
                 "mcp_failure_rate": service_failures / service_attempts if service_attempts else 0,
                 "cycle_success_rate": totals["successes"] / cycles if cycles else 0,
             },

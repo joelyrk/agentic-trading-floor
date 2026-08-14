@@ -12,7 +12,6 @@ from backend.market.models import (
     ObservationSource,
 )
 
-
 NOW = datetime(2026, 8, 13, 12, tzinfo=timezone.utc)
 
 

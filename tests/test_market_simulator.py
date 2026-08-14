@@ -26,4 +26,3 @@ def test_price_is_positive_and_moves_over_time() -> None:
     assert start_price != later_price
     assert start_price == round(start_price, 2)
     assert later_price == round(later_price, 2)
-

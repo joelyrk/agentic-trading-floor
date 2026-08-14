@@ -1,9 +1,9 @@
 """Market-data contracts shared at provider, MCP, persistence, and API boundaries."""
 
+import re
 from datetime import datetime
 from decimal import Decimal
 from enum import StrEnum
-import re
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 

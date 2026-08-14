@@ -2,7 +2,6 @@
 
 from .mcp_servers import ObservedMCPServerStdio, local_server_params
 
-
 PARAMS = local_server_params("backend.accounts_server")
 
 
