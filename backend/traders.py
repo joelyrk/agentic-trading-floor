@@ -1,4 +1,5 @@
 from contextlib import AsyncExitStack
+import asyncio
 from .accounts_client import read_accounts_resource, read_strategy_resource
 from .tracers import make_trace_id
 from agents import Agent, Tool, Runner, OpenAIChatCompletionsModel, trace
@@ -8,6 +9,7 @@ import os
 import json
 from datetime import datetime, timezone
 from functools import lru_cache
+from time import monotonic
 from .templates import (
     researcher_instructions,
     trader_instructions,
@@ -15,8 +17,9 @@ from .templates import (
     rebalance_message,
     research_tool,
 )
-from .mcp_servers import trader_mcp_servers, researcher_mcp_servers
-from .market import get_market_observation
+from .mcp_servers import attribute_runtime_failure, trader_mcp_servers, researcher_mcp_servers
+from .market import get_market_observation, get_market_service
+from .observability import BudgetExceeded, BudgetHooks, CycleBudget, CycleContext, TelemetryRepository
 from .decisions import (
     DecisionPipeline,
     ExecutionService,
@@ -41,8 +44,6 @@ DEEPSEEK_BASE_URL = "https://api.deepseek.com/v1"
 GROK_BASE_URL = "https://api.x.ai/v1"
 GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/openai/"
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
-
-MAX_TURNS = 30
 
 @lru_cache(maxsize=4)
 def _optional_client(provider: str) -> AsyncOpenAI:
@@ -94,6 +95,8 @@ class Trader:
         self.agent = None
         self.model_name = model_name
         self.do_trade = True
+        self._budget_hooks = None
+        self._last_usage = None
 
     async def create_agent(self, trader_mcp_servers, researcher_mcp_servers, decision_cutoff: datetime) -> Agent:
         tool = await get_researcher_tool(researcher_mcp_servers, self.model_name, decision_cutoff)
@@ -113,7 +116,7 @@ class Trader:
         account_json.pop("portfolio_value_time_series", None)
         return json.dumps(account_json)
 
-    async def run_agent(self, trader_mcp_servers, researcher_mcp_servers):
+    async def run_agent(self, trader_mcp_servers, researcher_mcp_servers, budget: CycleBudget):
         decision_cutoff = datetime.now(timezone.utc)
         self.agent = await self.create_agent(trader_mcp_servers, researcher_mcp_servers, decision_cutoff)
         account = await self.get_account_report()
@@ -123,7 +126,25 @@ class Trader:
             if self.do_trade
             else rebalance_message(self.name, strategy, account, decision_cutoff)
         )
-        result = await Runner.run(self.agent, message, max_turns=MAX_TURNS)
+        self._budget_hooks = BudgetHooks(budget)
+        result = await Runner.run(
+            self.agent,
+            message,
+            max_turns=budget.max_turns,
+            hooks=self._budget_hooks,
+            run_config={"trace_include_sensitive_data": False},
+        )
+        usage = result.context_wrapper.usage
+        self._last_usage = usage
+        estimated_cost = budget.estimate_cost(usage.input_tokens, usage.output_tokens)
+        if usage.total_tokens > budget.max_tokens:
+            raise BudgetExceeded(
+                f"cycle token budget exceeded ({usage.total_tokens}/{budget.max_tokens})"
+            )
+        if estimated_cost > budget.max_spend_usd:
+            raise BudgetExceeded(
+                f"cycle spend budget exceeded ({estimated_cost}/{budget.max_spend_usd} USD)"
+            )
         repository = DecisionRepository()
         proposal_service = ProposalService(repository, get_market_observation)
         risk_service = RiskService(repository, RiskEngine(RiskPolicy.from_env()), get_market_observation)
@@ -141,9 +162,9 @@ class Trader:
         processed, error = pipeline.safely_process(self.name, output)
         if error:
             raise ValueError(error)
-        return processed
+        return processed, usage
 
-    async def run_with_mcp_servers(self):
+    async def run_with_mcp_servers(self, budget: CycleBudget):
         async with AsyncExitStack() as stack:
             trader_servers = [
                 await stack.enter_async_context(server) for server in trader_mcp_servers()
@@ -152,17 +173,63 @@ class Trader:
                 await stack.enter_async_context(server)
                 for server in researcher_mcp_servers(self.name)
             ]
-            await self.run_agent(trader_servers, researcher_servers)
+            return await self.run_agent(trader_servers, researcher_servers, budget)
 
-    async def run_with_trace(self):
+    async def run_with_trace(self, context: CycleContext, budget: CycleBudget):
         trace_name = f"{self.name}-trading" if self.do_trade else f"{self.name}-rebalancing"
         trace_id = make_trace_id(f"{self.name.lower()}")
-        with trace(trace_name, trace_id=trace_id):
-            await self.run_with_mcp_servers()
+        metadata = {
+            "cycle_id": context.cycle_id,
+            "run_id": context.run_id or "live",
+            "scenario_id": context.scenario_id or "live",
+            "prompt_version": TRADER_PROMPT_VERSION,
+            "market_mode": get_market_service().status().mode.value,
+            "model": self.model_name,
+            "decision_ids": [],
+            "sensitive_payload_capture": False,
+        }
+        with trace(trace_name, trace_id=trace_id, group_id=context.run_id, metadata=metadata) as current_trace:
+            processed, usage = await self.run_with_mcp_servers(budget)
+            decision_ids = [str(decision.decision_id) for _, decision, _ in processed]
+            if hasattr(current_trace, "metadata"):
+                current_trace.metadata["decision_ids"] = decision_ids
+            return processed, usage, trace_id
 
     async def run(self):
+        self._budget_hooks = None
+        self._last_usage = None
+        budget = CycleBudget.from_env()
+        context = CycleContext.create(
+            run_id=os.getenv("EVALUATION_RUN_ID"), scenario_id=os.getenv("EVALUATION_SCENARIO_ID")
+        )
+        telemetry = TelemetryRepository()
+        market_mode = get_market_service().status().mode.value
+        telemetry.start_cycle(
+            context, self.name, self.model_name, TRADER_PROMPT_VERSION, market_mode, budget
+        )
+        started = monotonic()
+        usage = None
         try:
-            await self.run_with_trace()
+            async with asyncio.timeout(budget.max_wall_seconds):
+                processed, usage, trace_id = await self.run_with_trace(context, budget)
+            cost = budget.estimate_cost(usage.input_tokens, usage.output_tokens)
+            telemetry.finish_cycle(
+                context.cycle_id, status="succeeded", usage=usage,
+                latency_ms=(monotonic() - started) * 1000, estimated_cost=cost,
+                decision_ids=[str(decision.decision_id) for _, decision, _ in processed],
+                trace_id=trace_id,
+            )
         except Exception as e:
+            usage = self._last_usage or (
+                self._budget_hooks.usage if self._budget_hooks is not None else None
+            )
+            attribute_runtime_failure(e)
+            cost = budget.estimate_cost(
+                getattr(usage, "input_tokens", 0), getattr(usage, "output_tokens", 0)
+            )
+            telemetry.finish_cycle(
+                context.cycle_id, status="failed", usage=usage,
+                latency_ms=(monotonic() - started) * 1000, estimated_cost=cost, error=e,
+            )
             print(f"Error running trader {self.name}: {e}")
         self.do_trade = not self.do_trade

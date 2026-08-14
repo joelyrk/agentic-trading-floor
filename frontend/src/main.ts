@@ -1,7 +1,7 @@
 // App entry point: build a panel per trader, then poll the backend for portfolio
 // data and activity logs. The trading floor runs on its own; this only reads.
 
-import { getMarket, getTrader, getTraderDecisions, getTraderLogs, getTraders } from "./api";
+import { getHealth, getMarket, getTrader, getTraderDecisions, getTraderLogs, getTraders } from "./api";
 import { TraderPanel } from "./panel";
 import { TraderState } from "./state";
 import { initTheme } from "./theme";
@@ -40,6 +40,37 @@ async function loadMarket(): Promise<void> {
     document.getElementById("market-status")!.textContent = `${state} · ${freshness}`;
   } catch (err) {
     console.error("market fetch failed", err);
+  }
+}
+
+async function loadHealth(): Promise<void> {
+  try {
+    const health = await getHealth();
+    const summary = document.getElementById("health-summary")!;
+    summary.textContent = health.current_cycle_id
+      ? `${health.status.toUpperCase()} · cycle ${health.current_cycle_id.slice(0, 8)}`
+      : health.status.toUpperCase();
+    summary.dataset.state = health.status;
+    const services = document.getElementById("health-services")!;
+    services.innerHTML = "";
+    for (const service of health.services) {
+      const row = document.createElement("div");
+      row.className = "health-service";
+      row.dataset.state = service.state;
+      row.title = service.error_summary ?? (service.last_success ? `Last success ${service.last_success}` : "Not checked yet");
+      row.innerHTML = `<span class="health-dot"></span><span></span><span></span>`;
+      row.children[1].textContent = service.name;
+      row.children[2].textContent = service.latency_ms === null ? service.state : `${service.latency_ms.toFixed(0)}ms`;
+      services.append(row);
+    }
+    document.getElementById("health-metrics")!.textContent =
+      `${health.metrics.cycle_success_rate.toLocaleString(undefined, { style: "percent", maximumFractionDigits: 0 })} cycles · ` +
+      `${health.metrics.token_count.toLocaleString()} tokens · $${health.metrics.estimated_cost_usd.toFixed(4)}`;
+  } catch (err) {
+    const summary = document.getElementById("health-summary")!;
+    summary.textContent = "UNAVAILABLE";
+    summary.dataset.state = "degraded";
+    console.error("health fetch failed", err);
   }
 }
 
@@ -121,10 +152,12 @@ function markLeader(): void {
 
 async function main(): Promise<void> {
   await loadMarket();
+  await loadHealth();
   await buildPanels();
   await pollData();
   await pollLogs();
   setInterval(loadMarket, DATA_POLL_MS);
+  setInterval(loadHealth, DATA_POLL_MS);
   setInterval(pollData, DATA_POLL_MS);
   setInterval(pollLogs, LOG_POLL_MS);
 }

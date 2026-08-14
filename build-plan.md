@@ -166,14 +166,14 @@ One documented command reproduces an evaluation report comparing the agent syste
 
 ### Deliverables
 
-- [ ] Give every MCP server a stable name and startup health check.
-- [ ] Capture subprocess diagnostics safely; report which server failed and why without secrets.
-- [ ] Add bounded retry/backoff, timeouts, circuit breakers, and degraded-state transitions.
-- [ ] Expose `/api/health` with per-server state, last success/error, latency, data freshness, and current cycle ID.
-- [ ] Add trace metadata for decision ID, scenario/run ID, prompt version, market mode, and model.
-- [ ] Disable sensitive trace payload capture where credentials or proprietary data could appear.
-- [ ] Record request/token usage, estimated cost, latency, MCP failure rate, and cycle success rate.
-- [ ] Add budgets for turns, tokens, wall time, and spend per cycle.
+- [x] Give every MCP server a stable name and startup health check.
+- [x] Capture subprocess diagnostics safely; report which server failed and why without secrets.
+- [x] Add bounded retry/backoff, timeouts, circuit breakers, and degraded-state transitions.
+- [x] Expose `/api/health` with per-server state, last success/error, latency, data freshness, and current cycle ID.
+- [x] Add trace metadata for decision ID, scenario/run ID, prompt version, market mode, and model.
+- [x] Disable sensitive trace payload capture where credentials or proprietary data could appear.
+- [x] Record request/token usage, estimated cost, latency, MCP failure rate, and cycle success rate.
+- [x] Add budgets for turns, tokens, wall time, and spend per cycle.
 
 ### Acceptance gate
 
@@ -272,3 +272,4 @@ Record material architecture decisions here as short dated entries or replace th
 - **2026-08-13:** Sector concentration uses configured classifications rather than model claims; unmapped symbols share a conservative `unclassified` sector. High-risk human approval is opt-in and disabled during automated replay.
 - **2026-08-13:** Phase 3 uses a versioned, citation-linked research graph persisted with each run in SQLite. Canonical URL/content deduplication, domain policy, and publication cutoffs are deterministic gates; prompt versions and concise evidence are persisted without chain-of-thought.
 - **2026-08-13:** Phase 4 uses hashed, physically separated decision/outcome fixtures and an injected monotonic simulation clock. The credential-free default evaluator compares five deterministic baselines plus single-agent/multi-agent workflow proxies, checkpoints by stable scenario keys and order IDs, and emits versioned JSON/Markdown reports. Its 30-scenario historical fixture and derived benchmark proxy are explicitly limited to replay-system validation, not investment-strategy claims.
+- **2026-08-14:** Phase 5 supervises stable logical MCP services with bounded startup probes, request retries, redacted stderr diagnostics, persisted circuit state, and explicit healthy/degraded/unavailable transitions. Per-trader cycles enforce turn/token/wall-time/spend budgets, disable sensitive trace payload capture, and persist provider-reported usage, configurable cost estimates, latency, trace/run/prompt/market metadata, and decision links for the health API and dashboard.

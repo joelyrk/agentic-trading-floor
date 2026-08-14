@@ -108,6 +108,64 @@ def initialize_database(path: str | None = None) -> None:
         CREATE INDEX IF NOT EXISTS idx_orders_account_submitted
         ON paper_orders(account_name, submitted_at)
         ''')
+        cursor.execute('''
+        CREATE TABLE IF NOT EXISTS service_health (
+            name TEXT PRIMARY KEY,
+            state TEXT NOT NULL,
+            required INTEGER NOT NULL,
+            last_success TEXT,
+            last_error TEXT,
+            error_summary TEXT,
+            latency_ms REAL,
+            consecutive_failures INTEGER NOT NULL DEFAULT 0,
+            circuit_open_until TEXT,
+            attempt_count INTEGER NOT NULL DEFAULT 0,
+            failure_count INTEGER NOT NULL DEFAULT 0
+        )
+        ''')
+        health_columns = {
+            row[1] for row in cursor.execute("PRAGMA table_info(service_health)").fetchall()
+        }
+        if "attempt_count" not in health_columns:
+            cursor.execute("ALTER TABLE service_health ADD COLUMN attempt_count INTEGER NOT NULL DEFAULT 0")
+        if "failure_count" not in health_columns:
+            cursor.execute("ALTER TABLE service_health ADD COLUMN failure_count INTEGER NOT NULL DEFAULT 0")
+        cursor.execute('''
+        CREATE TABLE IF NOT EXISTS cycle_metrics (
+            cycle_id TEXT PRIMARY KEY,
+            account_name TEXT NOT NULL,
+            run_id TEXT,
+            scenario_id TEXT,
+            model TEXT NOT NULL,
+            prompt_version TEXT NOT NULL,
+            market_mode TEXT NOT NULL,
+            started_at TEXT NOT NULL,
+            completed_at TEXT,
+            status TEXT NOT NULL,
+            requests INTEGER NOT NULL DEFAULT 0,
+            input_tokens INTEGER NOT NULL DEFAULT 0,
+            output_tokens INTEGER NOT NULL DEFAULT 0,
+            total_tokens INTEGER NOT NULL DEFAULT 0,
+            estimated_cost_usd TEXT NOT NULL DEFAULT '0',
+            latency_ms REAL,
+            error_summary TEXT,
+            decision_ids TEXT NOT NULL DEFAULT '[]',
+            budget TEXT NOT NULL
+        )
+        ''')
+        cursor.execute('''
+        CREATE INDEX IF NOT EXISTS idx_cycle_metrics_started
+        ON cycle_metrics(started_at)
+        ''')
+        cursor.execute('''
+        CREATE TABLE IF NOT EXISTS decision_telemetry (
+            decision_id TEXT PRIMARY KEY,
+            cycle_id TEXT NOT NULL,
+            trace_id TEXT NOT NULL,
+            recorded_at TEXT NOT NULL,
+            FOREIGN KEY(cycle_id) REFERENCES cycle_metrics(cycle_id)
+        )
+        ''')
         conn.commit()
 
 

@@ -173,6 +173,26 @@ body {
 .returns-pct[data-trend="up"] { color: var(--trend-up); }
 .returns-pct[data-trend="down"] { color: var(--trend-down); }
 
+.health { display: flex; flex-direction: column; gap: 7px; }
+.health-summary { font-size: 12px; font-weight: 700; color: var(--trend-up); }
+.health-summary[data-state="degraded"] { color: var(--trend-down); }
+.health-services { display: flex; flex-direction: column; gap: 4px; }
+.health-service {
+  display: grid;
+  grid-template-columns: 7px 1fr auto;
+  gap: 6px;
+  align-items: center;
+  font-size: 10px;
+  color: var(--fg-muted);
+}
+.health-service span:last-child { color: var(--fg-dim); font-variant-numeric: tabular-nums; }
+.health-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--fg-dim); }
+.health-service[data-state="healthy"] .health-dot { background: var(--trend-up); }
+.health-service[data-state="degraded"] .health-dot,
+.health-service[data-state="unavailable"] .health-dot { background: var(--trend-down); }
+.health-service[data-state="starting"] .health-dot { background: var(--yellow); }
+.health-metrics { font-size: 10px; line-height: 1.4; color: var(--fg-dim); }
+
 .sidebar-spacer { flex: 1; }
 
 .theme-toggle {

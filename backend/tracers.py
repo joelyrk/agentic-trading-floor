@@ -1,5 +1,6 @@
 from agents import TracingProcessor, Trace, Span
 from .database import write_log
+from .observability import safe_error
 import secrets
 import string
 
@@ -48,7 +49,7 @@ class LogTracer(TracingProcessor):
                 if hasattr(span.span_data, "server") and span.span_data.server:
                     message += f" {span.span_data.server}"
             if span.error:
-                message += f" {span.error}"
+                message += f" {safe_error(span.error)}"
             write_log(name, type, message)
 
     def on_span_end(self, span) -> None:
@@ -65,7 +66,7 @@ class LogTracer(TracingProcessor):
                 if hasattr(span.span_data, "server") and span.span_data.server:
                     message += f" {span.span_data.server}"
             if span.error:
-                message += f" {span.error}"
+                message += f" {safe_error(span.error)}"
             write_log(name, type, message)
 
     def force_flush(self) -> None:

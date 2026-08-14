@@ -6,6 +6,7 @@ from agents import add_trace_processor
 from .market import is_market_open
 from dotenv import load_dotenv
 import os
+import re
 
 load_dotenv(override=True)
 
@@ -14,6 +15,22 @@ RUN_EVEN_WHEN_MARKET_IS_CLOSED = (
     os.getenv("RUN_EVEN_WHEN_MARKET_IS_CLOSED", "false").strip().lower() == "true"
 )
 USE_MANY_MODELS = os.getenv("USE_MANY_MODELS", "false").strip().lower() == "true"
+DEFAULT_MODEL_NAME = "gpt-5.4-mini"
+_MODEL_NAME_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:/-]{0,99}$")
+
+
+def configured_model_name(value: str | None) -> str:
+    """Validate a configured API model identifier without rewriting it."""
+    model_name = (DEFAULT_MODEL_NAME if value is None else value).strip()
+    if not _MODEL_NAME_PATTERN.fullmatch(model_name):
+        raise ValueError(
+            "MODEL_NAME must be a non-empty model identifier containing only letters, "
+            "numbers, '.', '_', ':', '/', or '-'"
+        )
+    return model_name
+
+
+MODEL_NAME = configured_model_name(os.getenv("MODEL_NAME"))
 
 names = ["Warren", "George", "Ray", "Cathie"]
 lastnames = ["Patience", "Bold", "Systematic", "Crypto"]
@@ -27,8 +44,8 @@ if USE_MANY_MODELS:
     ]
     short_model_names = ["GPT 5.5", "DeepSeek V4", "Gemini 3.5 Flash", "Grok 4.3"]
 else:
-    model_names = ["gpt-5.4-mini"] * 4
-    short_model_names = ["GPT 5.4 mini"] * 4
+    model_names = [MODEL_NAME] * 4
+    short_model_names = [MODEL_NAME] * 4
 
 
 def create_traders() -> List[Trader]:

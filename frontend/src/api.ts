@@ -79,6 +79,34 @@ export interface MarketInfo {
   error_summary: string | null;
 }
 
+export interface ServiceHealth {
+  name: string;
+  state: "starting" | "healthy" | "degraded" | "unavailable";
+  required: boolean;
+  last_success: string | null;
+  last_error: string | null;
+  error_summary: string | null;
+  latency_ms: number | null;
+  consecutive_failures: number;
+  circuit_open_until: string | null;
+  attempt_count: number;
+  failure_count: number;
+}
+
+export interface HealthInfo {
+  status: "healthy" | "degraded";
+  current_cycle_id: string | null;
+  services: ServiceHealth[];
+  metrics: {
+    request_count: number;
+    token_count: number;
+    estimated_cost_usd: number;
+    average_cycle_latency_ms: number;
+    mcp_failure_rate: number;
+    cycle_success_rate: number;
+  };
+}
+
 export type EvidenceStance = "supports" | "opposes" | "mixed" | "context";
 
 export interface SourceRecord {
@@ -141,6 +169,17 @@ export interface EvidenceChain {
   risk_decision: { outcome: string; rules: Array<{ rule: string; passed: boolean; reason: string }> } | null;
   order: unknown | null;
   execution: { status: string; executed_at: string } | null;
+  telemetry: {
+    cycle_id: string;
+    trace_id: string;
+    model: string;
+    prompt_version: string;
+    market_mode: MarketMode;
+    total_tokens: number;
+    estimated_cost_usd: string;
+    latency_ms: number;
+    status: string;
+  } | null;
 }
 
 async function get<T>(path: string): Promise<T> {
@@ -163,6 +202,10 @@ export function getTraderLogs(name: string, lastN = 13): Promise<LogRow[]> {
 
 export function getMarket(): Promise<MarketInfo> {
   return get("/api/market");
+}
+
+export function getHealth(): Promise<HealthInfo> {
+  return get("/api/health");
 }
 
 export function getTraderDecisions(name: string): Promise<DecisionAudit[]> {

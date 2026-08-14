@@ -19,6 +19,7 @@ from backend.database import read_log, write_market_observation
 from backend.trading_floor import names, lastnames, short_model_names
 from backend.decisions import ExecutionService, RiskPolicy
 from backend.decisions.repository import DecisionRepository, ExecutionConflict
+from backend.observability import TelemetryRepository
 
 # Mirrors the log colours in demo/ so the frontend reproduces the same panel.
 LOG_COLORS = {
@@ -40,6 +41,7 @@ roster_by_name = {trader["name"].lower(): trader for trader in roster}
 app = FastAPI(title="Trading Floor")
 market_service = market.get_market_service()  # Fail startup on invalid capability config.
 decision_repository = DecisionRepository()
+telemetry_repository = TelemetryRepository()
 
 
 def average_cost(account: Account, symbol: str) -> float:
@@ -94,6 +96,13 @@ def get_market() -> dict:
     return market_service.status().model_dump(mode="json")
 
 
+@app.get("/api/health")
+def get_health() -> dict:
+    """One credential-safe view of service, cycle, freshness, latency, and cost health."""
+    market_status = market_service.status().model_dump(mode="json")
+    return telemetry_repository.health_payload(market_status)
+
+
 @app.get("/api/traders/{name}")
 def get_trader(name: str) -> dict:
     """A trader's full state: value, profit, holdings, transactions and history."""
@@ -140,7 +149,13 @@ def get_trader_decisions(name: str) -> list[dict]:
 def get_decision_evidence(proposal_id: str) -> dict:
     """Citation-linked evidence, observation, policy result, and paper execution."""
     try:
-        return decision_repository.evidence_chain(proposal_id)
+        evidence = decision_repository.evidence_chain(proposal_id)
+        decision = evidence.get("risk_decision")
+        evidence["telemetry"] = (
+            telemetry_repository.decision_metadata(decision["decision_id"])
+            if decision else None
+        )
+        return evidence
     except KeyError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 

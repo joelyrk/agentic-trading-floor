@@ -73,6 +73,14 @@ export class EvidenceView {
       `${chain.prompt_versions.researcher} · ${chain.prompt_versions.trader}`,
       "Prompt versions",
     ));
+    if (chain.telemetry) {
+      fragment.append(this.line(
+        `${chain.telemetry.model} · ${chain.telemetry.total_tokens.toLocaleString()} tokens · ` +
+        `$${Number(chain.telemetry.estimated_cost_usd).toFixed(4)} · ${chain.telemetry.latency_ms.toFixed(0)}ms · ` +
+        `trace ${chain.telemetry.trace_id.slice(-8)}`,
+        "Trace & cost",
+      ));
+    }
     return fragment;
   }
 

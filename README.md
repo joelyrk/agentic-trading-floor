@@ -18,6 +18,8 @@ Trader agents cannot mutate accounts. They return validated `TradingDecision` ou
 
 Research is a versioned, point-in-time contract rather than free-form analysis. Each material recommendation cites a structured claim; each claim links to canonicalized source records containing publisher, title, publication/retrieval times, a bounded supporting excerpt and SHA-256 hash, confidence, stance, and caveats. Future publications, broken citations, duplicate URLs/content, conflicting dates, and disallowed domains are rejected before a proposal can reach risk review. Only concise evidence and rationale are stored—private chain-of-thought is neither requested nor exposed.
 
+Runtime dependencies are supervised under stable names. Each MCP subprocess must initialize and list its tools within a bounded startup check; requests use bounded timeout/retry with exponential backoff, and repeated failures open a persisted circuit. Subprocess stderr and stored errors are length-bounded and credential-redacted. Cycle records link model/prompt/market/run metadata to trace IDs and decision IDs, while sensitive trace input and output capture is disabled.
+
 ## Requirements
 
 - Python 3.12
@@ -52,6 +54,15 @@ MARKET_DATA_FALLBACK=fail_closed
 
 `MARKET_DATA_FRESHNESS_SECONDS` defaults to 300 seconds for simulated observations and four days for EOD observations so a Friday close remains usable over an ordinary weekend. `MARKET_DATA_TIMEOUT_SECONDS` defaults to 10 seconds. This phase supports only `simulated` and `end_of_day`; requesting `delayed` or `real_time`, or requesting EOD without a key, fails startup with an actionable configuration error.
 
+All four traders use one configurable model by default:
+
+```dotenv
+MODEL_NAME=gpt-5.4-mini
+USE_MANY_MODELS=false
+```
+
+`MODEL_NAME` defaults to `gpt-5.4-mini` when omitted and is shown verbatim in the API, dashboard, traces, and cycle telemetry. `USE_MANY_MODELS=true` retains the fixed four-provider comparison roster and ignores `MODEL_NAME`; the corresponding provider keys are then required.
+
 Risk policy is configured with these optional environment variables:
 
 ```dotenv
@@ -82,6 +93,26 @@ RESEARCH_DENIED_DOMAINS=example.invalid
 ```
 
 The research schema is version `1.0`; live agent runs persist `researcher-v1` and `trader-v1` prompt versions with the research record. The decision cutoff is injected into both prompts. Source publication times must be at or before that cutoff, and source retrieval must precede proposal creation.
+
+Runtime reliability and per-trader cycle budgets are configurable:
+
+```dotenv
+MCP_STARTUP_TIMEOUT_SECONDS=20
+MCP_REQUEST_TIMEOUT_SECONDS=30
+MCP_MAX_RETRIES=2
+MCP_RETRY_BACKOFF_SECONDS=0.5
+MCP_CIRCUIT_FAILURE_THRESHOLD=3
+MCP_CIRCUIT_RESET_SECONDS=60
+
+CYCLE_MAX_TURNS=30
+CYCLE_MAX_TOKENS=100000
+CYCLE_MAX_WALL_SECONDS=300
+CYCLE_MAX_SPEND_USD=5
+MODEL_INPUT_COST_PER_MILLION=0
+MODEL_OUTPUT_COST_PER_MILLION=0
+```
+
+Token and request counts come from the model provider's usage response. Cost is estimated from the configured per-million-token rates because this project can route to several providers and models; rates default to zero instead of embedding prices that may become stale. The token/spend hook stops before another model request once a budget is exhausted, the final response is checked again before any proposal reaches deterministic execution, and the wall-time budget encloses MCP startup and the full agent run.
 
 ## Run
 
@@ -117,6 +148,8 @@ Every observation includes `symbol`, `price`, `currency`, `market_timestamp`, `r
 `GET /api/traders/{name}/decisions` returns the complete proposal, rule-level risk decision, paper order, and execution chain. When human approval policy is active, `POST /api/decisions/{decision_id}/approve` records explicit approval and submits that approved paper order idempotently. This endpoint only affects the local paper account; it has no broker integration.
 
 `GET /api/evidence/{proposal_id}` returns the citation-linked research brief and prompt versions together with the exact market observation, rule-level risk decision, paper order, and execution result. The dashboard’s recommendation drill-down consumes this endpoint and links only to canonical source URLs; it shows concise evidence and never model chain-of-thought.
+
+`GET /api/health` returns the current cycle ID, per-server state, last success/error, safe diagnostic summary, latency, circuit state, market-data freshness, request/token usage, estimated cost, MCP failure rate, and cycle success rate. The dashboard sidebar presents the same attributable service view; each completed decision's evidence drill-down includes its trace ID, model, prompt version, market mode, latency, tokens, and estimated cost.
 
 Massive credentialed tests are not part of the default suite. Provider behavior is tested with deterministic fakes for success, authentication failure, entitlement failure, timeout, malformed responses, empty market days, and weekend previous-close handling.
 
