@@ -62,7 +62,7 @@ class SourceRecord(StrictModel):
     title: str = Field(min_length=1, max_length=500)
     published_at: datetime
     retrieved_at: datetime
-    supporting_excerpt: str = Field(min_length=1, max_length=500)
+    supporting_excerpt: str = Field(min_length=1, max_length=240)
     content_hash: str | None = Field(default=None, pattern=r"^[a-f0-9]{64}$")
     caveats: list[str] = Field(default_factory=list, max_length=20)
 
@@ -105,8 +105,8 @@ class ResearchBrief(StrictModel):
     research_id: UUID = Field(default_factory=uuid4)
     summary: str = Field(min_length=1, max_length=4000)
     as_of: datetime
-    sources: list[SourceRecord] = Field(default_factory=list, max_length=50)
-    claims: list[EvidenceClaim] = Field(default_factory=list, max_length=50)
+    sources: list[SourceRecord] = Field(default_factory=list, max_length=5)
+    claims: list[EvidenceClaim] = Field(default_factory=list, max_length=8)
     caveats: list[str] = Field(default_factory=list, max_length=20)
     researcher_prompt_version: str = Field(
         default=RESEARCHER_PROMPT_VERSION, min_length=1, max_length=100

@@ -35,8 +35,26 @@ class APIAccessSettings(BaseModel):
         )
 
 
+class ApplicationSettings(BaseModel):
+    """Deployment behavior that must be visible to API and UI callers."""
+
+    mode: Literal["standard", "demo"] = "standard"
+
+    @property
+    def read_only(self) -> bool:
+        return self.mode == "demo"
+
+    @classmethod
+    def from_env(cls) -> "ApplicationSettings":
+        return cls(mode=os.getenv("APP_MODE", "standard").strip().lower())
+
+
 class RuntimeSettings(BaseModel):
     scheduler_interval_minutes: int = Field(gt=0, le=1_440)
+    scheduler_mode: Literal["interval", "daily_utc"] = "interval"
+    scheduler_daily_time_utc: str = Field(default="22:30", pattern=r"^(?:[01]\d|2[0-3]):[0-5]\d$")
+    agent_max_concurrency: int = Field(default=1, ge=1, le=4)
+    model_max_retries: int = Field(default=4, ge=0, le=10)
     mcp_startup_timeout_seconds: float = Field(gt=0, le=120)
     mcp_request_timeout_seconds: float = Field(gt=0, le=300)
     mcp_max_retries: int = Field(ge=0, le=10)
@@ -50,6 +68,10 @@ class RuntimeSettings(BaseModel):
     def from_env(cls) -> "RuntimeSettings":
         return cls(
             scheduler_interval_minutes=os.getenv("RUN_EVERY_N_MINUTES", "60"),
+            scheduler_mode=os.getenv("SCHEDULER_MODE", "interval"),
+            scheduler_daily_time_utc=os.getenv("SCHEDULER_DAILY_TIME_UTC", "22:30"),
+            agent_max_concurrency=os.getenv("AGENT_MAX_CONCURRENCY", "1"),
+            model_max_retries=os.getenv("MODEL_MAX_RETRIES", "4"),
             mcp_startup_timeout_seconds=os.getenv("MCP_STARTUP_TIMEOUT_SECONDS", "20"),
             mcp_request_timeout_seconds=os.getenv("MCP_REQUEST_TIMEOUT_SECONDS", "30"),
             mcp_max_retries=os.getenv("MCP_MAX_RETRIES", "2"),
@@ -64,6 +86,7 @@ class RuntimeSettings(BaseModel):
 def validate_startup(component: Literal["api", "scheduler"]) -> RuntimeSettings:
     """Validate all deterministic configuration before starting a process."""
     runtime = RuntimeSettings.from_env()
+    application = ApplicationSettings.from_env()
     APIAccessSettings.from_env()
     if runtime.accounts_db.exists() and runtime.accounts_db.is_dir():
         raise ValueError(f"ACCOUNTS_DB points to a directory: {runtime.accounts_db}")
@@ -72,10 +95,14 @@ def validate_startup(component: Literal["api", "scheduler"]) -> RuntimeSettings:
     from backend.market.config import MarketSettings
     from backend.observability import CycleBudget
 
-    MarketSettings.from_env()
+    market = MarketSettings.from_env()
+    if application.mode == "demo" and market.mode.value != "simulated":
+        raise ValueError("APP_MODE=demo requires MARKET_DATA_MODE=simulated")
     RiskPolicy.from_env()
     CycleBudget.from_env()
     if component == "scheduler":
+        if application.read_only:
+            raise ValueError("APP_MODE=demo is read-only and cannot run the scheduler")
         model = os.getenv("MODEL_NAME", "gpt-5.4-mini")
         use_many = os.getenv("USE_MANY_MODELS", "false").strip().lower() == "true"
         missing: list[str] = []

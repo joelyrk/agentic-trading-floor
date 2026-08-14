@@ -104,6 +104,22 @@ def test_duplicate_content_and_conflicting_publication_dates_are_rejected() -> N
         brief(sources=[source(), conflicting])
 
 
+def test_research_brief_bounds_sources_and_excerpts() -> None:
+    with pytest.raises(ValidationError):
+        source(supporting_excerpt="x" * 241)
+
+    sources = [
+        source(
+            source_id=f"s{index}",
+            canonical_url=f"https://example.com/article-{index}",
+            supporting_excerpt=f"Distinct supporting excerpt {index}.",
+        )
+        for index in range(1, 7)
+    ]
+    with pytest.raises(ValidationError):
+        brief(sources=sources)
+
+
 def test_future_dated_source_and_unsupported_proposal_are_rejected() -> None:
     future = source(
         published_at=NOW + timedelta(minutes=1), retrieved_at=NOW + timedelta(minutes=2)

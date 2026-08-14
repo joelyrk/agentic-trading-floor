@@ -7,6 +7,13 @@ export interface TraderInfo {
   model_name: string;
 }
 
+export interface RuntimeInfo {
+  mode: "standard" | "demo";
+  read_only: boolean;
+  paper_trading_only: true;
+  credentials_required: boolean | null;
+}
+
 export interface Holding {
   symbol: string;
   quantity: number;
@@ -214,6 +221,10 @@ async function post<T>(path: string, body?: unknown): Promise<T> {
 
 export function getTraders(): Promise<TraderInfo[]> {
   return get("/api/traders");
+}
+
+export function getRuntime(): Promise<RuntimeInfo> {
+  return get("/api/runtime");
 }
 
 export function getTrader(name: string): Promise<TraderDetail> {

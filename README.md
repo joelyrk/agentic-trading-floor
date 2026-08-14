@@ -30,7 +30,23 @@ Runtime dependencies are supervised under stable names. Each MCP subprocess must
 - npm
 - `npx` (used by the Tavily and memory MCP servers)
 
-## Setup
+## Safe demo in one command
+
+The default container stack is seeded, simulated, read-only, and requires no
+provider credentials:
+
+```bash
+docker compose up --build
+```
+
+Open `http://localhost:8080`. The API seeds four paper accounts, auditable
+approved/rejected proposals, service telemetry, and the published offline
+experiment once in its `demo-data` volume. Every mutating HTTP method is
+rejected, the scheduler is not started, and the UI labels the mode. Stop with
+`docker compose down`; add `-v` only when you deliberately want to discard the
+demo database.
+
+## Development setup
 
 ```bash
 cp .env.example .env
@@ -39,10 +55,13 @@ cd frontend
 npm ci
 ```
 
-Add at least `OPENAI_API_KEY` and `TAVILY_API_KEY` to `.env`. Market data is configured explicitly:
+The API and credential-free evaluator need no keys in simulated mode. The live
+scheduler needs at least `OPENAI_API_KEY` and `TAVILY_API_KEY`. Market data is
+configured explicitly:
 
 ```dotenv
-# Safe credential-free demo
+# Simulated development
+APP_MODE=standard
 MARKET_DATA_MODE=simulated
 MARKET_DATA_FALLBACK=fail_closed
 
@@ -106,13 +125,28 @@ MCP_RETRY_BACKOFF_SECONDS=0.5
 MCP_CIRCUIT_FAILURE_THRESHOLD=3
 MCP_CIRCUIT_RESET_SECONDS=60
 
-CYCLE_MAX_TURNS=30
-CYCLE_MAX_TOKENS=100000
-CYCLE_MAX_WALL_SECONDS=300
+SCHEDULER_MODE=daily_utc
+SCHEDULER_DAILY_TIME_UTC=22:30
+AGENT_MAX_CONCURRENCY=1
+
+CYCLE_MAX_TURNS=8
+CYCLE_MAX_TOKENS=40000
+CYCLE_MAX_WALL_SECONDS=180
 CYCLE_MAX_SPEND_USD=5
+MODEL_MAX_RETRIES=4
 MODEL_INPUT_COST_PER_MILLION=0
 MODEL_OUTPUT_COST_PER_MILLION=0
 ```
+
+The standard EOD profile runs once on UTC weekdays at `22:30` UTC (06:30 the
+following day in Singapore), after the U.S. regular close in both daylight and
+standard time. The four traders run sequentially by default so they do not
+burst model requests together. Research briefs are capped at five sources and
+eight claims, with short supporting excerpts. Eligible model failures use the
+OpenAI client's bounded retry policy, including server `Retry-After` guidance
+and exponential backoff with jitter. Set `SCHEDULER_MODE=interval` only for a
+deliberate intraday provider configuration; `RUN_EVERY_N_MINUTES` then controls
+the interval.
 
 `SHUTDOWN_GRACE_SECONDS` defaults to 30. SIGINT/SIGTERM stops new scheduler
 cycles, gives the active cycle that bounded grace period, then cancels it and
@@ -145,6 +179,13 @@ npm run dev
 ```
 
 Vite normally serves the dashboard at `http://localhost:5173`.
+
+For the credentialed container profile, first configure the untracked `.env`,
+then run `docker compose --profile live up --build scheduler live-api live-frontend`.
+The isolated live dashboard is at `http://localhost:8081`; it shares `live-data`
+between the scheduler and API. The default read-only demo may remain at `8080`.
+Provider secrets are supplied only to backend containers and never built into or
+sent to the frontend.
 
 ## Market-data contract
 
@@ -183,6 +224,7 @@ concise Markdown report, and an idempotent retry checkpoint are written below
 `evals/results/`. See [`evals/README.md`](evals/README.md) for schemas,
 methodology, metric definitions, provenance, and limitations. This offline
 evaluation tests replay infrastructure; it does not establish investment merit.
+The versioned published result is documented in [`EVALUATION.md`](EVALUATION.md).
 
 The Replay Lab consumes the same immutable fixtures. `GET /api/replay/scenarios`
 contains decision-time inputs only. `POST /api/replays` persists a completed
@@ -213,3 +255,8 @@ uv run python -m compileall -q backend
 uv run python scripts/check_secrets.py
 cd frontend && npm test && npm run typecheck && npm run build
 ```
+
+System topology and data contracts are in [`ARCHITECTURE.md`](ARCHITECTURE.md).
+Deployment and threat boundaries are in [`SECURITY.md`](SECURITY.md). Portfolio
+media capture requirements are in [`media/README.md`](media/README.md), and a
+sanitized example cycle is under [`docs/traces/`](docs/traces/).

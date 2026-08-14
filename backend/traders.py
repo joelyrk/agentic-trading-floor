@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from functools import lru_cache
 from time import monotonic
 
-from agents import Agent, OpenAIChatCompletionsModel, Runner, Tool, trace
+from agents import Agent, OpenAIChatCompletionsModel, OpenAIResponsesModel, Runner, Tool, trace
 from dotenv import load_dotenv
 from openai import AsyncOpenAI
 
@@ -56,6 +56,13 @@ DEEPSEEK_BASE_URL = "https://api.deepseek.com/v1"
 GROK_BASE_URL = "https://api.x.ai/v1"
 GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/openai/"
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
+MODEL_MAX_RETRIES = int(os.getenv("MODEL_MAX_RETRIES", "4"))
+
+
+@lru_cache(maxsize=1)
+def _openai_client() -> AsyncOpenAI:
+    """Official client honors Retry-After and applies bounded backoff with jitter."""
+    return AsyncOpenAI(max_retries=MODEL_MAX_RETRIES)
 
 
 @lru_cache(maxsize=4)
@@ -88,7 +95,7 @@ def get_model(model_name: str):
             model=model_name, openai_client=_optional_client("gemini")
         )
     else:
-        return model_name
+        return OpenAIResponsesModel(model=model_name, openai_client=_openai_client())
 
 
 async def get_researcher(mcp_servers, model_name, decision_cutoff: datetime) -> Agent:

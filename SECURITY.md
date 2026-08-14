@@ -45,6 +45,13 @@ precedence over `.env`. The trace configuration disables sensitive input/output
 capture, persisted diagnostics are length-bounded and credential-redacted, and
 CI scans tracked source for common private-key and provider-token formats.
 
+Container images contain application code and locked dependencies only. Runtime
+credentials are injected into the API and scheduler services from the server
+environment or an untracked `.env`; they are not Docker build arguments. The
+frontend image is static, calls same-origin `/api` routes, and receives no
+provider environment variables. The checked-in example trace contains seeded
+identifiers only and explicitly excludes model payloads and credentials.
+
 ### HTTP API
 
 `API_ACCESS_MODE=local` is the default and assumes loopback access through the
@@ -55,6 +62,22 @@ Bearer authentication on every mutating method. Put it behind TLS and a trusted
 reverse proxy, but do not trust forwarded IP headers without adding an explicit
 proxy policy. The in-memory limiter is per process and is not a substitute for
 an edge limiter in a multi-instance deployment.
+
+`APP_MODE=demo` is an additional hard boundary: startup requires simulated
+market data, all non-safe HTTP methods receive `403`, valuation reads do not
+persist observations, and the scheduler refuses to start. This makes the
+default container demo inspectable without turning it into a writable public
+service. It is not an authorization system for standard mode.
+
+## Container operations
+
+The default Compose ports bind to loopback. For an internet-facing deployment,
+terminate TLS at a maintained reverse proxy, set public API authentication,
+apply edge rate limits and egress restrictions, store secrets in the platform's
+secret manager, run vulnerability scans, and back up the persistent data volume.
+Do not expose the scheduler, SQLite volume, or MCP subprocesses as network
+services. Rotate a credential if it could have entered logs and remove the logs
+according to the incident policy.
 
 ## Database protection and recovery
 

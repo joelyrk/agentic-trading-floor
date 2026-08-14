@@ -11,6 +11,7 @@ h1,h2,h3,h4,p { margin-top:0; } h1 { margin:2px 0 0; font-size:clamp(24px,3vw,38
 .eyebrow { margin:0; color:var(--accent); text-transform:uppercase; letter-spacing:.16em; font-size:10px; font-weight:800; }
 .topbar-status { display:flex; align-items:center; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
 .badge { border:1px solid var(--line); border-radius:999px; padding:7px 10px; color:var(--muted); font-size:11px; font-weight:800; letter-spacing:.06em; } .badge[data-state="good"]{color:var(--good);border-color:color-mix(in srgb,var(--good) 45%,var(--line))}.badge[data-state="bad"]{color:var(--bad);border-color:color-mix(in srgb,var(--bad) 45%,var(--line))}
+.badge[data-state="demo"]{color:var(--accent);border-color:color-mix(in srgb,var(--accent) 55%,var(--line))}
 .icon-button { width:34px;height:34px;border:1px solid var(--line);border-radius:50%;background:transparent;color:var(--text);cursor:pointer; }
 .tabs { position:sticky;top:0;z-index:4;display:flex;gap:4px;padding:10px clamp(20px,5vw,72px);background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(14px);border-bottom:1px solid var(--line);overflow-x:auto; }
 .tab { border:0;background:transparent;color:var(--muted);padding:9px 15px;border-radius:8px;cursor:pointer;white-space:nowrap; }.tab:hover{color:var(--text)}.tab.is-active{background:var(--surface-2);color:var(--text);font-weight:700}

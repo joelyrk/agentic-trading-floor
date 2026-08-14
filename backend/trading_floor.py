@@ -2,6 +2,7 @@ import asyncio
 import os
 import re
 import signal
+from datetime import datetime, timedelta, timezone
 from typing import List
 
 from agents import add_trace_processor
@@ -18,6 +19,8 @@ from .traders import Trader
 load_dotenv()
 
 RUN_EVERY_N_MINUTES = startup.runtime_settings.scheduler_interval_minutes
+SCHEDULER_MODE = startup.runtime_settings.scheduler_mode
+SCHEDULER_DAILY_TIME_UTC = startup.runtime_settings.scheduler_daily_time_utc
 RUN_EVEN_WHEN_MARKET_IS_CLOSED = (
     os.getenv("RUN_EVEN_WHEN_MARKET_IS_CLOSED", "false").strip().lower() == "true"
 )
@@ -62,8 +65,28 @@ def create_traders() -> List[Trader]:
     return traders
 
 
-async def _run_cycle(traders: list[Trader]) -> None:
-    await asyncio.gather(*(trader.run() for trader in traders))
+async def _run_cycle(traders: list[Trader], max_concurrency: int = 1) -> None:
+    semaphore = asyncio.Semaphore(max_concurrency)
+
+    async def run_one(trader: Trader) -> None:
+        async with semaphore:
+            await trader.run()
+
+    await asyncio.gather(*(run_one(trader) for trader in traders))
+
+
+def seconds_until_daily_run(now: datetime, configured_time: str) -> float:
+    """Return a positive delay to the next configured UTC wall-clock time."""
+    hour, minute = (int(part) for part in configured_time.split(":"))
+    target = now.astimezone(timezone.utc).replace(hour=hour, minute=minute, second=0, microsecond=0)
+    if target <= now:
+        target += timedelta(days=1)
+    return (target - now).total_seconds()
+
+
+def is_daily_run_day(now: datetime) -> bool:
+    """Run post-close cycles on UTC weekdays; provider freshness remains authoritative."""
+    return now.astimezone(timezone.utc).weekday() < 5
 
 
 async def run_every_n_minutes(
@@ -89,9 +112,27 @@ async def run_every_n_minutes(
         else runtime.shutdown_grace_seconds
     )
     TelemetryRepository().recover_interrupted_cycles()
+    daily_schedule = runtime.scheduler_mode == "daily_utc" and interval_seconds is None
     while not stop_event.is_set():
-        if RUN_EVEN_WHEN_MARKET_IS_CLOSED or is_market_open():
-            cycle_task = asyncio.create_task(_run_cycle(traders))
+        if daily_schedule:
+            delay = seconds_until_daily_run(
+                datetime.now(timezone.utc), runtime.scheduler_daily_time_utc
+            )
+            try:
+                await asyncio.wait_for(stop_event.wait(), timeout=delay)
+                return
+            except TimeoutError:
+                pass
+        scheduled_now = datetime.now(timezone.utc)
+        should_run = (
+            is_daily_run_day(scheduled_now)
+            if daily_schedule
+            else RUN_EVEN_WHEN_MARKET_IS_CLOSED or is_market_open()
+        )
+        if should_run:
+            cycle_task = asyncio.create_task(
+                _run_cycle(traders, max_concurrency=runtime.agent_max_concurrency)
+            )
             stop_task = asyncio.create_task(stop_event.wait())
             done, _ = await asyncio.wait(
                 {cycle_task, stop_task}, return_when=asyncio.FIRST_COMPLETED
@@ -107,11 +148,13 @@ async def run_every_n_minutes(
             await asyncio.gather(stop_task, return_exceptions=True)
             await cycle_task
         else:
-            print("Market is closed, skipping run")
-        try:
-            await asyncio.wait_for(stop_event.wait(), timeout=interval)
-        except TimeoutError:
-            pass
+            reason = "non-scheduled day" if daily_schedule else "market is closed"
+            print(f"Skipping run: {reason}")
+        if not daily_schedule:
+            try:
+                await asyncio.wait_for(stop_event.wait(), timeout=interval)
+            except TimeoutError:
+                pass
 
 
 async def scheduler_main() -> None:
@@ -126,5 +169,10 @@ async def scheduler_main() -> None:
 
 
 if __name__ == "__main__":
-    print(f"Starting scheduler to run every {RUN_EVERY_N_MINUTES} minutes")
+    schedule = (
+        f"daily at {SCHEDULER_DAILY_TIME_UTC} UTC"
+        if SCHEDULER_MODE == "daily_utc"
+        else f"every {RUN_EVERY_N_MINUTES} minutes"
+    )
+    print(f"Starting scheduler {schedule}")
     asyncio.run(scheduler_main())

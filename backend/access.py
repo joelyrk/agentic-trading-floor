@@ -50,3 +50,24 @@ class AccessControlMiddleware:
                 )
                 return
         await self.app(scope, receive, send)
+
+
+class ReadOnlyModeMiddleware:
+    """Enforce demo immutability before a mutating endpoint can run."""
+
+    def __init__(self, app: ASGIApp, read_only: bool):
+        self.app = app
+        self.read_only = read_only
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if (
+            self.read_only
+            and scope["type"] == "http"
+            and scope["method"] not in {"GET", "HEAD", "OPTIONS"}
+        ):
+            await JSONResponse(
+                {"detail": "seeded demo mode is read-only"},
+                status_code=403,
+            )(scope, receive, send)
+            return
+        await self.app(scope, receive, send)

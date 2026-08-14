@@ -23,6 +23,7 @@ from evals.strategies import default_strategies
 
 DATASET_ROOT = Path("evals/datasets/historical-v1")
 RESULTS_ROOT = Path("evals/results")
+PUBLISHED_RESULTS_ROOT = Path("evals/published")
 
 
 class ProductModel(BaseModel):
@@ -56,6 +57,9 @@ class ProductService:
         database.initialize_database(self.db_path)
         self.dataset_root = dataset_root
         self.results_root = results_root
+        self.published_results_root = (
+            PUBLISHED_RESULTS_ROOT if results_root == RESULTS_ROOT else None
+        )
 
     def _fixtures(self) -> FixtureSet:
         return load_dataset(self.dataset_root)
@@ -203,16 +207,21 @@ class ProductService:
         return report.model_dump(mode="json")
 
     def experiments(self) -> list[dict]:
-        if not self.results_root.exists():
-            return []
         reports = []
-        for path in self.results_root.glob("*/report.json"):
+        paths = list(self.results_root.glob("*/report.json")) if self.results_root.exists() else []
+        if self.published_results_root and self.published_results_root.exists():
+            paths.extend(self.published_results_root.glob("**/report.json"))
+        for path in paths:
             try:
                 reports.append(json.loads(path.read_text()))
             except (OSError, json.JSONDecodeError):
                 continue
+        unique = {
+            item.get("metadata", {}).get("run_id", str(index)): item
+            for index, item in enumerate(reports)
+        }
         return sorted(
-            reports,
+            unique.values(),
             key=lambda item: item.get("metadata", {}).get("completed_at", ""),
             reverse=True,
         )

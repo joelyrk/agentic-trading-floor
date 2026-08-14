@@ -1,0 +1,5053 @@
+{
+  "schema_version": "1.0",
+  "metadata": {
+    "run_id": "8cce06c6-209e-5509-9e78-daded052f901",
+    "dataset_id": "historical-v1",
+    "dataset_version": "1.0.0",
+    "git_sha": "local-verification",
+    "model": "offline-deterministic-proxy",
+    "prompt_version": "eval-agent-v1",
+    "configuration": {
+      "scenario_count": 30,
+      "strategy_count": 7
+    },
+    "seed": 7,
+    "started_at": "2026-08-13T15:36:17.206835Z",
+    "completed_at": "2026-08-13T15:36:17.428104Z"
+  },
+  "results": [
+    {
+      "strategy": "buy_and_hold",
+      "metrics": {
+        "total_return": "-0.0305725802417637632777843353",
+        "benchmark_return": "-0.0305725802417637632777843353",
+        "benchmark_relative_return": "0E-28",
+        "annualized_volatility": "0.1809579866330700038038941796",
+        "sharpe": "-1.350223725347170047750648251",
+        "max_drawdown": "0.08785604901075629254428549186",
+        "turnover": "1",
+        "win_rate": "0.5",
+        "decision_validity": "1",
+        "citation_validity": "1",
+        "tool_success_rate": "1",
+        "average_latency_ms": "0",
+        "model_api_cost_usd": "0"
+      },
+      "scenarios": [
+        {
+          "scenario_id": "hist-2014-01",
+          "strategy": "buy_and_hold",
+          "portfolio_return": "0.004901404569226850432341149",
+          "benchmark_return": "0.004901404569226850432341149",
+          "turnover": "1",
+          "won": true,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "c0f523e8-4ae1-544d-96d8-940d927afa22"
+          ],
+          "timing": {
+            "research_cutoff": "2014-11-17T21:05:00Z",
+            "market_timestamp": "2014-11-17T21:00:00Z",
+            "market_retrieved_at": "2014-11-17T21:01:00Z",
+            "decided_at": "2014-11-17T21:05:00Z",
+            "executed_at": "2014-11-17T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-02",
+          "strategy": "buy_and_hold",
+          "portfolio_return": "-0.0025123656496915356217375314",
+          "benchmark_return": "-0.0025123656496915356217375314",
+          "turnover": "1",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "3621db71-6825-55a6-bfdf-fc6dca04814d"
+          ],
+          "timing": {
+            "research_cutoff": "2014-11-18T21:05:00Z",
+            "market_timestamp": "2014-11-18T21:00:00Z",
+            "market_retrieved_at": "2014-11-18T21:01:00Z",
+            "decided_at": "2014-11-18T21:05:00Z",
+            "executed_at": "2014-11-18T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-03",
+          "strategy": "buy_and_hold",
+          "portfolio_return": "0.009706928456667777149262647",
+          "benchmark_return": "0.009706928456667777149262647",
+          "turnover": "1",
+          "won": true,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "cdf04081-fd62-5e0d-94c8-68906274ea27"
+          ],
+          "timing": {
+            "research_cutoff": "2014-11-19T21:05:00Z",
+            "market_timestamp": "2014-11-19T21:00:00Z",
+            "market_retrieved_at": "2014-11-19T21:01:00Z",
+            "decided_at": "2014-11-19T21:05:00Z",
+            "executed_at": "2014-11-19T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-04",
+          "strategy": "buy_and_hold",
+          "portfolio_return": "0.001829249746585128618607663",
+          "benchmark_return": "0.001829249746585128618607663",
+          "turnover": "1",
+          "won": true,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "0b1518d1-2e18-5d34-9ee2-7c565dc4f58a"
+          ],
+          "timing": {
+            "research_cutoff": "2014-11-20T21:05:00Z",
+            "market_timestamp": "2014-11-20T21:00:00Z",
+            "market_retrieved_at": "2014-11-20T21:01:00Z",
+            "decided_at": "2014-11-20T21:05:00Z",
+            "executed_at": "2014-11-20T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-05",
+          "strategy": "buy_and_hold",
+          "portfolio_return": "0.003198998103270652391415973",
+          "benchmark_return": "0.003198998103270652391415973",
+          "turnover": "1",
+          "won": true,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "98594caa-f392-5e1e-9e4f-22f396ff28bc"
+          ],
+          "timing": {
+            "research_cutoff": "2014-11-21T21:05:00Z",
+            "market_timestamp": "2014-11-21T21:00:00Z",
+            "market_retrieved_at": "2014-11-21T21:01:00Z",
+            "decided_at": "2014-11-21T21:05:00Z",
+            "executed_at": "2014-11-21T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-06",
+          "strategy": "buy_and_hold",
+          "portfolio_return": "-0.0073906142185128288386221180",
+          "benchmark_return": "-0.0073906142185128288386221180",
+          "turnover": "1",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "59625cae-c8ca-551e-8628-d73aea80bd0b"
+          ],
+          "timing": {
+            "research_cutoff": "2014-11-24T21:05:00Z",
+            "market_timestamp": "2014-11-24T21:00:00Z",
+            "market_retrieved_at": "2014-11-24T21:01:00Z",
+            "decided_at": "2014-11-24T21:05:00Z",
+            "executed_at": "2014-11-24T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-07",
+          "strategy": "buy_and_hold",
+          "portfolio_return": "0.006372472587514448294388755",
+          "benchmark_return": "0.006372472587514448294388755",
+          "turnover": "1",
+          "won": true,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "1512262e-e775-58e9-ad52-9601490b64fc"
+          ],
+          "timing": {
+            "research_cutoff": "2014-11-25T21:05:00Z",
+            "market_timestamp": "2014-11-25T21:00:00Z",
+            "market_retrieved_at": "2014-11-25T21:01:00Z",
+            "decided_at": "2014-11-25T21:05:00Z",
+            "executed_at": "2014-11-25T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-08",
+          "strategy": "buy_and_hold",
+          "portfolio_return": "-0.0133149231278601399322521953",
+          "benchmark_return": "-0.0133149231278601399322521953",
+          "turnover": "1",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "83db460d-c7d9-5f8c-b0e5-653170b2b22f"
+          ],
+          "timing": {
+            "research_cutoff": "2014-11-26T21:05:00Z",
+            "market_timestamp": "2014-11-26T21:00:00Z",
+            "market_retrieved_at": "2014-11-26T21:01:00Z",
+            "decided_at": "2014-11-26T21:05:00Z",
+            "executed_at": "2014-11-26T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-09",
+          "strategy": "buy_and_hold",
+          "portfolio_return": "-0.0064482051439090769267652375",
+          "benchmark_return": "-0.0064482051439090769267652375",
+          "turnover": "1",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "0c31cb71-4556-58b9-b1b7-496d02f1a429"
+          ],
+          "timing": {
+            "research_cutoff": "2014-11-28T21:05:00Z",
+            "market_timestamp": "2014-11-28T21:00:00Z",
+            "market_retrieved_at": "2014-11-28T21:01:00Z",
+            "decided_at": "2014-11-28T21:05:00Z",
+            "executed_at": "2014-11-28T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-10",
+          "strategy": "buy_and_hold",
+          "portfolio_return": "0.004325110168950854790418277",
+          "benchmark_return": "0.004325110168950854790418277",
+          "turnover": "1",
+          "won": true,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "d3a0a2e8-b38c-5f06-b13a-0468cf2dead4"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-01T21:05:00Z",
+            "market_timestamp": "2014-12-01T21:00:00Z",
+            "market_retrieved_at": "2014-12-01T21:01:00Z",
+            "decided_at": "2014-12-01T21:05:00Z",
+            "executed_at": "2014-12-01T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-11",
+          "strategy": "buy_and_hold",
+          "portfolio_return": "0.008049984756173827529538040",
+          "benchmark_return": "0.008049984756173827529538040",
+          "turnover": "1",
+          "won": true,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "062e4a3b-fcef-585e-be09-fe9cf7f4f166"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-02T21:05:00Z",
+            "market_timestamp": "2014-12-02T21:00:00Z",
+            "market_retrieved_at": "2014-12-02T21:01:00Z",
+            "decided_at": "2014-12-02T21:05:00Z",
+            "executed_at": "2014-12-02T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-12",
+          "strategy": "buy_and_hold",
+          "portfolio_return": "-0.0016022956267243286836239211",
+          "benchmark_return": "-0.0016022956267243286836239211",
+          "turnover": "1",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "eb3eee01-c88f-52f9-9bd7-3527fdfa9375"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-03T21:05:00Z",
+            "market_timestamp": "2014-12-03T21:00:00Z",
+            "market_retrieved_at": "2014-12-03T21:01:00Z",
+            "decided_at": "2014-12-03T21:05:00Z",
+            "executed_at": "2014-12-03T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-13",
+          "strategy": "buy_and_hold",
+          "portfolio_return": "-0.0047340609903157320472736395",
+          "benchmark_return": "-0.0047340609903157320472736395",
+          "turnover": "1",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "9408435e-91f4-5b10-b772-3582c93cbc29"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-04T21:05:00Z",
+            "market_timestamp": "2014-12-04T21:00:00Z",
+            "market_retrieved_at": "2014-12-04T21:01:00Z",
+            "decided_at": "2014-12-04T21:05:00Z",
+            "executed_at": "2014-12-04T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-14",
+          "strategy": "buy_and_hold",
+          "portfolio_return": "-0.0204815053988507982393482896",
+          "benchmark_return": "-0.0204815053988507982393482896",
+          "turnover": "1",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "f0e10410-a003-57e9-a1c7-00bf28e0fce0"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-05T21:05:00Z",
+            "market_timestamp": "2014-12-05T21:00:00Z",
+            "market_retrieved_at": "2014-12-05T21:01:00Z",
+            "decided_at": "2014-12-05T21:05:00Z",
+            "executed_at": "2014-12-05T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-15",
+          "strategy": "buy_and_hold",
+          "portfolio_return": "0.004635545912223422277449067",
+          "benchmark_return": "0.004635545912223422277449067",
+          "turnover": "1",
+          "won": true,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "b1cc0867-987a-5766-bd8e-2e717a88e20d"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-08T21:05:00Z",
+            "market_timestamp": "2014-12-08T21:00:00Z",
+            "market_retrieved_at": "2014-12-08T21:01:00Z",
+            "decided_at": "2014-12-08T21:05:00Z",
+            "executed_at": "2014-12-08T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-16",
+          "strategy": "buy_and_hold",
+          "portfolio_return": "-0.0219066763396085545038972879",
+          "benchmark_return": "-0.0219066763396085545038972879",
+          "turnover": "1",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "5fe54845-8cef-5163-8454-68954e8bc80b"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-09T21:05:00Z",
+            "market_timestamp": "2014-12-09T21:00:00Z",
+            "market_retrieved_at": "2014-12-09T21:01:00Z",
+            "decided_at": "2014-12-09T21:05:00Z",
+            "executed_at": "2014-12-09T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-17",
+          "strategy": "buy_and_hold",
+          "portfolio_return": "0.001617540766964874656605155",
+          "benchmark_return": "0.001617540766964874656605155",
+          "turnover": "1",
+          "won": true,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "e6d80df7-157c-5e2c-8434-cd337dee2f94"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-10T21:05:00Z",
+            "market_timestamp": "2014-12-10T21:00:00Z",
+            "market_retrieved_at": "2014-12-10T21:01:00Z",
+            "decided_at": "2014-12-10T21:05:00Z",
+            "executed_at": "2014-12-10T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-18",
+          "strategy": "buy_and_hold",
+          "portfolio_return": "-0.0198168445405921293601394416",
+          "benchmark_return": "-0.0198168445405921293601394416",
+          "turnover": "1",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "36a243ac-0593-5ea8-8b04-07f492b34977"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-11T21:05:00Z",
+            "market_timestamp": "2014-12-11T21:00:00Z",
+            "market_retrieved_at": "2014-12-11T21:01:00Z",
+            "decided_at": "2014-12-11T21:05:00Z",
+            "executed_at": "2014-12-11T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-19",
+          "strategy": "buy_and_hold",
+          "portfolio_return": "-0.0060245911697993649370853036",
+          "benchmark_return": "-0.0060245911697993649370853036",
+          "turnover": "1",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "4d0dd718-b46e-5ec0-9000-6ca31edb8be4"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-12T21:05:00Z",
+            "market_timestamp": "2014-12-12T21:00:00Z",
+            "market_retrieved_at": "2014-12-12T21:01:00Z",
+            "decided_at": "2014-12-12T21:05:00Z",
+            "executed_at": "2014-12-12T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-20",
+          "strategy": "buy_and_hold",
+          "portfolio_return": "-0.0142385987632043847248515768",
+          "benchmark_return": "-0.0142385987632043847248515768",
+          "turnover": "1",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "801138b9-d6c4-537a-81d5-6693b8144562"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-15T21:05:00Z",
+            "market_timestamp": "2014-12-15T21:00:00Z",
+            "market_retrieved_at": "2014-12-15T21:01:00Z",
+            "decided_at": "2014-12-15T21:05:00Z",
+            "executed_at": "2014-12-15T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-21",
+          "strategy": "buy_and_hold",
+          "portfolio_return": "0.025768304386742204741961878",
+          "benchmark_return": "0.025768304386742204741961878",
+          "turnover": "1",
+          "won": true,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "e87a4f53-d2d0-589e-9b1a-fc4c83ef5d89"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-16T21:05:00Z",
+            "market_timestamp": "2014-12-16T21:00:00Z",
+            "market_retrieved_at": "2014-12-16T21:01:00Z",
+            "decided_at": "2014-12-16T21:05:00Z",
+            "executed_at": "2014-12-16T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-22",
+          "strategy": "buy_and_hold",
+          "portfolio_return": "0.027359553543232146019042308",
+          "benchmark_return": "0.027359553543232146019042308",
+          "turnover": "1",
+          "won": true,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "9df2cff7-ac4d-5d89-860e-1be6d383bb08"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-17T21:05:00Z",
+            "market_timestamp": "2014-12-17T21:00:00Z",
+            "market_retrieved_at": "2014-12-17T21:01:00Z",
+            "decided_at": "2014-12-17T21:05:00Z",
+            "executed_at": "2014-12-17T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-23",
+          "strategy": "buy_and_hold",
+          "portfolio_return": "0.006822769962382121252493639",
+          "benchmark_return": "0.006822769962382121252493639",
+          "turnover": "1",
+          "won": true,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "fc277116-0e75-509f-a73c-0dc4435f8ca5"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-18T21:05:00Z",
+            "market_timestamp": "2014-12-18T21:00:00Z",
+            "market_retrieved_at": "2014-12-18T21:01:00Z",
+            "decided_at": "2014-12-18T21:05:00Z",
+            "executed_at": "2014-12-18T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-24",
+          "strategy": "buy_and_hold",
+          "portfolio_return": "0.005788951446161013626269967",
+          "benchmark_return": "0.005788951446161013626269967",
+          "turnover": "1",
+          "won": true,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "2fa54f7e-efaa-5442-a0b3-e8ed0173d807"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-19T21:05:00Z",
+            "market_timestamp": "2014-12-19T21:00:00Z",
+            "market_retrieved_at": "2014-12-19T21:01:00Z",
+            "decided_at": "2014-12-19T21:05:00Z",
+            "executed_at": "2014-12-19T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-25",
+          "strategy": "buy_and_hold",
+          "portfolio_return": "0.004143204770443059289209754",
+          "benchmark_return": "0.004143204770443059289209754",
+          "turnover": "1",
+          "won": true,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "2014f40f-bd2a-512a-ab88-e45f404290ae"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-22T21:05:00Z",
+            "market_timestamp": "2014-12-22T21:00:00Z",
+            "market_retrieved_at": "2014-12-22T21:01:00Z",
+            "decided_at": "2014-12-22T21:05:00Z",
+            "executed_at": "2014-12-22T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-26",
+          "strategy": "buy_and_hold",
+          "portfolio_return": "-0.0062125021038436525649076934",
+          "benchmark_return": "-0.0062125021038436525649076934",
+          "turnover": "1",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "4a0fb09a-b396-5a53-8cda-756f9c28fa42"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-23T21:05:00Z",
+            "market_timestamp": "2014-12-23T21:00:00Z",
+            "market_retrieved_at": "2014-12-23T21:01:00Z",
+            "decided_at": "2014-12-23T21:05:00Z",
+            "executed_at": "2014-12-23T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-27",
+          "strategy": "buy_and_hold",
+          "portfolio_return": "0.004492338602784711492532557",
+          "benchmark_return": "0.004492338602784711492532557",
+          "turnover": "1",
+          "won": true,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "d2388210-b7ae-59a9-a8ed-9dbc53cfa2f6"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-24T21:05:00Z",
+            "market_timestamp": "2014-12-24T21:00:00Z",
+            "market_retrieved_at": "2014-12-24T21:01:00Z",
+            "decided_at": "2014-12-24T21:05:00Z",
+            "executed_at": "2014-12-24T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-28",
+          "strategy": "buy_and_hold",
+          "portfolio_return": "-0.0024581173238475784077897180",
+          "benchmark_return": "-0.0024581173238475784077897180",
+          "turnover": "1",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "725206c1-f67e-519a-bc2f-0243465078ce"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-26T21:05:00Z",
+            "market_timestamp": "2014-12-26T21:00:00Z",
+            "market_retrieved_at": "2014-12-26T21:01:00Z",
+            "decided_at": "2014-12-26T21:05:00Z",
+            "executed_at": "2014-12-26T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-29",
+          "strategy": "buy_and_hold",
+          "portfolio_return": "-0.0076224149611457364371240230",
+          "benchmark_return": "-0.0076224149611457364371240230",
+          "turnover": "1",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "ae1ea668-bed1-5741-b240-0426d44cebc0"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-29T21:05:00Z",
+            "market_timestamp": "2014-12-29T21:00:00Z",
+            "market_retrieved_at": "2014-12-29T21:01:00Z",
+            "decided_at": "2014-12-29T21:05:00Z",
+            "executed_at": "2014-12-29T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-30",
+          "strategy": "buy_and_hold",
+          "portfolio_return": "-0.0133359956170157253339905487",
+          "benchmark_return": "-0.0133359956170157253339905487",
+          "turnover": "1",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "d6c720e3-ef51-52d5-829b-5fac77c6a031"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-30T21:05:00Z",
+            "market_timestamp": "2014-12-30T21:00:00Z",
+            "market_retrieved_at": "2014-12-30T21:01:00Z",
+            "decided_at": "2014-12-30T21:05:00Z",
+            "executed_at": "2014-12-30T21:05:00Z"
+          }
+        }
+      ]
+    },
+    {
+      "strategy": "equal_weight",
+      "metrics": {
+        "total_return": "-0.0238217036325674373725542073",
+        "benchmark_return": "-0.0305725802417637632777843353",
+        "benchmark_relative_return": "0.0067508766091963259052301280",
+        "annualized_volatility": "0.1767642528427476178235418105",
+        "sharpe": "-1.057021376612264843033274533",
+        "max_drawdown": "0.08044778514181634941600038771",
+        "turnover": "1.0",
+        "win_rate": "0.5",
+        "decision_validity": "1",
+        "citation_validity": "1",
+        "tool_success_rate": "1",
+        "average_latency_ms": "0",
+        "model_api_cost_usd": "0"
+      },
+      "scenarios": [
+        {
+          "scenario_id": "hist-2014-01",
+          "strategy": "equal_weight",
+          "portfolio_return": "0.00617554347977538439107477500",
+          "benchmark_return": "0.004901404569226850432341149",
+          "turnover": "1.0",
+          "won": true,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "842e9573-d333-559f-8d6e-ba54cf5a42ca",
+            "72f534bd-77d8-5846-af2d-ea71e25c96c8",
+            "8cefb4d7-8a92-5ab7-abbf-5790bcd8dd9f",
+            "cc366a11-1c10-5bc7-a4f5-1b68045f4baa",
+            "a4df4cba-5f9d-53df-8e69-0103a6bbf5d7"
+          ],
+          "timing": {
+            "research_cutoff": "2014-11-17T21:05:00Z",
+            "market_timestamp": "2014-11-17T21:00:00Z",
+            "market_retrieved_at": "2014-11-17T21:01:00Z",
+            "decided_at": "2014-11-17T21:05:00Z",
+            "executed_at": "2014-11-17T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-02",
+          "strategy": "equal_weight",
+          "portfolio_return": "-0.00320866731985348103401234184",
+          "benchmark_return": "-0.0025123656496915356217375314",
+          "turnover": "1.0",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "d269d09e-1d3b-5b1a-bf30-0e9815b985e5",
+            "fd68c2a7-747a-5144-81e2-0b8cbaa0c34d",
+            "787f6559-5319-5d93-b1b7-38022e6c7781",
+            "5be01757-eaec-5e0a-b04f-67eac4269d41",
+            "5de24b1f-104f-5e57-a64b-9833c36fdfde"
+          ],
+          "timing": {
+            "research_cutoff": "2014-11-18T21:05:00Z",
+            "market_timestamp": "2014-11-18T21:00:00Z",
+            "market_retrieved_at": "2014-11-18T21:01:00Z",
+            "decided_at": "2014-11-18T21:05:00Z",
+            "executed_at": "2014-11-18T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-03",
+          "strategy": "equal_weight",
+          "portfolio_return": "0.0105303078549094091259079438",
+          "benchmark_return": "0.009706928456667777149262647",
+          "turnover": "1.0",
+          "won": true,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "e685966d-5613-5c68-8625-bedb06b94125",
+            "97f01154-e785-5a26-9f2a-5f1436e11e19",
+            "ac29cfc8-fb95-5445-b628-d6d414e30556",
+            "b4d179ca-4fa0-55d5-9610-94f5d0974caf",
+            "94aec7e4-63d2-5e93-a824-d65af6fa0a59"
+          ],
+          "timing": {
+            "research_cutoff": "2014-11-19T21:05:00Z",
+            "market_timestamp": "2014-11-19T21:00:00Z",
+            "market_retrieved_at": "2014-11-19T21:01:00Z",
+            "decided_at": "2014-11-19T21:05:00Z",
+            "executed_at": "2014-11-19T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-04",
+          "strategy": "equal_weight",
+          "portfolio_return": "0.00083204295235188721025414474",
+          "benchmark_return": "0.001829249746585128618607663",
+          "turnover": "1.0",
+          "won": true,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "c0012739-c5fb-5643-a235-f838f2f7295b",
+            "9f7e7569-8c3f-5de0-82f2-4da0e1ded2b0",
+            "9974757e-1cc1-52b0-b538-7ba3a2b8d262",
+            "2fd68d52-7683-5ac7-9049-5bae5061ce62",
+            "6b493aad-2730-5f76-9bce-afc8befa50db"
+          ],
+          "timing": {
+            "research_cutoff": "2014-11-20T21:05:00Z",
+            "market_timestamp": "2014-11-20T21:00:00Z",
+            "market_retrieved_at": "2014-11-20T21:01:00Z",
+            "decided_at": "2014-11-20T21:05:00Z",
+            "executed_at": "2014-11-20T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-05",
+          "strategy": "equal_weight",
+          "portfolio_return": "0.00174276577576038836114347656",
+          "benchmark_return": "0.003198998103270652391415973",
+          "turnover": "1.0",
+          "won": true,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "806fc756-709c-59f5-a0de-ca83ba21c17a",
+            "b253c881-2964-5599-b0fb-cad681b08029",
+            "a69cfcba-4656-55e9-9728-9e0025dbd6f2",
+            "f7afe919-922a-5a5e-b90d-08807e5fc219",
+            "cd6c20f7-7f59-54ef-a672-807dd0e52c5f"
+          ],
+          "timing": {
+            "research_cutoff": "2014-11-21T21:05:00Z",
+            "market_timestamp": "2014-11-21T21:00:00Z",
+            "market_retrieved_at": "2014-11-21T21:01:00Z",
+            "decided_at": "2014-11-21T21:05:00Z",
+            "executed_at": "2014-11-21T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-06",
+          "strategy": "equal_weight",
+          "portfolio_return": "-0.00578016844303334961752343402",
+          "benchmark_return": "-0.0073906142185128288386221180",
+          "turnover": "1.0",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "fb659e3b-8fd4-54cf-8c1c-f863bd054b0f",
+            "085c7f26-8cee-58a0-bc47-72fb29d55de8",
+            "72191edb-ba93-54a3-b37e-f77efefdd1bf",
+            "514d12ea-d1f5-54f6-916d-d08ea1b84881",
+            "06278a9b-0248-5da4-9e9d-b2f953abde1a"
+          ],
+          "timing": {
+            "research_cutoff": "2014-11-24T21:05:00Z",
+            "market_timestamp": "2014-11-24T21:00:00Z",
+            "market_retrieved_at": "2014-11-24T21:01:00Z",
+            "decided_at": "2014-11-24T21:05:00Z",
+            "executed_at": "2014-11-24T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-07",
+          "strategy": "equal_weight",
+          "portfolio_return": "0.00760514185351592230148914132",
+          "benchmark_return": "0.006372472587514448294388755",
+          "turnover": "1.0",
+          "won": true,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "7f7c0223-d315-52bc-8b39-49fb2eaf47dc",
+            "0c7b2f80-35a7-5580-a5ab-2ea01f3c8350",
+            "d065e96b-b148-504f-8241-3637ed7cb577",
+            "8bcc66bb-9af5-543a-9320-897e9c7b6511",
+            "3bec022a-1177-586e-a2a3-dda66cc90288"
+          ],
+          "timing": {
+            "research_cutoff": "2014-11-25T21:05:00Z",
+            "market_timestamp": "2014-11-25T21:00:00Z",
+            "market_retrieved_at": "2014-11-25T21:01:00Z",
+            "decided_at": "2014-11-25T21:05:00Z",
+            "executed_at": "2014-11-25T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-08",
+          "strategy": "equal_weight",
+          "portfolio_return": "-0.01039175305016920528733300856",
+          "benchmark_return": "-0.0133149231278601399322521953",
+          "turnover": "1.0",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "915d782b-0310-5387-b98d-61d92fe501de",
+            "16453618-3cf3-59bd-9072-3d38f9a6860d",
+            "f756b45e-e064-5bbc-9bec-bc639c93d57b",
+            "52394c71-c45e-569d-bb8b-75246b583922",
+            "0123a311-974e-5176-b756-21ed97522d36"
+          ],
+          "timing": {
+            "research_cutoff": "2014-11-26T21:05:00Z",
+            "market_timestamp": "2014-11-26T21:00:00Z",
+            "market_retrieved_at": "2014-11-26T21:01:00Z",
+            "decided_at": "2014-11-26T21:05:00Z",
+            "executed_at": "2014-11-26T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-09",
+          "strategy": "equal_weight",
+          "portfolio_return": "-0.00411382458277623570488431634",
+          "benchmark_return": "-0.0064482051439090769267652375",
+          "turnover": "1.0",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "dda2867b-9b42-58d9-90e0-1e2cbed4426a",
+            "e832610a-54fa-5aec-97b7-7e55c558e6ff",
+            "1aad4ecf-4a77-585e-a086-7171dc0cf40e",
+            "e334a261-b8b6-5d6e-816c-d05aa72de119",
+            "8b3071a0-db12-5f27-9a9f-c66fe81eb7fc"
+          ],
+          "timing": {
+            "research_cutoff": "2014-11-28T21:05:00Z",
+            "market_timestamp": "2014-11-28T21:00:00Z",
+            "market_retrieved_at": "2014-11-28T21:01:00Z",
+            "decided_at": "2014-11-28T21:05:00Z",
+            "executed_at": "2014-11-28T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-10",
+          "strategy": "equal_weight",
+          "portfolio_return": "0.00371854069795431903386183018",
+          "benchmark_return": "0.004325110168950854790418277",
+          "turnover": "1.0",
+          "won": true,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "cc2bdab3-e3a1-5d67-90d4-09ad1a00dda8",
+            "b62e5797-2b66-5335-a2ec-157535e509a1",
+            "4864918d-3d0b-5e33-8cbc-f5847871ce50",
+            "54be6806-76dd-54cc-a17f-169faab40f6b",
+            "2f2169c4-a518-5707-866b-921c613e0437"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-01T21:05:00Z",
+            "market_timestamp": "2014-12-01T21:00:00Z",
+            "market_retrieved_at": "2014-12-01T21:01:00Z",
+            "decided_at": "2014-12-01T21:05:00Z",
+            "executed_at": "2014-12-01T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-11",
+          "strategy": "equal_weight",
+          "portfolio_return": "0.00906675177084854077895687486",
+          "benchmark_return": "0.008049984756173827529538040",
+          "turnover": "1.0",
+          "won": true,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "8700a6e7-f189-5e52-98f9-20d35f07b3d3",
+            "2034b5a9-6225-59e8-90be-1b5922b563bb",
+            "5564d9c5-8fca-5c63-9b1f-b7f90932634d",
+            "347023be-fa64-5c72-a8ee-4da2c579f04f",
+            "04f0db28-fc49-593e-9752-7824e5817c7d"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-02T21:05:00Z",
+            "market_timestamp": "2014-12-02T21:00:00Z",
+            "market_retrieved_at": "2014-12-02T21:01:00Z",
+            "decided_at": "2014-12-02T21:05:00Z",
+            "executed_at": "2014-12-02T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-12",
+          "strategy": "equal_weight",
+          "portfolio_return": "-0.00093736998445743233987267360",
+          "benchmark_return": "-0.0016022956267243286836239211",
+          "turnover": "1.0",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "b14f80c1-5cd9-552a-a918-fbb78ea5317b",
+            "e62fad01-b751-527f-895f-da921a3a9585",
+            "eff90e0a-f855-5625-ab6e-d835a4d7ebfd",
+            "a829bd4a-8583-5e36-86ff-3ec761003c60",
+            "aba62895-d19c-55d1-a5d3-493c10d8d610"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-03T21:05:00Z",
+            "market_timestamp": "2014-12-03T21:00:00Z",
+            "market_retrieved_at": "2014-12-03T21:01:00Z",
+            "decided_at": "2014-12-03T21:05:00Z",
+            "executed_at": "2014-12-03T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-13",
+          "strategy": "equal_weight",
+          "portfolio_return": "-0.00353527561736827618513271858",
+          "benchmark_return": "-0.0047340609903157320472736395",
+          "turnover": "1.0",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "342f4a84-898a-5dc1-81b5-08c7083b2e6b",
+            "ce091b19-e0f4-5e74-8ad2-2bb4391bba2b",
+            "b4b4914f-912c-5444-9eea-8cd0ad677e03",
+            "d87139ba-d14e-54e3-954d-c87087738dcd",
+            "a36a2c4b-b288-5f85-9608-6925ca2851a5"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-04T21:05:00Z",
+            "market_timestamp": "2014-12-04T21:00:00Z",
+            "market_retrieved_at": "2014-12-04T21:01:00Z",
+            "decided_at": "2014-12-04T21:05:00Z",
+            "executed_at": "2014-12-04T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-14",
+          "strategy": "equal_weight",
+          "portfolio_return": "-0.01867424420685273678171381950",
+          "benchmark_return": "-0.0204815053988507982393482896",
+          "turnover": "1.0",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "2e6525b7-9776-5b81-b5df-9e35f6301860",
+            "bb775667-ddbe-5c36-8653-fc870e997ab0",
+            "1b67301e-d206-56cd-9457-6c26d191b63e",
+            "cf649274-df19-5927-b717-73321667eeee",
+            "04af6141-75a4-5830-893e-d503fb9979cb"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-05T21:05:00Z",
+            "market_timestamp": "2014-12-05T21:00:00Z",
+            "market_retrieved_at": "2014-12-05T21:01:00Z",
+            "decided_at": "2014-12-05T21:05:00Z",
+            "executed_at": "2014-12-05T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-15",
+          "strategy": "equal_weight",
+          "portfolio_return": "0.00215534827336234453555628586",
+          "benchmark_return": "0.004635545912223422277449067",
+          "turnover": "1.0",
+          "won": true,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "f4c30613-265c-51af-b1f3-5439dca3151f",
+            "a3a179c2-390a-5dab-956d-18178c2b6130",
+            "acbd566f-d244-57c9-a139-4bef3ae01de5",
+            "8e64f1c2-96c3-5d18-8956-002934fbca1d",
+            "b2f4b166-8715-5c4e-96c7-f64eca5c000f"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-08T21:05:00Z",
+            "market_timestamp": "2014-12-08T21:00:00Z",
+            "market_retrieved_at": "2014-12-08T21:01:00Z",
+            "decided_at": "2014-12-08T21:05:00Z",
+            "executed_at": "2014-12-08T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-16",
+          "strategy": "equal_weight",
+          "portfolio_return": "-0.02145336313973715432569516236",
+          "benchmark_return": "-0.0219066763396085545038972879",
+          "turnover": "1.0",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "d4ce1cdc-9709-577b-bfb3-07e850479cd8",
+            "3c5fac13-241a-5989-824d-e1bde1cd6a1a",
+            "5b3afdbd-af0e-5ae0-800c-b63b56620168",
+            "431ff730-3064-5953-a3e1-b363643bc2b4",
+            "34ebc46f-65ee-5d9d-bd90-98b7abbece4e"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-09T21:05:00Z",
+            "market_timestamp": "2014-12-09T21:00:00Z",
+            "market_retrieved_at": "2014-12-09T21:01:00Z",
+            "decided_at": "2014-12-09T21:05:00Z",
+            "executed_at": "2014-12-09T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-17",
+          "strategy": "equal_weight",
+          "portfolio_return": "0.00198217043005771113321017252",
+          "benchmark_return": "0.001617540766964874656605155",
+          "turnover": "1.0",
+          "won": true,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "dbef88d9-260d-5d45-ba1a-071c3f2f21dd",
+            "ec5c8581-e525-5d91-8f2f-20acbfbacd20",
+            "3b200f0e-6198-5938-a218-76122f283e86",
+            "586c2aab-8c82-5414-87dd-3a977fd8211e",
+            "78a6fdef-eef9-5205-ab50-93f1eb7001d5"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-10T21:05:00Z",
+            "market_timestamp": "2014-12-10T21:00:00Z",
+            "market_retrieved_at": "2014-12-10T21:01:00Z",
+            "decided_at": "2014-12-10T21:05:00Z",
+            "executed_at": "2014-12-10T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-18",
+          "strategy": "equal_weight",
+          "portfolio_return": "-0.02033150889244174311846556378",
+          "benchmark_return": "-0.0198168445405921293601394416",
+          "turnover": "1.0",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "224d32ab-30d3-5835-b85c-6866b170de53",
+            "0b207423-7384-5533-845f-2c1882b4dbd1",
+            "e137bb13-3c9e-5a6e-aa25-06bda605fb2e",
+            "d7460a15-63a7-52c4-8be2-8a3fcdb346d1",
+            "25c297b0-9e53-573a-9c36-a6e14b830390"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-11T21:05:00Z",
+            "market_timestamp": "2014-12-11T21:00:00Z",
+            "market_retrieved_at": "2014-12-11T21:01:00Z",
+            "decided_at": "2014-12-11T21:05:00Z",
+            "executed_at": "2014-12-11T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-19",
+          "strategy": "equal_weight",
+          "portfolio_return": "-0.00505005867985695469197524638",
+          "benchmark_return": "-0.0060245911697993649370853036",
+          "turnover": "1.0",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "7cbb08f5-8c0a-5924-8ac0-aca3502c2745",
+            "261b9759-d849-53d3-923f-a14f226ce806",
+            "25f52cdb-c2f9-5992-8e4e-7f6336667c9d",
+            "0e553a1b-7c14-5912-966f-d02202bdd9ab",
+            "01a3608b-d38e-5bc6-8380-54e319aed4ea"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-12T21:05:00Z",
+            "market_timestamp": "2014-12-12T21:00:00Z",
+            "market_retrieved_at": "2014-12-12T21:01:00Z",
+            "decided_at": "2014-12-12T21:05:00Z",
+            "executed_at": "2014-12-12T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-20",
+          "strategy": "equal_weight",
+          "portfolio_return": "-0.01542963523323237451979859652",
+          "benchmark_return": "-0.0142385987632043847248515768",
+          "turnover": "1.0",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "a6297da6-fbb7-5775-8c8f-9e02a41372ed",
+            "72aa5393-2261-5239-ad33-0c9023231c14",
+            "1d2f8ad1-dd86-585c-a8ac-fddee94b2ab0",
+            "bb809388-6dfb-51ad-b06e-cbbee4188812",
+            "8b33aeca-2a39-58d3-8093-8b092de76ae4"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-15T21:05:00Z",
+            "market_timestamp": "2014-12-15T21:00:00Z",
+            "market_retrieved_at": "2014-12-15T21:01:00Z",
+            "decided_at": "2014-12-15T21:05:00Z",
+            "executed_at": "2014-12-15T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-21",
+          "strategy": "equal_weight",
+          "portfolio_return": "0.0269122215679962234736605182",
+          "benchmark_return": "0.025768304386742204741961878",
+          "turnover": "1.0",
+          "won": true,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "261105ac-cdc9-5f30-9ceb-0ae82c4d76f6",
+            "9ec482bc-38d5-5e2f-8a24-a8cd957c2127",
+            "bc71d00d-fd2f-56f3-a808-0ff8b42a7a74",
+            "05349277-fd54-5a7c-a0b5-a001a14e14cd",
+            "9ee83d02-777e-51ce-82f8-d7b007f3a4e2"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-16T21:05:00Z",
+            "market_timestamp": "2014-12-16T21:00:00Z",
+            "market_retrieved_at": "2014-12-16T21:01:00Z",
+            "decided_at": "2014-12-16T21:05:00Z",
+            "executed_at": "2014-12-16T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-22",
+          "strategy": "equal_weight",
+          "portfolio_return": "0.0247799911864661727273408712",
+          "benchmark_return": "0.027359553543232146019042308",
+          "turnover": "1.0",
+          "won": true,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "fb469c0b-66dc-54fb-896c-908cf1967bbf",
+            "d325c7fd-01f1-5bdc-9248-42726d1db05f",
+            "c47a02ab-2830-520f-8a3e-5fb9f3b66f6c",
+            "49f88c39-76df-55aa-8e17-ba5ea3eccc5a",
+            "bef4cab3-a839-5a05-9c78-f589719d4644"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-17T21:05:00Z",
+            "market_timestamp": "2014-12-17T21:00:00Z",
+            "market_retrieved_at": "2014-12-17T21:01:00Z",
+            "decided_at": "2014-12-17T21:05:00Z",
+            "executed_at": "2014-12-17T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-23",
+          "strategy": "equal_weight",
+          "portfolio_return": "0.00782844064942223474260438476",
+          "benchmark_return": "0.006822769962382121252493639",
+          "turnover": "1.0",
+          "won": true,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "9f7bdb0a-b87d-5ce3-92e5-2af766fb4fa8",
+            "8a911b62-8706-58e1-98ef-0cb07265617d",
+            "6a3ff525-2431-56bf-8b90-04fb532bc4eb",
+            "8931c3ff-9013-5618-a2d0-e0ceff2bb7aa",
+            "d6a8fd33-89c7-5d7e-a624-145c4172d177"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-18T21:05:00Z",
+            "market_timestamp": "2014-12-18T21:00:00Z",
+            "market_retrieved_at": "2014-12-18T21:01:00Z",
+            "decided_at": "2014-12-18T21:05:00Z",
+            "executed_at": "2014-12-18T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-24",
+          "strategy": "equal_weight",
+          "portfolio_return": "0.00743992790658710300084111410",
+          "benchmark_return": "0.005788951446161013626269967",
+          "turnover": "1.0",
+          "won": true,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "81701283-2cf9-5d27-8d9e-db44516a64c6",
+            "9c018f9f-0172-5d8e-8908-92e09c9b0fe8",
+            "b16dda93-c57e-53f9-a608-edff7f5af97f",
+            "bada085a-b235-5163-8ca6-e38b4deb479b",
+            "477d620e-f8ca-540d-af9f-1ace4e244d35"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-19T21:05:00Z",
+            "market_timestamp": "2014-12-19T21:00:00Z",
+            "market_retrieved_at": "2014-12-19T21:01:00Z",
+            "decided_at": "2014-12-19T21:05:00Z",
+            "executed_at": "2014-12-19T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-25",
+          "strategy": "equal_weight",
+          "portfolio_return": "0.00352841847940761408592123776",
+          "benchmark_return": "0.004143204770443059289209754",
+          "turnover": "1.0",
+          "won": true,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "a1fe4e6c-7c35-5907-9d75-fc30c972f3c4",
+            "408e7d31-9036-5510-9b1b-a81c973c786d",
+            "9d97d684-f6a4-5e99-bdce-1fb92a3c71df",
+            "303b993f-6cd4-5ce9-a654-85e05937d28d",
+            "e8154731-4ded-5f95-a9e4-4c5953a71763"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-22T21:05:00Z",
+            "market_timestamp": "2014-12-22T21:00:00Z",
+            "market_retrieved_at": "2014-12-22T21:01:00Z",
+            "decided_at": "2014-12-22T21:05:00Z",
+            "executed_at": "2014-12-22T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-26",
+          "strategy": "equal_weight",
+          "portfolio_return": "-0.00595151437874871501908540056",
+          "benchmark_return": "-0.0062125021038436525649076934",
+          "turnover": "1.0",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "548d3174-d2ae-5f18-ace6-558e6095375c",
+            "00e7bb90-a91f-5f7b-9874-56e9e1d1bfb4",
+            "80f372b5-d9fc-5ca7-82fc-2af0ee13d5f5",
+            "e1fed594-d5fc-5b8d-a0db-22956fd11e19",
+            "617e0b9a-6c59-522b-b5f0-980cd17dd9d3"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-23T21:05:00Z",
+            "market_timestamp": "2014-12-23T21:00:00Z",
+            "market_retrieved_at": "2014-12-23T21:01:00Z",
+            "decided_at": "2014-12-23T21:05:00Z",
+            "executed_at": "2014-12-23T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-27",
+          "strategy": "equal_weight",
+          "portfolio_return": "0.00233254766629681413751520162",
+          "benchmark_return": "0.004492338602784711492532557",
+          "turnover": "1.0",
+          "won": true,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "53b64bef-09d2-5a46-8b78-8c24aee5a53a",
+            "be5f2f42-1277-5106-9ae4-4a2c56546b75",
+            "05ab3e46-d23e-5280-b6b3-c40617994e98",
+            "3bdb74f0-7688-58c1-89e8-0c8058a928a9",
+            "73205a51-e577-56e5-9a61-18df3981e8b6"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-24T21:05:00Z",
+            "market_timestamp": "2014-12-24T21:00:00Z",
+            "market_retrieved_at": "2014-12-24T21:01:00Z",
+            "decided_at": "2014-12-24T21:05:00Z",
+            "executed_at": "2014-12-24T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-28",
+          "strategy": "equal_weight",
+          "portfolio_return": "-0.00302000373290514129446481556",
+          "benchmark_return": "-0.0024581173238475784077897180",
+          "turnover": "1.0",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "55208008-f26d-5aff-9a5d-5a30060722d1",
+            "f846c068-3cfe-5f7c-9b35-2bdc61e93b43",
+            "43afd24d-9ec9-5c83-a048-7e01cfd31368",
+            "1a30d9f3-051b-50e2-bcdf-d8dc50acc6f3",
+            "0a0c2e20-7a2a-56e0-93c0-d22f19bac5b1"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-26T21:05:00Z",
+            "market_timestamp": "2014-12-26T21:00:00Z",
+            "market_retrieved_at": "2014-12-26T21:01:00Z",
+            "decided_at": "2014-12-26T21:05:00Z",
+            "executed_at": "2014-12-26T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-29",
+          "strategy": "equal_weight",
+          "portfolio_return": "-0.00773318530784075684777639056",
+          "benchmark_return": "-0.0076224149611457364371240230",
+          "turnover": "1.0",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "e40616b5-c8c3-5e0f-b316-7a2c78e189b9",
+            "097b590c-dc40-588d-97eb-457eccf602a9",
+            "fb51388f-1559-5802-bb38-9675dc1f4395",
+            "f2d45556-6b46-5874-9119-5bd3ec434bcf",
+            "e650bac1-27f6-52f0-a5b1-698eb726a368"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-29T21:05:00Z",
+            "market_timestamp": "2014-12-29T21:00:00Z",
+            "market_retrieved_at": "2014-12-29T21:01:00Z",
+            "decided_at": "2014-12-29T21:05:00Z",
+            "executed_at": "2014-12-29T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-30",
+          "strategy": "equal_weight",
+          "portfolio_return": "-0.01326287296063845704936891428",
+          "benchmark_return": "-0.0133359956170157253339905487",
+          "turnover": "1.0",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "289d8463-98ad-5851-b1a9-53f6df3b2ab9",
+            "29056ee5-f85b-506c-88e6-d319d3dde745",
+            "19d58cf6-9bab-5c1d-bd2d-fc3cd4a48315",
+            "1052f0ab-c2a2-5c1f-b090-13cd879a6258",
+            "5aeede47-250b-5688-9efd-0861a6b12bbb"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-30T21:05:00Z",
+            "market_timestamp": "2014-12-30T21:00:00Z",
+            "market_retrieved_at": "2014-12-30T21:01:00Z",
+            "decided_at": "2014-12-30T21:05:00Z",
+            "executed_at": "2014-12-30T21:05:00Z"
+          }
+        }
+      ]
+    },
+    {
+      "strategy": "no_trade",
+      "metrics": {
+        "total_return": "0",
+        "benchmark_return": "-0.0305725802417637632777843353",
+        "benchmark_relative_return": "0.0305725802417637632777843353",
+        "annualized_volatility": "0E-26",
+        "sharpe": null,
+        "max_drawdown": "0",
+        "turnover": "0",
+        "win_rate": "0",
+        "decision_validity": "1",
+        "citation_validity": "1",
+        "tool_success_rate": "1",
+        "average_latency_ms": "0",
+        "model_api_cost_usd": "0"
+      },
+      "scenarios": [
+        {
+          "scenario_id": "hist-2014-01",
+          "strategy": "no_trade",
+          "portfolio_return": "0",
+          "benchmark_return": "0.004901404569226850432341149",
+          "turnover": "0",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [],
+          "timing": {
+            "research_cutoff": "2014-11-17T21:05:00Z",
+            "market_timestamp": "2014-11-17T21:00:00Z",
+            "market_retrieved_at": "2014-11-17T21:01:00Z",
+            "decided_at": "2014-11-17T21:05:00Z",
+            "executed_at": "2014-11-17T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-02",
+          "strategy": "no_trade",
+          "portfolio_return": "0",
+          "benchmark_return": "-0.0025123656496915356217375314",
+          "turnover": "0",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [],
+          "timing": {
+            "research_cutoff": "2014-11-18T21:05:00Z",
+            "market_timestamp": "2014-11-18T21:00:00Z",
+            "market_retrieved_at": "2014-11-18T21:01:00Z",
+            "decided_at": "2014-11-18T21:05:00Z",
+            "executed_at": "2014-11-18T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-03",
+          "strategy": "no_trade",
+          "portfolio_return": "0",
+          "benchmark_return": "0.009706928456667777149262647",
+          "turnover": "0",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [],
+          "timing": {
+            "research_cutoff": "2014-11-19T21:05:00Z",
+            "market_timestamp": "2014-11-19T21:00:00Z",
+            "market_retrieved_at": "2014-11-19T21:01:00Z",
+            "decided_at": "2014-11-19T21:05:00Z",
+            "executed_at": "2014-11-19T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-04",
+          "strategy": "no_trade",
+          "portfolio_return": "0",
+          "benchmark_return": "0.001829249746585128618607663",
+          "turnover": "0",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [],
+          "timing": {
+            "research_cutoff": "2014-11-20T21:05:00Z",
+            "market_timestamp": "2014-11-20T21:00:00Z",
+            "market_retrieved_at": "2014-11-20T21:01:00Z",
+            "decided_at": "2014-11-20T21:05:00Z",
+            "executed_at": "2014-11-20T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-05",
+          "strategy": "no_trade",
+          "portfolio_return": "0",
+          "benchmark_return": "0.003198998103270652391415973",
+          "turnover": "0",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [],
+          "timing": {
+            "research_cutoff": "2014-11-21T21:05:00Z",
+            "market_timestamp": "2014-11-21T21:00:00Z",
+            "market_retrieved_at": "2014-11-21T21:01:00Z",
+            "decided_at": "2014-11-21T21:05:00Z",
+            "executed_at": "2014-11-21T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-06",
+          "strategy": "no_trade",
+          "portfolio_return": "0",
+          "benchmark_return": "-0.0073906142185128288386221180",
+          "turnover": "0",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [],
+          "timing": {
+            "research_cutoff": "2014-11-24T21:05:00Z",
+            "market_timestamp": "2014-11-24T21:00:00Z",
+            "market_retrieved_at": "2014-11-24T21:01:00Z",
+            "decided_at": "2014-11-24T21:05:00Z",
+            "executed_at": "2014-11-24T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-07",
+          "strategy": "no_trade",
+          "portfolio_return": "0",
+          "benchmark_return": "0.006372472587514448294388755",
+          "turnover": "0",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [],
+          "timing": {
+            "research_cutoff": "2014-11-25T21:05:00Z",
+            "market_timestamp": "2014-11-25T21:00:00Z",
+            "market_retrieved_at": "2014-11-25T21:01:00Z",
+            "decided_at": "2014-11-25T21:05:00Z",
+            "executed_at": "2014-11-25T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-08",
+          "strategy": "no_trade",
+          "portfolio_return": "0",
+          "benchmark_return": "-0.0133149231278601399322521953",
+          "turnover": "0",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [],
+          "timing": {
+            "research_cutoff": "2014-11-26T21:05:00Z",
+            "market_timestamp": "2014-11-26T21:00:00Z",
+            "market_retrieved_at": "2014-11-26T21:01:00Z",
+            "decided_at": "2014-11-26T21:05:00Z",
+            "executed_at": "2014-11-26T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-09",
+          "strategy": "no_trade",
+          "portfolio_return": "0",
+          "benchmark_return": "-0.0064482051439090769267652375",
+          "turnover": "0",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [],
+          "timing": {
+            "research_cutoff": "2014-11-28T21:05:00Z",
+            "market_timestamp": "2014-11-28T21:00:00Z",
+            "market_retrieved_at": "2014-11-28T21:01:00Z",
+            "decided_at": "2014-11-28T21:05:00Z",
+            "executed_at": "2014-11-28T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-10",
+          "strategy": "no_trade",
+          "portfolio_return": "0",
+          "benchmark_return": "0.004325110168950854790418277",
+          "turnover": "0",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [],
+          "timing": {
+            "research_cutoff": "2014-12-01T21:05:00Z",
+            "market_timestamp": "2014-12-01T21:00:00Z",
+            "market_retrieved_at": "2014-12-01T21:01:00Z",
+            "decided_at": "2014-12-01T21:05:00Z",
+            "executed_at": "2014-12-01T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-11",
+          "strategy": "no_trade",
+          "portfolio_return": "0",
+          "benchmark_return": "0.008049984756173827529538040",
+          "turnover": "0",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [],
+          "timing": {
+            "research_cutoff": "2014-12-02T21:05:00Z",
+            "market_timestamp": "2014-12-02T21:00:00Z",
+            "market_retrieved_at": "2014-12-02T21:01:00Z",
+            "decided_at": "2014-12-02T21:05:00Z",
+            "executed_at": "2014-12-02T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-12",
+          "strategy": "no_trade",
+          "portfolio_return": "0",
+          "benchmark_return": "-0.0016022956267243286836239211",
+          "turnover": "0",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [],
+          "timing": {
+            "research_cutoff": "2014-12-03T21:05:00Z",
+            "market_timestamp": "2014-12-03T21:00:00Z",
+            "market_retrieved_at": "2014-12-03T21:01:00Z",
+            "decided_at": "2014-12-03T21:05:00Z",
+            "executed_at": "2014-12-03T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-13",
+          "strategy": "no_trade",
+          "portfolio_return": "0",
+          "benchmark_return": "-0.0047340609903157320472736395",
+          "turnover": "0",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [],
+          "timing": {
+            "research_cutoff": "2014-12-04T21:05:00Z",
+            "market_timestamp": "2014-12-04T21:00:00Z",
+            "market_retrieved_at": "2014-12-04T21:01:00Z",
+            "decided_at": "2014-12-04T21:05:00Z",
+            "executed_at": "2014-12-04T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-14",
+          "strategy": "no_trade",
+          "portfolio_return": "0",
+          "benchmark_return": "-0.0204815053988507982393482896",
+          "turnover": "0",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [],
+          "timing": {
+            "research_cutoff": "2014-12-05T21:05:00Z",
+            "market_timestamp": "2014-12-05T21:00:00Z",
+            "market_retrieved_at": "2014-12-05T21:01:00Z",
+            "decided_at": "2014-12-05T21:05:00Z",
+            "executed_at": "2014-12-05T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-15",
+          "strategy": "no_trade",
+          "portfolio_return": "0",
+          "benchmark_return": "0.004635545912223422277449067",
+          "turnover": "0",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [],
+          "timing": {
+            "research_cutoff": "2014-12-08T21:05:00Z",
+            "market_timestamp": "2014-12-08T21:00:00Z",
+            "market_retrieved_at": "2014-12-08T21:01:00Z",
+            "decided_at": "2014-12-08T21:05:00Z",
+            "executed_at": "2014-12-08T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-16",
+          "strategy": "no_trade",
+          "portfolio_return": "0",
+          "benchmark_return": "-0.0219066763396085545038972879",
+          "turnover": "0",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [],
+          "timing": {
+            "research_cutoff": "2014-12-09T21:05:00Z",
+            "market_timestamp": "2014-12-09T21:00:00Z",
+            "market_retrieved_at": "2014-12-09T21:01:00Z",
+            "decided_at": "2014-12-09T21:05:00Z",
+            "executed_at": "2014-12-09T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-17",
+          "strategy": "no_trade",
+          "portfolio_return": "0",
+          "benchmark_return": "0.001617540766964874656605155",
+          "turnover": "0",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [],
+          "timing": {
+            "research_cutoff": "2014-12-10T21:05:00Z",
+            "market_timestamp": "2014-12-10T21:00:00Z",
+            "market_retrieved_at": "2014-12-10T21:01:00Z",
+            "decided_at": "2014-12-10T21:05:00Z",
+            "executed_at": "2014-12-10T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-18",
+          "strategy": "no_trade",
+          "portfolio_return": "0",
+          "benchmark_return": "-0.0198168445405921293601394416",
+          "turnover": "0",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [],
+          "timing": {
+            "research_cutoff": "2014-12-11T21:05:00Z",
+            "market_timestamp": "2014-12-11T21:00:00Z",
+            "market_retrieved_at": "2014-12-11T21:01:00Z",
+            "decided_at": "2014-12-11T21:05:00Z",
+            "executed_at": "2014-12-11T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-19",
+          "strategy": "no_trade",
+          "portfolio_return": "0",
+          "benchmark_return": "-0.0060245911697993649370853036",
+          "turnover": "0",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [],
+          "timing": {
+            "research_cutoff": "2014-12-12T21:05:00Z",
+            "market_timestamp": "2014-12-12T21:00:00Z",
+            "market_retrieved_at": "2014-12-12T21:01:00Z",
+            "decided_at": "2014-12-12T21:05:00Z",
+            "executed_at": "2014-12-12T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-20",
+          "strategy": "no_trade",
+          "portfolio_return": "0",
+          "benchmark_return": "-0.0142385987632043847248515768",
+          "turnover": "0",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [],
+          "timing": {
+            "research_cutoff": "2014-12-15T21:05:00Z",
+            "market_timestamp": "2014-12-15T21:00:00Z",
+            "market_retrieved_at": "2014-12-15T21:01:00Z",
+            "decided_at": "2014-12-15T21:05:00Z",
+            "executed_at": "2014-12-15T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-21",
+          "strategy": "no_trade",
+          "portfolio_return": "0",
+          "benchmark_return": "0.025768304386742204741961878",
+          "turnover": "0",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [],
+          "timing": {
+            "research_cutoff": "2014-12-16T21:05:00Z",
+            "market_timestamp": "2014-12-16T21:00:00Z",
+            "market_retrieved_at": "2014-12-16T21:01:00Z",
+            "decided_at": "2014-12-16T21:05:00Z",
+            "executed_at": "2014-12-16T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-22",
+          "strategy": "no_trade",
+          "portfolio_return": "0",
+          "benchmark_return": "0.027359553543232146019042308",
+          "turnover": "0",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [],
+          "timing": {
+            "research_cutoff": "2014-12-17T21:05:00Z",
+            "market_timestamp": "2014-12-17T21:00:00Z",
+            "market_retrieved_at": "2014-12-17T21:01:00Z",
+            "decided_at": "2014-12-17T21:05:00Z",
+            "executed_at": "2014-12-17T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-23",
+          "strategy": "no_trade",
+          "portfolio_return": "0",
+          "benchmark_return": "0.006822769962382121252493639",
+          "turnover": "0",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [],
+          "timing": {
+            "research_cutoff": "2014-12-18T21:05:00Z",
+            "market_timestamp": "2014-12-18T21:00:00Z",
+            "market_retrieved_at": "2014-12-18T21:01:00Z",
+            "decided_at": "2014-12-18T21:05:00Z",
+            "executed_at": "2014-12-18T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-24",
+          "strategy": "no_trade",
+          "portfolio_return": "0",
+          "benchmark_return": "0.005788951446161013626269967",
+          "turnover": "0",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [],
+          "timing": {
+            "research_cutoff": "2014-12-19T21:05:00Z",
+            "market_timestamp": "2014-12-19T21:00:00Z",
+            "market_retrieved_at": "2014-12-19T21:01:00Z",
+            "decided_at": "2014-12-19T21:05:00Z",
+            "executed_at": "2014-12-19T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-25",
+          "strategy": "no_trade",
+          "portfolio_return": "0",
+          "benchmark_return": "0.004143204770443059289209754",
+          "turnover": "0",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [],
+          "timing": {
+            "research_cutoff": "2014-12-22T21:05:00Z",
+            "market_timestamp": "2014-12-22T21:00:00Z",
+            "market_retrieved_at": "2014-12-22T21:01:00Z",
+            "decided_at": "2014-12-22T21:05:00Z",
+            "executed_at": "2014-12-22T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-26",
+          "strategy": "no_trade",
+          "portfolio_return": "0",
+          "benchmark_return": "-0.0062125021038436525649076934",
+          "turnover": "0",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [],
+          "timing": {
+            "research_cutoff": "2014-12-23T21:05:00Z",
+            "market_timestamp": "2014-12-23T21:00:00Z",
+            "market_retrieved_at": "2014-12-23T21:01:00Z",
+            "decided_at": "2014-12-23T21:05:00Z",
+            "executed_at": "2014-12-23T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-27",
+          "strategy": "no_trade",
+          "portfolio_return": "0",
+          "benchmark_return": "0.004492338602784711492532557",
+          "turnover": "0",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [],
+          "timing": {
+            "research_cutoff": "2014-12-24T21:05:00Z",
+            "market_timestamp": "2014-12-24T21:00:00Z",
+            "market_retrieved_at": "2014-12-24T21:01:00Z",
+            "decided_at": "2014-12-24T21:05:00Z",
+            "executed_at": "2014-12-24T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-28",
+          "strategy": "no_trade",
+          "portfolio_return": "0",
+          "benchmark_return": "-0.0024581173238475784077897180",
+          "turnover": "0",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [],
+          "timing": {
+            "research_cutoff": "2014-12-26T21:05:00Z",
+            "market_timestamp": "2014-12-26T21:00:00Z",
+            "market_retrieved_at": "2014-12-26T21:01:00Z",
+            "decided_at": "2014-12-26T21:05:00Z",
+            "executed_at": "2014-12-26T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-29",
+          "strategy": "no_trade",
+          "portfolio_return": "0",
+          "benchmark_return": "-0.0076224149611457364371240230",
+          "turnover": "0",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [],
+          "timing": {
+            "research_cutoff": "2014-12-29T21:05:00Z",
+            "market_timestamp": "2014-12-29T21:00:00Z",
+            "market_retrieved_at": "2014-12-29T21:01:00Z",
+            "decided_at": "2014-12-29T21:05:00Z",
+            "executed_at": "2014-12-29T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-30",
+          "strategy": "no_trade",
+          "portfolio_return": "0",
+          "benchmark_return": "-0.0133359956170157253339905487",
+          "turnover": "0",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [],
+          "timing": {
+            "research_cutoff": "2014-12-30T21:05:00Z",
+            "market_timestamp": "2014-12-30T21:00:00Z",
+            "market_retrieved_at": "2014-12-30T21:01:00Z",
+            "decided_at": "2014-12-30T21:05:00Z",
+            "executed_at": "2014-12-30T21:05:00Z"
+          }
+        }
+      ]
+    },
+    {
+      "strategy": "random_valid_trades",
+      "metrics": {
+        "total_return": "-0.0587311099470263483773620733",
+        "benchmark_return": "-0.0305725802417637632777843353",
+        "benchmark_relative_return": "-0.0281585297052625850995777380",
+        "annualized_volatility": "0.1971888877528905304673408110",
+        "sharpe": "-2.477315660794854135392763942",
+        "max_drawdown": "0.0971528244494484076131717648",
+        "turnover": "0.8666666666666666666666666667",
+        "win_rate": "0.3666666666666666666666666667",
+        "decision_validity": "1",
+        "citation_validity": "1",
+        "tool_success_rate": "1",
+        "average_latency_ms": "0",
+        "model_api_cost_usd": "0"
+      },
+      "scenarios": [
+        {
+          "scenario_id": "hist-2014-01",
+          "strategy": "random_valid_trades",
+          "portfolio_return": "0",
+          "benchmark_return": "0.004901404569226850432341149",
+          "turnover": "0",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [],
+          "timing": {
+            "research_cutoff": "2014-11-17T21:05:00Z",
+            "market_timestamp": "2014-11-17T21:00:00Z",
+            "market_retrieved_at": "2014-11-17T21:01:00Z",
+            "decided_at": "2014-11-17T21:05:00Z",
+            "executed_at": "2014-11-17T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-02",
+          "strategy": "random_valid_trades",
+          "portfolio_return": "-0.0106689043874784191818265446",
+          "benchmark_return": "-0.0025123656496915356217375314",
+          "turnover": "1",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "da681172-d0d4-5108-a002-569d614bbef4"
+          ],
+          "timing": {
+            "research_cutoff": "2014-11-18T21:05:00Z",
+            "market_timestamp": "2014-11-18T21:00:00Z",
+            "market_retrieved_at": "2014-11-18T21:01:00Z",
+            "decided_at": "2014-11-18T21:05:00Z",
+            "executed_at": "2014-11-18T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-03",
+          "strategy": "random_valid_trades",
+          "portfolio_return": "0.002196320898226607942132025",
+          "benchmark_return": "0.009706928456667777149262647",
+          "turnover": "1",
+          "won": true,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "048396d5-aee2-5a57-8248-c88ba42f5e84"
+          ],
+          "timing": {
+            "research_cutoff": "2014-11-19T21:05:00Z",
+            "market_timestamp": "2014-11-19T21:00:00Z",
+            "market_retrieved_at": "2014-11-19T21:01:00Z",
+            "decided_at": "2014-11-19T21:05:00Z",
+            "executed_at": "2014-11-19T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-04",
+          "strategy": "random_valid_trades",
+          "portfolio_return": "-0.00222642141196879616172928515",
+          "benchmark_return": "0.001829249746585128618607663",
+          "turnover": "1.0",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "b4fdcc8e-3d57-58be-8ddd-3a3b016365ad",
+            "c6ac6df4-e4f4-5cd9-a897-ec52419b7130"
+          ],
+          "timing": {
+            "research_cutoff": "2014-11-20T21:05:00Z",
+            "market_timestamp": "2014-11-20T21:00:00Z",
+            "market_retrieved_at": "2014-11-20T21:01:00Z",
+            "decided_at": "2014-11-20T21:05:00Z",
+            "executed_at": "2014-11-20T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-05",
+          "strategy": "random_valid_trades",
+          "portfolio_return": "0.000589229771848606153013922700",
+          "benchmark_return": "0.003198998103270652391415973",
+          "turnover": "1.00",
+          "won": true,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "09a9111e-30bb-5546-a91b-86d93147b5e8",
+            "c4fd2918-aa58-59ff-9570-9270b04ec625",
+            "38a7d45b-d962-527f-ac80-f21d0c46956a",
+            "12948ab2-4a78-56f3-aff1-2b0abed443c0"
+          ],
+          "timing": {
+            "research_cutoff": "2014-11-21T21:05:00Z",
+            "market_timestamp": "2014-11-21T21:00:00Z",
+            "market_retrieved_at": "2014-11-21T21:01:00Z",
+            "decided_at": "2014-11-21T21:05:00Z",
+            "executed_at": "2014-11-21T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-06",
+          "strategy": "random_valid_trades",
+          "portfolio_return": "0",
+          "benchmark_return": "-0.0073906142185128288386221180",
+          "turnover": "0",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [],
+          "timing": {
+            "research_cutoff": "2014-11-24T21:05:00Z",
+            "market_timestamp": "2014-11-24T21:00:00Z",
+            "market_retrieved_at": "2014-11-24T21:01:00Z",
+            "decided_at": "2014-11-24T21:05:00Z",
+            "executed_at": "2014-11-24T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-07",
+          "strategy": "random_valid_trades",
+          "portfolio_return": "0",
+          "benchmark_return": "0.006372472587514448294388755",
+          "turnover": "0",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [],
+          "timing": {
+            "research_cutoff": "2014-11-25T21:05:00Z",
+            "market_timestamp": "2014-11-25T21:00:00Z",
+            "market_retrieved_at": "2014-11-25T21:01:00Z",
+            "decided_at": "2014-11-25T21:05:00Z",
+            "executed_at": "2014-11-25T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-08",
+          "strategy": "random_valid_trades",
+          "portfolio_return": "0.00033408780189051511785977485",
+          "benchmark_return": "-0.0133149231278601399322521953",
+          "turnover": "1.0",
+          "won": true,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "9cce0af4-3e1b-5345-bc00-1b3891a229e3",
+            "abf9843e-3a1b-58b5-ba82-663b607076a8"
+          ],
+          "timing": {
+            "research_cutoff": "2014-11-26T21:05:00Z",
+            "market_timestamp": "2014-11-26T21:00:00Z",
+            "market_retrieved_at": "2014-11-26T21:01:00Z",
+            "decided_at": "2014-11-26T21:05:00Z",
+            "executed_at": "2014-11-26T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-09",
+          "strategy": "random_valid_trades",
+          "portfolio_return": "-0.0185978304522199363539143582",
+          "benchmark_return": "-0.0064482051439090769267652375",
+          "turnover": "1",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "7c2d662d-d332-5354-b1c4-d6a60b23496f"
+          ],
+          "timing": {
+            "research_cutoff": "2014-11-28T21:05:00Z",
+            "market_timestamp": "2014-11-28T21:00:00Z",
+            "market_retrieved_at": "2014-11-28T21:01:00Z",
+            "decided_at": "2014-11-28T21:05:00Z",
+            "executed_at": "2014-11-28T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-10",
+          "strategy": "random_valid_trades",
+          "portfolio_return": "0.00805033350934730993776991570",
+          "benchmark_return": "0.004325110168950854790418277",
+          "turnover": "1.0",
+          "won": true,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "30aacf04-161f-5efe-a51f-ede599f474ed",
+            "90ba9cbd-c8f9-5e8b-a11f-c16d15412176"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-01T21:05:00Z",
+            "market_timestamp": "2014-12-01T21:00:00Z",
+            "market_retrieved_at": "2014-12-01T21:01:00Z",
+            "decided_at": "2014-12-01T21:05:00Z",
+            "executed_at": "2014-12-01T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-11",
+          "strategy": "random_valid_trades",
+          "portfolio_return": "0.00906675177084854077895687486",
+          "benchmark_return": "0.008049984756173827529538040",
+          "turnover": "1.0",
+          "won": true,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "d300304d-cf8e-504d-b2e5-ee0bf9508cca",
+            "41346a63-b2a0-5b18-97a0-e698697f161a",
+            "721dd964-5ac3-5aa0-9459-957da0f76591",
+            "d312dbb5-dce6-52ce-a1cf-9576d44ece34",
+            "e6f84d9c-6c7e-5a88-bfc6-e0ae9e8977d8"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-02T21:05:00Z",
+            "market_timestamp": "2014-12-02T21:00:00Z",
+            "market_retrieved_at": "2014-12-02T21:01:00Z",
+            "decided_at": "2014-12-02T21:05:00Z",
+            "executed_at": "2014-12-02T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-12",
+          "strategy": "random_valid_trades",
+          "portfolio_return": "-0.000771138573890708253934861725",
+          "benchmark_return": "-0.0016022956267243286836239211",
+          "turnover": "1.00",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "2a9c9ae4-00ce-52ab-b5dc-2016f465ee69",
+            "68898b9e-ba02-529b-9996-4b0dc4db5cb9",
+            "ce414ae0-421a-518e-8d21-a2e7c6ea49ee",
+            "944dd94c-083e-53a7-bbd7-8822e31f6842"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-03T21:05:00Z",
+            "market_timestamp": "2014-12-03T21:00:00Z",
+            "market_retrieved_at": "2014-12-03T21:01:00Z",
+            "decided_at": "2014-12-03T21:05:00Z",
+            "executed_at": "2014-12-03T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-13",
+          "strategy": "random_valid_trades",
+          "portfolio_return": "0",
+          "benchmark_return": "-0.0047340609903157320472736395",
+          "turnover": "0",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [],
+          "timing": {
+            "research_cutoff": "2014-12-04T21:05:00Z",
+            "market_timestamp": "2014-12-04T21:00:00Z",
+            "market_retrieved_at": "2014-12-04T21:01:00Z",
+            "decided_at": "2014-12-04T21:05:00Z",
+            "executed_at": "2014-12-04T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-14",
+          "strategy": "random_valid_trades",
+          "portfolio_return": "-0.01873323658961500385532207285",
+          "benchmark_return": "-0.0204815053988507982393482896",
+          "turnover": "1.0",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "db828a74-f769-5a73-b816-cc498e9a83a2",
+            "730bd774-a19e-55dd-b78c-cfac7d8ce8ed"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-05T21:05:00Z",
+            "market_timestamp": "2014-12-05T21:00:00Z",
+            "market_retrieved_at": "2014-12-05T21:01:00Z",
+            "decided_at": "2014-12-05T21:05:00Z",
+            "executed_at": "2014-12-05T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-15",
+          "strategy": "random_valid_trades",
+          "portfolio_return": "-0.0034894390411679913920728872",
+          "benchmark_return": "0.004635545912223422277449067",
+          "turnover": "1",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "6fdb04e9-add3-5348-863e-e8d2f47b491a"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-08T21:05:00Z",
+            "market_timestamp": "2014-12-08T21:00:00Z",
+            "market_retrieved_at": "2014-12-08T21:01:00Z",
+            "decided_at": "2014-12-08T21:05:00Z",
+            "executed_at": "2014-12-08T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-16",
+          "strategy": "random_valid_trades",
+          "portfolio_return": "-0.02458431372373254198011174443",
+          "benchmark_return": "-0.0219066763396085545038972879",
+          "turnover": "0.9999999999999999999999999999",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "9b7b9f42-b86e-51fa-89f7-6211376328f4",
+            "8e274170-5558-5a6d-844e-6ceb60656936",
+            "2b928b36-b3b2-53dc-b245-a4443f89e11d"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-09T21:05:00Z",
+            "market_timestamp": "2014-12-09T21:00:00Z",
+            "market_retrieved_at": "2014-12-09T21:01:00Z",
+            "decided_at": "2014-12-09T21:05:00Z",
+            "executed_at": "2014-12-09T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-17",
+          "strategy": "random_valid_trades",
+          "portfolio_return": "0.002073327845830920252361426900",
+          "benchmark_return": "0.001617540766964874656605155",
+          "turnover": "1.00",
+          "won": true,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "787b60b0-a818-534a-8003-da7a11c543d2",
+            "cb811730-f0c8-5f0c-83e5-0865d2071d26",
+            "274c4dda-4ca7-583c-a735-9302556e4ad3",
+            "5ba73966-fa32-5887-bf58-4f3bc50b74cd"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-10T21:05:00Z",
+            "market_timestamp": "2014-12-10T21:00:00Z",
+            "market_retrieved_at": "2014-12-10T21:01:00Z",
+            "decided_at": "2014-12-10T21:05:00Z",
+            "executed_at": "2014-12-10T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-18",
+          "strategy": "random_valid_trades",
+          "portfolio_return": "-0.0291481352515634761241239208",
+          "benchmark_return": "-0.0198168445405921293601394416",
+          "turnover": "1",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "0337a56f-7ed4-5bd2-84c7-5a1d7634703c"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-11T21:05:00Z",
+            "market_timestamp": "2014-12-11T21:00:00Z",
+            "market_retrieved_at": "2014-12-11T21:01:00Z",
+            "decided_at": "2014-12-11T21:05:00Z",
+            "executed_at": "2014-12-11T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-19",
+          "strategy": "random_valid_trades",
+          "portfolio_return": "-0.004806425557371352130697732075",
+          "benchmark_return": "-0.0060245911697993649370853036",
+          "turnover": "1.00",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "f3e4aecf-b9e5-5ce5-8e03-f98081b41a46",
+            "5e3adb8b-41d5-5fee-ab0b-26eec86e2e16",
+            "0be6e01b-fc81-5e05-8284-8adb16c50950",
+            "0978d44e-fba5-5caf-9d79-1df9b315058e"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-12T21:05:00Z",
+            "market_timestamp": "2014-12-12T21:00:00Z",
+            "market_retrieved_at": "2014-12-12T21:01:00Z",
+            "decided_at": "2014-12-12T21:05:00Z",
+            "executed_at": "2014-12-12T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-20",
+          "strategy": "random_valid_trades",
+          "portfolio_return": "-0.01018501232884683064879489457",
+          "benchmark_return": "-0.0142385987632043847248515768",
+          "turnover": "0.9999999999999999999999999999",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "cc61d1aa-5517-5e19-9ecd-c8c250b5a77d",
+            "673a3a95-12d4-559c-b308-47cbe387658e",
+            "d656ca06-acd0-59d7-9927-3ef9bb544cb6"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-15T21:05:00Z",
+            "market_timestamp": "2014-12-15T21:00:00Z",
+            "market_retrieved_at": "2014-12-15T21:01:00Z",
+            "decided_at": "2014-12-15T21:05:00Z",
+            "executed_at": "2014-12-15T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-21",
+          "strategy": "random_valid_trades",
+          "portfolio_return": "0.0328725275940765130953461870",
+          "benchmark_return": "0.025768304386742204741961878",
+          "turnover": "1.0",
+          "won": true,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "4fe98860-7be7-5586-919b-9625d290fdb6",
+            "411fabe5-ab3c-52f9-8590-6d59c921ef2c"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-16T21:05:00Z",
+            "market_timestamp": "2014-12-16T21:00:00Z",
+            "market_retrieved_at": "2014-12-16T21:01:00Z",
+            "decided_at": "2014-12-16T21:05:00Z",
+            "executed_at": "2014-12-16T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-22",
+          "strategy": "random_valid_trades",
+          "portfolio_return": "0.003971882222947726909525095",
+          "benchmark_return": "0.027359553543232146019042308",
+          "turnover": "1",
+          "won": true,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "5d6c0f7e-50d7-5ab2-a5b4-7a72f349b04b"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-17T21:05:00Z",
+            "market_timestamp": "2014-12-17T21:00:00Z",
+            "market_retrieved_at": "2014-12-17T21:01:00Z",
+            "decided_at": "2014-12-17T21:05:00Z",
+            "executed_at": "2014-12-17T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-23",
+          "strategy": "random_valid_trades",
+          "portfolio_return": "0.027204901771584592907467819",
+          "benchmark_return": "0.006822769962382121252493639",
+          "turnover": "1",
+          "won": true,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "9d8f1755-1988-5979-9bf6-1f4a5db51a19"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-18T21:05:00Z",
+            "market_timestamp": "2014-12-18T21:00:00Z",
+            "market_retrieved_at": "2014-12-18T21:01:00Z",
+            "decided_at": "2014-12-18T21:05:00Z",
+            "executed_at": "2014-12-18T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-24",
+          "strategy": "random_valid_trades",
+          "portfolio_return": "0.006714188760438598434562220",
+          "benchmark_return": "0.005788951446161013626269967",
+          "turnover": "1",
+          "won": true,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "7439a77c-19a3-5629-90f6-de08ca71ed9c"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-19T21:05:00Z",
+            "market_timestamp": "2014-12-19T21:00:00Z",
+            "market_retrieved_at": "2014-12-19T21:01:00Z",
+            "decided_at": "2014-12-19T21:05:00Z",
+            "executed_at": "2014-12-19T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-25",
+          "strategy": "random_valid_trades",
+          "portfolio_return": "0.004143204770443059289209754",
+          "benchmark_return": "0.004143204770443059289209754",
+          "turnover": "1",
+          "won": true,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "70acc1c0-ad59-5a4e-822e-d4c3a7fadf2b"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-22T21:05:00Z",
+            "market_timestamp": "2014-12-22T21:00:00Z",
+            "market_retrieved_at": "2014-12-22T21:01:00Z",
+            "decided_at": "2014-12-22T21:05:00Z",
+            "executed_at": "2014-12-22T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-26",
+          "strategy": "random_valid_trades",
+          "portfolio_return": "-0.0038738882528317660833684755",
+          "benchmark_return": "-0.0062125021038436525649076934",
+          "turnover": "1",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "2b75c6ee-0bf7-52dc-ba49-9e7ca0dde11a"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-23T21:05:00Z",
+            "market_timestamp": "2014-12-23T21:00:00Z",
+            "market_retrieved_at": "2014-12-23T21:01:00Z",
+            "decided_at": "2014-12-23T21:05:00Z",
+            "executed_at": "2014-12-23T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-27",
+          "strategy": "random_valid_trades",
+          "portfolio_return": "-0.0054008155065227596145518603",
+          "benchmark_return": "0.004492338602784711492532557",
+          "turnover": "1",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "95853f33-98ca-54ae-9820-d06332cf166f"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-24T21:05:00Z",
+            "market_timestamp": "2014-12-24T21:00:00Z",
+            "market_retrieved_at": "2014-12-24T21:01:00Z",
+            "decided_at": "2014-12-24T21:05:00Z",
+            "executed_at": "2014-12-24T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-28",
+          "strategy": "random_valid_trades",
+          "portfolio_return": "-0.001529799437900064022168603425",
+          "benchmark_return": "-0.0024581173238475784077897180",
+          "turnover": "1.00",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "d13862ce-c7ec-5c54-8f30-39e4cd81b6eb",
+            "66ef9462-95fe-5696-8c8a-71157df61038",
+            "dfd15754-2160-548e-a89b-887ab484330f",
+            "17049299-ee0d-5620-8350-d330456f117f"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-26T21:05:00Z",
+            "market_timestamp": "2014-12-26T21:00:00Z",
+            "market_retrieved_at": "2014-12-26T21:01:00Z",
+            "decided_at": "2014-12-26T21:05:00Z",
+            "executed_at": "2014-12-26T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-29",
+          "strategy": "random_valid_trades",
+          "portfolio_return": "-0.009532149749588240283802349525",
+          "benchmark_return": "-0.0076224149611457364371240230",
+          "turnover": "1.00",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "85023a83-c09c-5ba6-bccd-e6f19262d6e7",
+            "f69038be-430c-5c1f-b1f1-75e36c0cf358",
+            "db2a8fca-039d-5ac6-b99f-44cd36125536",
+            "2e96551f-f8b1-5771-84d3-910cf179fb57"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-29T21:05:00Z",
+            "market_timestamp": "2014-12-29T21:00:00Z",
+            "market_retrieved_at": "2014-12-29T21:01:00Z",
+            "decided_at": "2014-12-29T21:05:00Z",
+            "executed_at": "2014-12-29T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-30",
+          "strategy": "random_valid_trades",
+          "portfolio_return": "-0.01182390356766061952658722125",
+          "benchmark_return": "-0.0133359956170157253339905487",
+          "turnover": "1.00",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "49c33eaa-cf9b-5562-b42e-57140b4c8b09",
+            "acf20c3f-921c-56a6-ab6c-da60ea8b0762",
+            "8bbdd391-1c76-5f3d-ad17-d8cd7ec243be",
+            "46848ab1-5595-5676-9751-ca6f71775d99"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-30T21:05:00Z",
+            "market_timestamp": "2014-12-30T21:00:00Z",
+            "market_retrieved_at": "2014-12-30T21:01:00Z",
+            "decided_at": "2014-12-30T21:05:00Z",
+            "executed_at": "2014-12-30T21:05:00Z"
+          }
+        }
+      ]
+    },
+    {
+      "strategy": "momentum",
+      "metrics": {
+        "total_return": "-0.0133191577015297899976512981",
+        "benchmark_return": "-0.0305725802417637632777843353",
+        "benchmark_relative_return": "0.0172534225402339732801330372",
+        "annualized_volatility": "0.1865251250357577663434152237",
+        "sharpe": "-0.5106653283113342559528122865",
+        "max_drawdown": "0.09178439588035302760849771124",
+        "turnover": "0.8",
+        "win_rate": "0.3",
+        "decision_validity": "1",
+        "citation_validity": "1",
+        "tool_success_rate": "1",
+        "average_latency_ms": "0",
+        "model_api_cost_usd": "0"
+      },
+      "scenarios": [
+        {
+          "scenario_id": "hist-2014-01",
+          "strategy": "momentum",
+          "portfolio_return": "0.012983549663638400023136291",
+          "benchmark_return": "0.004901404569226850432341149",
+          "turnover": "1",
+          "won": true,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "fd3edbf6-3f3e-5cd5-9f4b-3a8cdd70cd62"
+          ],
+          "timing": {
+            "research_cutoff": "2014-11-17T21:05:00Z",
+            "market_timestamp": "2014-11-17T21:00:00Z",
+            "market_retrieved_at": "2014-11-17T21:01:00Z",
+            "decided_at": "2014-11-17T21:05:00Z",
+            "executed_at": "2014-11-17T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-02",
+          "strategy": "momentum",
+          "portfolio_return": "-0.0069280206811435443089996946",
+          "benchmark_return": "-0.0025123656496915356217375314",
+          "turnover": "1",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "ff8a5e2b-3eff-5028-b8a6-1b33b1d2900c"
+          ],
+          "timing": {
+            "research_cutoff": "2014-11-18T21:05:00Z",
+            "market_timestamp": "2014-11-18T21:00:00Z",
+            "market_retrieved_at": "2014-11-18T21:01:00Z",
+            "decided_at": "2014-11-18T21:05:00Z",
+            "executed_at": "2014-11-18T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-03",
+          "strategy": "momentum",
+          "portfolio_return": "0.014301817796515514232512509",
+          "benchmark_return": "0.009706928456667777149262647",
+          "turnover": "1",
+          "won": true,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "e6093949-6d75-5eba-ace7-4a1983a1a62b"
+          ],
+          "timing": {
+            "research_cutoff": "2014-11-19T21:05:00Z",
+            "market_timestamp": "2014-11-19T21:00:00Z",
+            "market_retrieved_at": "2014-11-19T21:01:00Z",
+            "decided_at": "2014-11-19T21:05:00Z",
+            "executed_at": "2014-11-19T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-04",
+          "strategy": "momentum",
+          "portfolio_return": "0.005408208953937851035858306",
+          "benchmark_return": "0.001829249746585128618607663",
+          "turnover": "1",
+          "won": true,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "05b9f39f-c586-58a6-9a8a-e2e0c0fc854f"
+          ],
+          "timing": {
+            "research_cutoff": "2014-11-20T21:05:00Z",
+            "market_timestamp": "2014-11-20T21:00:00Z",
+            "market_retrieved_at": "2014-11-20T21:01:00Z",
+            "decided_at": "2014-11-20T21:05:00Z",
+            "executed_at": "2014-11-20T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-05",
+          "strategy": "momentum",
+          "portfolio_return": "0.006356909791407517193661692",
+          "benchmark_return": "0.003198998103270652391415973",
+          "turnover": "1",
+          "won": true,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "a5f68fc0-6af5-5e52-bc9b-6ad15bac16b1"
+          ],
+          "timing": {
+            "research_cutoff": "2014-11-21T21:05:00Z",
+            "market_timestamp": "2014-11-21T21:00:00Z",
+            "market_retrieved_at": "2014-11-21T21:01:00Z",
+            "decided_at": "2014-11-21T21:05:00Z",
+            "executed_at": "2014-11-21T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-06",
+          "strategy": "momentum",
+          "portfolio_return": "-0.0004858579713769091678528835",
+          "benchmark_return": "-0.0073906142185128288386221180",
+          "turnover": "1",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "050937f5-e54f-57f5-a03f-b4b0b5f3a527"
+          ],
+          "timing": {
+            "research_cutoff": "2014-11-24T21:05:00Z",
+            "market_timestamp": "2014-11-24T21:00:00Z",
+            "market_retrieved_at": "2014-11-24T21:01:00Z",
+            "decided_at": "2014-11-24T21:05:00Z",
+            "executed_at": "2014-11-24T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-07",
+          "strategy": "momentum",
+          "portfolio_return": "0.017014748464197605113034806",
+          "benchmark_return": "0.006372472587514448294388755",
+          "turnover": "1",
+          "won": true,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "0ba129f3-d07a-5c34-8d71-a0ce8fe2d49e"
+          ],
+          "timing": {
+            "research_cutoff": "2014-11-25T21:05:00Z",
+            "market_timestamp": "2014-11-25T21:00:00Z",
+            "market_retrieved_at": "2014-11-25T21:01:00Z",
+            "decided_at": "2014-11-25T21:05:00Z",
+            "executed_at": "2014-11-25T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-08",
+          "strategy": "momentum",
+          "portfolio_return": "0.002390153682515623198988746",
+          "benchmark_return": "-0.0133149231278601399322521953",
+          "turnover": "1",
+          "won": true,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "bd6185f4-140b-55dd-8b88-edde2209dffc"
+          ],
+          "timing": {
+            "research_cutoff": "2014-11-26T21:05:00Z",
+            "market_timestamp": "2014-11-26T21:00:00Z",
+            "market_retrieved_at": "2014-11-26T21:01:00Z",
+            "decided_at": "2014-11-26T21:05:00Z",
+            "executed_at": "2014-11-26T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-09",
+          "strategy": "momentum",
+          "portfolio_return": "-0.0185978304522199363539143582",
+          "benchmark_return": "-0.0064482051439090769267652375",
+          "turnover": "1",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "59baf50c-744d-580b-b332-a431defa2fd6"
+          ],
+          "timing": {
+            "research_cutoff": "2014-11-28T21:05:00Z",
+            "market_timestamp": "2014-11-28T21:00:00Z",
+            "market_retrieved_at": "2014-11-28T21:01:00Z",
+            "decided_at": "2014-11-28T21:05:00Z",
+            "executed_at": "2014-11-28T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-10",
+          "strategy": "momentum",
+          "portfolio_return": "-0.0032907978928494498425113055",
+          "benchmark_return": "0.004325110168950854790418277",
+          "turnover": "1",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "7fcadfbd-ab96-5db9-9cad-90e2bcb39cfd"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-01T21:05:00Z",
+            "market_timestamp": "2014-12-01T21:00:00Z",
+            "market_retrieved_at": "2014-12-01T21:01:00Z",
+            "decided_at": "2014-12-01T21:05:00Z",
+            "executed_at": "2014-12-01T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-11",
+          "strategy": "momentum",
+          "portfolio_return": "-0.0078413881041838714498493577",
+          "benchmark_return": "0.008049984756173827529538040",
+          "turnover": "1",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "6011cfff-b8f9-5ad5-bbce-a13181cc4a91"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-02T21:05:00Z",
+            "market_timestamp": "2014-12-02T21:00:00Z",
+            "market_retrieved_at": "2014-12-02T21:01:00Z",
+            "decided_at": "2014-12-02T21:05:00Z",
+            "executed_at": "2014-12-02T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-12",
+          "strategy": "momentum",
+          "portfolio_return": "-0.0089877406030219419159076830",
+          "benchmark_return": "-0.0016022956267243286836239211",
+          "turnover": "1",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "24041bab-bdf6-5dc5-8543-c64df1848de9"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-03T21:05:00Z",
+            "market_timestamp": "2014-12-03T21:00:00Z",
+            "market_retrieved_at": "2014-12-03T21:01:00Z",
+            "decided_at": "2014-12-03T21:05:00Z",
+            "executed_at": "2014-12-03T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-13",
+          "strategy": "momentum",
+          "portfolio_return": "-0.0085994713791948575233954803",
+          "benchmark_return": "-0.0047340609903157320472736395",
+          "turnover": "1",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "586a6744-eb7e-55fe-a073-4b07e426e008"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-04T21:05:00Z",
+            "market_timestamp": "2014-12-04T21:00:00Z",
+            "market_retrieved_at": "2014-12-04T21:01:00Z",
+            "decided_at": "2014-12-04T21:05:00Z",
+            "executed_at": "2014-12-04T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-14",
+          "strategy": "momentum",
+          "portfolio_return": "-0.0225967167865028365859028406",
+          "benchmark_return": "-0.0204815053988507982393482896",
+          "turnover": "1",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "e59df25b-a9d5-52c3-b825-3be75ac2d852"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-05T21:05:00Z",
+            "market_timestamp": "2014-12-05T21:00:00Z",
+            "market_retrieved_at": "2014-12-05T21:01:00Z",
+            "decided_at": "2014-12-05T21:05:00Z",
+            "executed_at": "2014-12-05T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-15",
+          "strategy": "momentum",
+          "portfolio_return": "-0.0033655294703024476131891800",
+          "benchmark_return": "0.004635545912223422277449067",
+          "turnover": "1",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "6577b658-5b28-5d42-9a57-90fdbfdfbfb9"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-08T21:05:00Z",
+            "market_timestamp": "2014-12-08T21:00:00Z",
+            "market_retrieved_at": "2014-12-08T21:01:00Z",
+            "decided_at": "2014-12-08T21:05:00Z",
+            "executed_at": "2014-12-08T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-16",
+          "strategy": "momentum",
+          "portfolio_return": "-0.0221899411779917764564762892",
+          "benchmark_return": "-0.0219066763396085545038972879",
+          "turnover": "1",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "19472c81-b47c-52b5-b14a-82c29524bb95"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-09T21:05:00Z",
+            "market_timestamp": "2014-12-09T21:00:00Z",
+            "market_retrieved_at": "2014-12-09T21:01:00Z",
+            "decided_at": "2014-12-09T21:05:00Z",
+            "executed_at": "2014-12-09T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-17",
+          "strategy": "momentum",
+          "portfolio_return": "0",
+          "benchmark_return": "0.001617540766964874656605155",
+          "turnover": "0",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [],
+          "timing": {
+            "research_cutoff": "2014-12-10T21:05:00Z",
+            "market_timestamp": "2014-12-10T21:00:00Z",
+            "market_retrieved_at": "2014-12-10T21:01:00Z",
+            "decided_at": "2014-12-10T21:05:00Z",
+            "executed_at": "2014-12-10T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-18",
+          "strategy": "momentum",
+          "portfolio_return": "0",
+          "benchmark_return": "-0.0198168445405921293601394416",
+          "turnover": "0",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [],
+          "timing": {
+            "research_cutoff": "2014-12-11T21:05:00Z",
+            "market_timestamp": "2014-12-11T21:00:00Z",
+            "market_retrieved_at": "2014-12-11T21:01:00Z",
+            "decided_at": "2014-12-11T21:05:00Z",
+            "executed_at": "2014-12-11T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-19",
+          "strategy": "momentum",
+          "portfolio_return": "0",
+          "benchmark_return": "-0.0060245911697993649370853036",
+          "turnover": "0",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [],
+          "timing": {
+            "research_cutoff": "2014-12-12T21:05:00Z",
+            "market_timestamp": "2014-12-12T21:00:00Z",
+            "market_retrieved_at": "2014-12-12T21:01:00Z",
+            "decided_at": "2014-12-12T21:05:00Z",
+            "executed_at": "2014-12-12T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-20",
+          "strategy": "momentum",
+          "portfolio_return": "0",
+          "benchmark_return": "-0.0142385987632043847248515768",
+          "turnover": "0",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [],
+          "timing": {
+            "research_cutoff": "2014-12-15T21:05:00Z",
+            "market_timestamp": "2014-12-15T21:00:00Z",
+            "market_retrieved_at": "2014-12-15T21:01:00Z",
+            "decided_at": "2014-12-15T21:05:00Z",
+            "executed_at": "2014-12-15T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-21",
+          "strategy": "momentum",
+          "portfolio_return": "0",
+          "benchmark_return": "0.025768304386742204741961878",
+          "turnover": "0",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [],
+          "timing": {
+            "research_cutoff": "2014-12-16T21:05:00Z",
+            "market_timestamp": "2014-12-16T21:00:00Z",
+            "market_retrieved_at": "2014-12-16T21:01:00Z",
+            "decided_at": "2014-12-16T21:05:00Z",
+            "executed_at": "2014-12-16T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-22",
+          "strategy": "momentum",
+          "portfolio_return": "0.024039689295192122691856646",
+          "benchmark_return": "0.027359553543232146019042308",
+          "turnover": "1",
+          "won": true,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "88c193a5-6b80-5f4f-9b54-4cfbcb5a3ced"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-17T21:05:00Z",
+            "market_timestamp": "2014-12-17T21:00:00Z",
+            "market_retrieved_at": "2014-12-17T21:01:00Z",
+            "decided_at": "2014-12-17T21:05:00Z",
+            "executed_at": "2014-12-17T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-23",
+          "strategy": "momentum",
+          "portfolio_return": "0.027204901771584592907467819",
+          "benchmark_return": "0.006822769962382121252493639",
+          "turnover": "1",
+          "won": true,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "2a5e5498-1b61-5f4d-8063-f5a1059e13de"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-18T21:05:00Z",
+            "market_timestamp": "2014-12-18T21:00:00Z",
+            "market_retrieved_at": "2014-12-18T21:01:00Z",
+            "decided_at": "2014-12-18T21:05:00Z",
+            "executed_at": "2014-12-18T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-24",
+          "strategy": "momentum",
+          "portfolio_return": "-0.0033105570414716600403358975",
+          "benchmark_return": "0.005788951446161013626269967",
+          "turnover": "1",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "5dd850f0-9869-5989-b6ff-350e36d94631"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-19T21:05:00Z",
+            "market_timestamp": "2014-12-19T21:00:00Z",
+            "market_retrieved_at": "2014-12-19T21:01:00Z",
+            "decided_at": "2014-12-19T21:05:00Z",
+            "executed_at": "2014-12-19T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-25",
+          "strategy": "momentum",
+          "portfolio_return": "0.013500350269823634433187719",
+          "benchmark_return": "0.004143204770443059289209754",
+          "turnover": "1",
+          "won": true,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "99d8307e-3bb8-5d68-bca1-b8607afe26c3"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-22T21:05:00Z",
+            "market_timestamp": "2014-12-22T21:00:00Z",
+            "market_retrieved_at": "2014-12-22T21:01:00Z",
+            "decided_at": "2014-12-22T21:05:00Z",
+            "executed_at": "2014-12-22T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-26",
+          "strategy": "momentum",
+          "portfolio_return": "-0.0085631116668392648889948077",
+          "benchmark_return": "-0.0062125021038436525649076934",
+          "turnover": "1",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "573f3d52-bedc-588a-8cc5-5346c543ed7d"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-23T21:05:00Z",
+            "market_timestamp": "2014-12-23T21:00:00Z",
+            "market_retrieved_at": "2014-12-23T21:01:00Z",
+            "decided_at": "2014-12-23T21:05:00Z",
+            "executed_at": "2014-12-23T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-27",
+          "strategy": "momentum",
+          "portfolio_return": "-0.0060779580965325250017240256",
+          "benchmark_return": "0.004492338602784711492532557",
+          "turnover": "1",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "e4a37033-5b9e-5187-a4c5-107792a30163"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-24T21:05:00Z",
+            "market_timestamp": "2014-12-24T21:00:00Z",
+            "market_retrieved_at": "2014-12-24T21:01:00Z",
+            "decided_at": "2014-12-24T21:05:00Z",
+            "executed_at": "2014-12-24T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-28",
+          "strategy": "momentum",
+          "portfolio_return": "-0.0015021077759919733374664991",
+          "benchmark_return": "-0.0024581173238475784077897180",
+          "turnover": "1",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "af5af8cf-65e3-545c-854a-5f83f63639ed"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-26T21:05:00Z",
+            "market_timestamp": "2014-12-26T21:00:00Z",
+            "market_retrieved_at": "2014-12-26T21:01:00Z",
+            "decided_at": "2014-12-26T21:05:00Z",
+            "executed_at": "2014-12-26T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-29",
+          "strategy": "momentum",
+          "portfolio_return": "-0.0122028141861777130691152338",
+          "benchmark_return": "-0.0076224149611457364371240230",
+          "turnover": "1",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [
+            "82073cb0-04c2-50c6-ab41-3a44514afe4d"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-29T21:05:00Z",
+            "market_timestamp": "2014-12-29T21:00:00Z",
+            "market_retrieved_at": "2014-12-29T21:01:00Z",
+            "decided_at": "2014-12-29T21:05:00Z",
+            "executed_at": "2014-12-29T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-30",
+          "strategy": "momentum",
+          "portfolio_return": "0",
+          "benchmark_return": "-0.0133359956170157253339905487",
+          "turnover": "0",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 0,
+          "model_cost_usd": "0",
+          "order_ids": [],
+          "timing": {
+            "research_cutoff": "2014-12-30T21:05:00Z",
+            "market_timestamp": "2014-12-30T21:00:00Z",
+            "market_retrieved_at": "2014-12-30T21:01:00Z",
+            "decided_at": "2014-12-30T21:05:00Z",
+            "executed_at": "2014-12-30T21:05:00Z"
+          }
+        }
+      ]
+    },
+    {
+      "strategy": "single_agent",
+      "metrics": {
+        "total_return": "0.027599224821466567629849410",
+        "benchmark_return": "-0.0305725802417637632777843353",
+        "benchmark_relative_return": "0.0581718050632303309076337453",
+        "annualized_volatility": "0.1462203940271073305561271196",
+        "sharpe": "1.637585157005754917718547407",
+        "max_drawdown": "0.03138136396056773945979321120",
+        "turnover": "0.5666666666666666666666666667",
+        "win_rate": "0.2666666666666666666666666667",
+        "decision_validity": "1",
+        "citation_validity": "1",
+        "tool_success_rate": "1",
+        "average_latency_ms": "120",
+        "model_api_cost_usd": "0.0300"
+      },
+      "scenarios": [
+        {
+          "scenario_id": "hist-2014-01",
+          "strategy": "single_agent",
+          "portfolio_return": "0.012983549663638400023136291",
+          "benchmark_return": "0.004901404569226850432341149",
+          "turnover": "1",
+          "won": true,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 120,
+          "model_cost_usd": "0.0010",
+          "order_ids": [
+            "1efee116-267a-54df-a3bb-30dfb20661f3"
+          ],
+          "timing": {
+            "research_cutoff": "2014-11-17T21:05:00Z",
+            "market_timestamp": "2014-11-17T21:00:00Z",
+            "market_retrieved_at": "2014-11-17T21:01:00Z",
+            "decided_at": "2014-11-17T21:05:00Z",
+            "executed_at": "2014-11-17T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-02",
+          "strategy": "single_agent",
+          "portfolio_return": "-0.0069280206811435443089996946",
+          "benchmark_return": "-0.0025123656496915356217375314",
+          "turnover": "1",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 120,
+          "model_cost_usd": "0.0010",
+          "order_ids": [
+            "14bad677-e609-5df9-a430-445b3889c3b3"
+          ],
+          "timing": {
+            "research_cutoff": "2014-11-18T21:05:00Z",
+            "market_timestamp": "2014-11-18T21:00:00Z",
+            "market_retrieved_at": "2014-11-18T21:01:00Z",
+            "decided_at": "2014-11-18T21:05:00Z",
+            "executed_at": "2014-11-18T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-03",
+          "strategy": "single_agent",
+          "portfolio_return": "0.014301817796515514232512509",
+          "benchmark_return": "0.009706928456667777149262647",
+          "turnover": "1",
+          "won": true,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 120,
+          "model_cost_usd": "0.0010",
+          "order_ids": [
+            "4dad1c72-9098-5cfe-8f66-b5fcdf801de1"
+          ],
+          "timing": {
+            "research_cutoff": "2014-11-19T21:05:00Z",
+            "market_timestamp": "2014-11-19T21:00:00Z",
+            "market_retrieved_at": "2014-11-19T21:01:00Z",
+            "decided_at": "2014-11-19T21:05:00Z",
+            "executed_at": "2014-11-19T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-04",
+          "strategy": "single_agent",
+          "portfolio_return": "0.005408208953937851035858306",
+          "benchmark_return": "0.001829249746585128618607663",
+          "turnover": "1",
+          "won": true,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 120,
+          "model_cost_usd": "0.0010",
+          "order_ids": [
+            "e5cd7679-0148-55c5-9658-828c57fff096"
+          ],
+          "timing": {
+            "research_cutoff": "2014-11-20T21:05:00Z",
+            "market_timestamp": "2014-11-20T21:00:00Z",
+            "market_retrieved_at": "2014-11-20T21:01:00Z",
+            "decided_at": "2014-11-20T21:05:00Z",
+            "executed_at": "2014-11-20T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-05",
+          "strategy": "single_agent",
+          "portfolio_return": "0.006356909791407517193661692",
+          "benchmark_return": "0.003198998103270652391415973",
+          "turnover": "1",
+          "won": true,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 120,
+          "model_cost_usd": "0.0010",
+          "order_ids": [
+            "086d7dee-5373-5ba1-b899-049ac0ce7f74"
+          ],
+          "timing": {
+            "research_cutoff": "2014-11-21T21:05:00Z",
+            "market_timestamp": "2014-11-21T21:00:00Z",
+            "market_retrieved_at": "2014-11-21T21:01:00Z",
+            "decided_at": "2014-11-21T21:05:00Z",
+            "executed_at": "2014-11-21T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-06",
+          "strategy": "single_agent",
+          "portfolio_return": "-0.0004858579713769091678528835",
+          "benchmark_return": "-0.0073906142185128288386221180",
+          "turnover": "1",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 120,
+          "model_cost_usd": "0.0010",
+          "order_ids": [
+            "cb0946d6-3af7-5f4a-a238-53d8a046a490"
+          ],
+          "timing": {
+            "research_cutoff": "2014-11-24T21:05:00Z",
+            "market_timestamp": "2014-11-24T21:00:00Z",
+            "market_retrieved_at": "2014-11-24T21:01:00Z",
+            "decided_at": "2014-11-24T21:05:00Z",
+            "executed_at": "2014-11-24T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-07",
+          "strategy": "single_agent",
+          "portfolio_return": "0.017014748464197605113034806",
+          "benchmark_return": "0.006372472587514448294388755",
+          "turnover": "1",
+          "won": true,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 120,
+          "model_cost_usd": "0.0010",
+          "order_ids": [
+            "561c6b99-74fa-5a52-a277-338dcb783e13"
+          ],
+          "timing": {
+            "research_cutoff": "2014-11-25T21:05:00Z",
+            "market_timestamp": "2014-11-25T21:00:00Z",
+            "market_retrieved_at": "2014-11-25T21:01:00Z",
+            "decided_at": "2014-11-25T21:05:00Z",
+            "executed_at": "2014-11-25T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-08",
+          "strategy": "single_agent",
+          "portfolio_return": "0.002390153682515623198988746",
+          "benchmark_return": "-0.0133149231278601399322521953",
+          "turnover": "1",
+          "won": true,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 120,
+          "model_cost_usd": "0.0010",
+          "order_ids": [
+            "e0ef9faf-45af-55c1-80cb-2fbef6ce7e4c"
+          ],
+          "timing": {
+            "research_cutoff": "2014-11-26T21:05:00Z",
+            "market_timestamp": "2014-11-26T21:00:00Z",
+            "market_retrieved_at": "2014-11-26T21:01:00Z",
+            "decided_at": "2014-11-26T21:05:00Z",
+            "executed_at": "2014-11-26T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-09",
+          "strategy": "single_agent",
+          "portfolio_return": "0",
+          "benchmark_return": "-0.0064482051439090769267652375",
+          "turnover": "0",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 120,
+          "model_cost_usd": "0.0010",
+          "order_ids": [],
+          "timing": {
+            "research_cutoff": "2014-11-28T21:05:00Z",
+            "market_timestamp": "2014-11-28T21:00:00Z",
+            "market_retrieved_at": "2014-11-28T21:01:00Z",
+            "decided_at": "2014-11-28T21:05:00Z",
+            "executed_at": "2014-11-28T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-10",
+          "strategy": "single_agent",
+          "portfolio_return": "0",
+          "benchmark_return": "0.004325110168950854790418277",
+          "turnover": "0",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 120,
+          "model_cost_usd": "0.0010",
+          "order_ids": [],
+          "timing": {
+            "research_cutoff": "2014-12-01T21:05:00Z",
+            "market_timestamp": "2014-12-01T21:00:00Z",
+            "market_retrieved_at": "2014-12-01T21:01:00Z",
+            "decided_at": "2014-12-01T21:05:00Z",
+            "executed_at": "2014-12-01T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-11",
+          "strategy": "single_agent",
+          "portfolio_return": "0",
+          "benchmark_return": "0.008049984756173827529538040",
+          "turnover": "0",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 120,
+          "model_cost_usd": "0.0010",
+          "order_ids": [],
+          "timing": {
+            "research_cutoff": "2014-12-02T21:05:00Z",
+            "market_timestamp": "2014-12-02T21:00:00Z",
+            "market_retrieved_at": "2014-12-02T21:01:00Z",
+            "decided_at": "2014-12-02T21:05:00Z",
+            "executed_at": "2014-12-02T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-12",
+          "strategy": "single_agent",
+          "portfolio_return": "-0.0089877406030219419159076830",
+          "benchmark_return": "-0.0016022956267243286836239211",
+          "turnover": "1",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 120,
+          "model_cost_usd": "0.0010",
+          "order_ids": [
+            "25f5695c-3572-5388-a544-4ea709034c24"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-03T21:05:00Z",
+            "market_timestamp": "2014-12-03T21:00:00Z",
+            "market_retrieved_at": "2014-12-03T21:01:00Z",
+            "decided_at": "2014-12-03T21:05:00Z",
+            "executed_at": "2014-12-03T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-13",
+          "strategy": "single_agent",
+          "portfolio_return": "0",
+          "benchmark_return": "-0.0047340609903157320472736395",
+          "turnover": "0",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 120,
+          "model_cost_usd": "0.0010",
+          "order_ids": [],
+          "timing": {
+            "research_cutoff": "2014-12-04T21:05:00Z",
+            "market_timestamp": "2014-12-04T21:00:00Z",
+            "market_retrieved_at": "2014-12-04T21:01:00Z",
+            "decided_at": "2014-12-04T21:05:00Z",
+            "executed_at": "2014-12-04T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-14",
+          "strategy": "single_agent",
+          "portfolio_return": "-0.0225967167865028365859028406",
+          "benchmark_return": "-0.0204815053988507982393482896",
+          "turnover": "1",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 120,
+          "model_cost_usd": "0.0010",
+          "order_ids": [
+            "9138377e-4d3b-59d5-81bf-d970c89e0839"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-05T21:05:00Z",
+            "market_timestamp": "2014-12-05T21:00:00Z",
+            "market_retrieved_at": "2014-12-05T21:01:00Z",
+            "decided_at": "2014-12-05T21:05:00Z",
+            "executed_at": "2014-12-05T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-15",
+          "strategy": "single_agent",
+          "portfolio_return": "0",
+          "benchmark_return": "0.004635545912223422277449067",
+          "turnover": "0",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 120,
+          "model_cost_usd": "0.0010",
+          "order_ids": [],
+          "timing": {
+            "research_cutoff": "2014-12-08T21:05:00Z",
+            "market_timestamp": "2014-12-08T21:00:00Z",
+            "market_retrieved_at": "2014-12-08T21:01:00Z",
+            "decided_at": "2014-12-08T21:05:00Z",
+            "executed_at": "2014-12-08T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-16",
+          "strategy": "single_agent",
+          "portfolio_return": "0",
+          "benchmark_return": "-0.0219066763396085545038972879",
+          "turnover": "0",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 120,
+          "model_cost_usd": "0.0010",
+          "order_ids": [],
+          "timing": {
+            "research_cutoff": "2014-12-09T21:05:00Z",
+            "market_timestamp": "2014-12-09T21:00:00Z",
+            "market_retrieved_at": "2014-12-09T21:01:00Z",
+            "decided_at": "2014-12-09T21:05:00Z",
+            "executed_at": "2014-12-09T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-17",
+          "strategy": "single_agent",
+          "portfolio_return": "0",
+          "benchmark_return": "0.001617540766964874656605155",
+          "turnover": "0",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 120,
+          "model_cost_usd": "0.0010",
+          "order_ids": [],
+          "timing": {
+            "research_cutoff": "2014-12-10T21:05:00Z",
+            "market_timestamp": "2014-12-10T21:00:00Z",
+            "market_retrieved_at": "2014-12-10T21:01:00Z",
+            "decided_at": "2014-12-10T21:05:00Z",
+            "executed_at": "2014-12-10T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-18",
+          "strategy": "single_agent",
+          "portfolio_return": "0",
+          "benchmark_return": "-0.0198168445405921293601394416",
+          "turnover": "0",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 120,
+          "model_cost_usd": "0.0010",
+          "order_ids": [],
+          "timing": {
+            "research_cutoff": "2014-12-11T21:05:00Z",
+            "market_timestamp": "2014-12-11T21:00:00Z",
+            "market_retrieved_at": "2014-12-11T21:01:00Z",
+            "decided_at": "2014-12-11T21:05:00Z",
+            "executed_at": "2014-12-11T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-19",
+          "strategy": "single_agent",
+          "portfolio_return": "0",
+          "benchmark_return": "-0.0060245911697993649370853036",
+          "turnover": "0",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 120,
+          "model_cost_usd": "0.0010",
+          "order_ids": [],
+          "timing": {
+            "research_cutoff": "2014-12-12T21:05:00Z",
+            "market_timestamp": "2014-12-12T21:00:00Z",
+            "market_retrieved_at": "2014-12-12T21:01:00Z",
+            "decided_at": "2014-12-12T21:05:00Z",
+            "executed_at": "2014-12-12T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-20",
+          "strategy": "single_agent",
+          "portfolio_return": "0",
+          "benchmark_return": "-0.0142385987632043847248515768",
+          "turnover": "0",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 120,
+          "model_cost_usd": "0.0010",
+          "order_ids": [],
+          "timing": {
+            "research_cutoff": "2014-12-15T21:05:00Z",
+            "market_timestamp": "2014-12-15T21:00:00Z",
+            "market_retrieved_at": "2014-12-15T21:01:00Z",
+            "decided_at": "2014-12-15T21:05:00Z",
+            "executed_at": "2014-12-15T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-21",
+          "strategy": "single_agent",
+          "portfolio_return": "0",
+          "benchmark_return": "0.025768304386742204741961878",
+          "turnover": "0",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 120,
+          "model_cost_usd": "0.0010",
+          "order_ids": [],
+          "timing": {
+            "research_cutoff": "2014-12-16T21:05:00Z",
+            "market_timestamp": "2014-12-16T21:00:00Z",
+            "market_retrieved_at": "2014-12-16T21:01:00Z",
+            "decided_at": "2014-12-16T21:05:00Z",
+            "executed_at": "2014-12-16T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-22",
+          "strategy": "single_agent",
+          "portfolio_return": "0",
+          "benchmark_return": "0.027359553543232146019042308",
+          "turnover": "0",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 120,
+          "model_cost_usd": "0.0010",
+          "order_ids": [],
+          "timing": {
+            "research_cutoff": "2014-12-17T21:05:00Z",
+            "market_timestamp": "2014-12-17T21:00:00Z",
+            "market_retrieved_at": "2014-12-17T21:01:00Z",
+            "decided_at": "2014-12-17T21:05:00Z",
+            "executed_at": "2014-12-17T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-23",
+          "strategy": "single_agent",
+          "portfolio_return": "0.027204901771584592907467819",
+          "benchmark_return": "0.006822769962382121252493639",
+          "turnover": "1",
+          "won": true,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 120,
+          "model_cost_usd": "0.0010",
+          "order_ids": [
+            "2fe09973-22ad-5eb0-b333-0d647aeb3094"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-18T21:05:00Z",
+            "market_timestamp": "2014-12-18T21:00:00Z",
+            "market_retrieved_at": "2014-12-18T21:01:00Z",
+            "decided_at": "2014-12-18T21:05:00Z",
+            "executed_at": "2014-12-18T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-24",
+          "strategy": "single_agent",
+          "portfolio_return": "-0.0033105570414716600403358975",
+          "benchmark_return": "0.005788951446161013626269967",
+          "turnover": "1",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 120,
+          "model_cost_usd": "0.0010",
+          "order_ids": [
+            "05816c37-81aa-5eb4-955c-9a8db77d9724"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-19T21:05:00Z",
+            "market_timestamp": "2014-12-19T21:00:00Z",
+            "market_retrieved_at": "2014-12-19T21:01:00Z",
+            "decided_at": "2014-12-19T21:05:00Z",
+            "executed_at": "2014-12-19T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-25",
+          "strategy": "single_agent",
+          "portfolio_return": "0.013500350269823634433187719",
+          "benchmark_return": "0.004143204770443059289209754",
+          "turnover": "1",
+          "won": true,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 120,
+          "model_cost_usd": "0.0010",
+          "order_ids": [
+            "931e3823-14f9-5d01-8035-71b9f17f0bdb"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-22T21:05:00Z",
+            "market_timestamp": "2014-12-22T21:00:00Z",
+            "market_retrieved_at": "2014-12-22T21:01:00Z",
+            "decided_at": "2014-12-22T21:05:00Z",
+            "executed_at": "2014-12-22T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-26",
+          "strategy": "single_agent",
+          "portfolio_return": "-0.0085631116668392648889948077",
+          "benchmark_return": "-0.0062125021038436525649076934",
+          "turnover": "1",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 120,
+          "model_cost_usd": "0.0010",
+          "order_ids": [
+            "46c0d406-f5f5-5bd2-92ce-59d7b603f8fa"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-23T21:05:00Z",
+            "market_timestamp": "2014-12-23T21:00:00Z",
+            "market_retrieved_at": "2014-12-23T21:01:00Z",
+            "decided_at": "2014-12-23T21:05:00Z",
+            "executed_at": "2014-12-23T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-27",
+          "strategy": "single_agent",
+          "portfolio_return": "-0.0060779580965325250017240256",
+          "benchmark_return": "0.004492338602784711492532557",
+          "turnover": "1",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 120,
+          "model_cost_usd": "0.0010",
+          "order_ids": [
+            "dd8d550c-aa2b-5375-871b-5e3572d0b131"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-24T21:05:00Z",
+            "market_timestamp": "2014-12-24T21:00:00Z",
+            "market_retrieved_at": "2014-12-24T21:01:00Z",
+            "decided_at": "2014-12-24T21:05:00Z",
+            "executed_at": "2014-12-24T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-28",
+          "strategy": "single_agent",
+          "portfolio_return": "-0.0015021077759919733374664991",
+          "benchmark_return": "-0.0024581173238475784077897180",
+          "turnover": "1",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 120,
+          "model_cost_usd": "0.0010",
+          "order_ids": [
+            "09694465-1ea3-5b6c-ada5-89527b913cc2"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-26T21:05:00Z",
+            "market_timestamp": "2014-12-26T21:00:00Z",
+            "market_retrieved_at": "2014-12-26T21:01:00Z",
+            "decided_at": "2014-12-26T21:05:00Z",
+            "executed_at": "2014-12-26T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-29",
+          "strategy": "single_agent",
+          "portfolio_return": "-0.0122028141861777130691152338",
+          "benchmark_return": "-0.0076224149611457364371240230",
+          "turnover": "1",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 120,
+          "model_cost_usd": "0.0010",
+          "order_ids": [
+            "6387cad4-ff17-54b2-847c-bdbd5a3c6a07"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-29T21:05:00Z",
+            "market_timestamp": "2014-12-29T21:00:00Z",
+            "market_retrieved_at": "2014-12-29T21:01:00Z",
+            "decided_at": "2014-12-29T21:05:00Z",
+            "executed_at": "2014-12-29T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-30",
+          "strategy": "single_agent",
+          "portfolio_return": "0",
+          "benchmark_return": "-0.0133359956170157253339905487",
+          "turnover": "0",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 120,
+          "model_cost_usd": "0.0010",
+          "order_ids": [],
+          "timing": {
+            "research_cutoff": "2014-12-30T21:05:00Z",
+            "market_timestamp": "2014-12-30T21:00:00Z",
+            "market_retrieved_at": "2014-12-30T21:01:00Z",
+            "decided_at": "2014-12-30T21:05:00Z",
+            "executed_at": "2014-12-30T21:05:00Z"
+          }
+        }
+      ]
+    },
+    {
+      "strategy": "multi_agent",
+      "metrics": {
+        "total_return": "0.010531574984653671883670667",
+        "benchmark_return": "-0.0305725802417637632777843353",
+        "benchmark_relative_return": "0.0411041552264174351614550023",
+        "annualized_volatility": "0.1708856327418875558290870642",
+        "sharpe": "0.6006751894198997935670967815",
+        "max_drawdown": "0.05883138311628189698296844675",
+        "turnover": "0.8",
+        "win_rate": "0.4",
+        "decision_validity": "1",
+        "citation_validity": "1",
+        "tool_success_rate": "1",
+        "average_latency_ms": "260",
+        "model_api_cost_usd": "0.0750"
+      },
+      "scenarios": [
+        {
+          "scenario_id": "hist-2014-01",
+          "strategy": "multi_agent",
+          "portfolio_return": "0.0089424771164326252277387200",
+          "benchmark_return": "0.004901404569226850432341149",
+          "turnover": "1.0",
+          "won": true,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 260,
+          "model_cost_usd": "0.0025",
+          "order_ids": [
+            "cbc68604-5dd8-5c80-863f-1f4c1a6260c3",
+            "878e1efd-ea9a-5e8d-a14c-6dd1280547c8"
+          ],
+          "timing": {
+            "research_cutoff": "2014-11-17T21:05:00Z",
+            "market_timestamp": "2014-11-17T21:00:00Z",
+            "market_retrieved_at": "2014-11-17T21:01:00Z",
+            "decided_at": "2014-11-17T21:05:00Z",
+            "executed_at": "2014-11-17T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-02",
+          "strategy": "multi_agent",
+          "portfolio_return": "-0.00533122690314916542717182560",
+          "benchmark_return": "-0.0025123656496915356217375314",
+          "turnover": "1.0",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 260,
+          "model_cost_usd": "0.0025",
+          "order_ids": [
+            "e58348e5-89b0-51e6-9739-b4a05f77cd35",
+            "d03df059-ad3d-5b0e-9394-858e0dcbdc61"
+          ],
+          "timing": {
+            "research_cutoff": "2014-11-18T21:05:00Z",
+            "market_timestamp": "2014-11-18T21:00:00Z",
+            "market_retrieved_at": "2014-11-18T21:01:00Z",
+            "decided_at": "2014-11-18T21:05:00Z",
+            "executed_at": "2014-11-18T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-03",
+          "strategy": "multi_agent",
+          "portfolio_return": "0.0153968551687833633859812310",
+          "benchmark_return": "0.009706928456667777149262647",
+          "turnover": "1.0",
+          "won": true,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 260,
+          "model_cost_usd": "0.0025",
+          "order_ids": [
+            "4234a8d6-6f37-5df1-b033-8fd8e08f010a",
+            "902e6c9b-f2f7-507c-9ac7-dbadcf47b098"
+          ],
+          "timing": {
+            "research_cutoff": "2014-11-19T21:05:00Z",
+            "market_timestamp": "2014-11-19T21:00:00Z",
+            "market_retrieved_at": "2014-11-19T21:01:00Z",
+            "decided_at": "2014-11-19T21:05:00Z",
+            "executed_at": "2014-11-19T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-04",
+          "strategy": "multi_agent",
+          "portfolio_return": "0.0033919039195559498780608155",
+          "benchmark_return": "0.001829249746585128618607663",
+          "turnover": "1.0",
+          "won": true,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 260,
+          "model_cost_usd": "0.0025",
+          "order_ids": [
+            "2a37f384-9036-5f91-8b78-1ca44ac7c248",
+            "9bac0d33-ac07-586c-b2c5-d042543a59f9"
+          ],
+          "timing": {
+            "research_cutoff": "2014-11-20T21:05:00Z",
+            "market_timestamp": "2014-11-20T21:00:00Z",
+            "market_retrieved_at": "2014-11-20T21:01:00Z",
+            "decided_at": "2014-11-20T21:05:00Z",
+            "executed_at": "2014-11-20T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-05",
+          "strategy": "multi_agent",
+          "portfolio_return": "0.0124512356911067190972336215",
+          "benchmark_return": "0.003198998103270652391415973",
+          "turnover": "1.0",
+          "won": true,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 260,
+          "model_cost_usd": "0.0025",
+          "order_ids": [
+            "0508c2ea-3f8b-58b3-abbd-f41d387759e9",
+            "6a8f2ed6-68a5-5f6c-9bf8-ba2113635601"
+          ],
+          "timing": {
+            "research_cutoff": "2014-11-21T21:05:00Z",
+            "market_timestamp": "2014-11-21T21:00:00Z",
+            "market_retrieved_at": "2014-11-21T21:01:00Z",
+            "decided_at": "2014-11-21T21:05:00Z",
+            "executed_at": "2014-11-21T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-06",
+          "strategy": "multi_agent",
+          "portfolio_return": "-0.00458418143770709769997208800",
+          "benchmark_return": "-0.0073906142185128288386221180",
+          "turnover": "1.0",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 260,
+          "model_cost_usd": "0.0025",
+          "order_ids": [
+            "5b1253c3-f53e-55d8-b703-cd7c6e1b0361",
+            "40dc9208-b263-532d-af04-71d400301ec3"
+          ],
+          "timing": {
+            "research_cutoff": "2014-11-24T21:05:00Z",
+            "market_timestamp": "2014-11-24T21:00:00Z",
+            "market_retrieved_at": "2014-11-24T21:01:00Z",
+            "decided_at": "2014-11-24T21:05:00Z",
+            "executed_at": "2014-11-24T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-07",
+          "strategy": "multi_agent",
+          "portfolio_return": "0.0144598254076834218081367900",
+          "benchmark_return": "0.006372472587514448294388755",
+          "turnover": "1.0",
+          "won": true,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 260,
+          "model_cost_usd": "0.0025",
+          "order_ids": [
+            "8c880116-9185-52d2-8617-41e8815fefca",
+            "c47a03e2-f892-5daf-97a2-ec3660af960a"
+          ],
+          "timing": {
+            "research_cutoff": "2014-11-25T21:05:00Z",
+            "market_timestamp": "2014-11-25T21:00:00Z",
+            "market_retrieved_at": "2014-11-25T21:01:00Z",
+            "decided_at": "2014-11-25T21:05:00Z",
+            "executed_at": "2014-11-25T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-08",
+          "strategy": "multi_agent",
+          "portfolio_return": "0.00090089515417724411803295785",
+          "benchmark_return": "-0.0133149231278601399322521953",
+          "turnover": "1.0",
+          "won": true,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 260,
+          "model_cost_usd": "0.0025",
+          "order_ids": [
+            "1aaa6e81-96e4-5997-98e3-cc178f508b8f",
+            "699a9d28-666a-5d51-b3da-eabff0d6528b"
+          ],
+          "timing": {
+            "research_cutoff": "2014-11-26T21:05:00Z",
+            "market_timestamp": "2014-11-26T21:00:00Z",
+            "market_retrieved_at": "2014-11-26T21:01:00Z",
+            "decided_at": "2014-11-26T21:05:00Z",
+            "executed_at": "2014-11-26T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-09",
+          "strategy": "multi_agent",
+          "portfolio_return": "-0.02552700640335403758554142860",
+          "benchmark_return": "-0.0064482051439090769267652375",
+          "turnover": "1.0",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 260,
+          "model_cost_usd": "0.0025",
+          "order_ids": [
+            "d4b95552-0294-5b13-a36f-5cab656f7c43",
+            "e0438087-c36d-5333-9c3f-299b436bc511"
+          ],
+          "timing": {
+            "research_cutoff": "2014-11-28T21:05:00Z",
+            "market_timestamp": "2014-11-28T21:00:00Z",
+            "market_retrieved_at": "2014-11-28T21:01:00Z",
+            "decided_at": "2014-11-28T21:05:00Z",
+            "executed_at": "2014-11-28T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-10",
+          "strategy": "multi_agent",
+          "portfolio_return": "-0.00091653684893693974832447875",
+          "benchmark_return": "0.004325110168950854790418277",
+          "turnover": "1.0",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 260,
+          "model_cost_usd": "0.0025",
+          "order_ids": [
+            "57a7a23b-5878-55e6-a21f-d7550f4f44ec",
+            "2e9c404d-e023-52f9-8b17-c953ae391a3d"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-01T21:05:00Z",
+            "market_timestamp": "2014-12-01T21:00:00Z",
+            "market_retrieved_at": "2014-12-01T21:01:00Z",
+            "decided_at": "2014-12-01T21:05:00Z",
+            "executed_at": "2014-12-01T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-11",
+          "strategy": "multi_agent",
+          "portfolio_return": "0.00893705148301048965869906465",
+          "benchmark_return": "0.008049984756173827529538040",
+          "turnover": "1.0",
+          "won": true,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 260,
+          "model_cost_usd": "0.0025",
+          "order_ids": [
+            "98ddd008-ab5f-5a2a-8188-8d8823a0e81d",
+            "5b46791a-7d95-5f84-8688-1f5aa3e0a1c6"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-02T21:05:00Z",
+            "market_timestamp": "2014-12-02T21:00:00Z",
+            "market_retrieved_at": "2014-12-02T21:01:00Z",
+            "decided_at": "2014-12-02T21:05:00Z",
+            "executed_at": "2014-12-02T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-12",
+          "strategy": "multi_agent",
+          "portfolio_return": "0.00340957004040157608516631100",
+          "benchmark_return": "-0.0016022956267243286836239211",
+          "turnover": "1.0",
+          "won": true,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 260,
+          "model_cost_usd": "0.0025",
+          "order_ids": [
+            "dd9b5482-27e0-5ac4-bf4e-2bdb1d992b8b",
+            "0250fcb4-e5f2-5a8a-84ea-71017841c8ae"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-03T21:05:00Z",
+            "market_timestamp": "2014-12-03T21:00:00Z",
+            "market_retrieved_at": "2014-12-03T21:01:00Z",
+            "decided_at": "2014-12-03T21:05:00Z",
+            "executed_at": "2014-12-03T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-13",
+          "strategy": "multi_agent",
+          "portfolio_return": "-0.00143565367211054785908809265",
+          "benchmark_return": "-0.0047340609903157320472736395",
+          "turnover": "1.0",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 260,
+          "model_cost_usd": "0.0025",
+          "order_ids": [
+            "0203e44f-558b-5697-b2b0-74b902c66d35",
+            "e7834cfd-a4ed-5c3d-92b5-a83d74c3d4d7"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-04T21:05:00Z",
+            "market_timestamp": "2014-12-04T21:00:00Z",
+            "market_retrieved_at": "2014-12-04T21:01:00Z",
+            "decided_at": "2014-12-04T21:05:00Z",
+            "executed_at": "2014-12-04T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-14",
+          "strategy": "multi_agent",
+          "portfolio_return": "-0.01873323658961500385532207285",
+          "benchmark_return": "-0.0204815053988507982393482896",
+          "turnover": "1.0",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 260,
+          "model_cost_usd": "0.0025",
+          "order_ids": [
+            "d9db1ad3-9cb1-558c-bb95-b4695f1ecf49",
+            "5518f974-e03d-578d-89c4-56e90b7861e3"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-05T21:05:00Z",
+            "market_timestamp": "2014-12-05T21:00:00Z",
+            "market_retrieved_at": "2014-12-05T21:01:00Z",
+            "decided_at": "2014-12-05T21:05:00Z",
+            "executed_at": "2014-12-05T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-15",
+          "strategy": "multi_agent",
+          "portfolio_return": "-0.0033655294703024476131891800",
+          "benchmark_return": "0.004635545912223422277449067",
+          "turnover": "1",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 260,
+          "model_cost_usd": "0.0025",
+          "order_ids": [
+            "0f966bc8-fe66-5fad-8101-fd83dd9f27e3"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-08T21:05:00Z",
+            "market_timestamp": "2014-12-08T21:00:00Z",
+            "market_retrieved_at": "2014-12-08T21:01:00Z",
+            "decided_at": "2014-12-08T21:05:00Z",
+            "executed_at": "2014-12-08T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-16",
+          "strategy": "multi_agent",
+          "portfolio_return": "-0.0221899411779917764564762892",
+          "benchmark_return": "-0.0219066763396085545038972879",
+          "turnover": "1",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 260,
+          "model_cost_usd": "0.0025",
+          "order_ids": [
+            "bde8a513-a686-52ca-b8a0-6f936f5d0398"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-09T21:05:00Z",
+            "market_timestamp": "2014-12-09T21:00:00Z",
+            "market_retrieved_at": "2014-12-09T21:01:00Z",
+            "decided_at": "2014-12-09T21:05:00Z",
+            "executed_at": "2014-12-09T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-17",
+          "strategy": "multi_agent",
+          "portfolio_return": "0",
+          "benchmark_return": "0.001617540766964874656605155",
+          "turnover": "0",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 260,
+          "model_cost_usd": "0.0025",
+          "order_ids": [],
+          "timing": {
+            "research_cutoff": "2014-12-10T21:05:00Z",
+            "market_timestamp": "2014-12-10T21:00:00Z",
+            "market_retrieved_at": "2014-12-10T21:01:00Z",
+            "decided_at": "2014-12-10T21:05:00Z",
+            "executed_at": "2014-12-10T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-18",
+          "strategy": "multi_agent",
+          "portfolio_return": "0",
+          "benchmark_return": "-0.0198168445405921293601394416",
+          "turnover": "0",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 260,
+          "model_cost_usd": "0.0025",
+          "order_ids": [],
+          "timing": {
+            "research_cutoff": "2014-12-11T21:05:00Z",
+            "market_timestamp": "2014-12-11T21:00:00Z",
+            "market_retrieved_at": "2014-12-11T21:01:00Z",
+            "decided_at": "2014-12-11T21:05:00Z",
+            "executed_at": "2014-12-11T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-19",
+          "strategy": "multi_agent",
+          "portfolio_return": "0",
+          "benchmark_return": "-0.0060245911697993649370853036",
+          "turnover": "0",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 260,
+          "model_cost_usd": "0.0025",
+          "order_ids": [],
+          "timing": {
+            "research_cutoff": "2014-12-12T21:05:00Z",
+            "market_timestamp": "2014-12-12T21:00:00Z",
+            "market_retrieved_at": "2014-12-12T21:01:00Z",
+            "decided_at": "2014-12-12T21:05:00Z",
+            "executed_at": "2014-12-12T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-20",
+          "strategy": "multi_agent",
+          "portfolio_return": "0",
+          "benchmark_return": "-0.0142385987632043847248515768",
+          "turnover": "0",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 260,
+          "model_cost_usd": "0.0025",
+          "order_ids": [],
+          "timing": {
+            "research_cutoff": "2014-12-15T21:05:00Z",
+            "market_timestamp": "2014-12-15T21:00:00Z",
+            "market_retrieved_at": "2014-12-15T21:01:00Z",
+            "decided_at": "2014-12-15T21:05:00Z",
+            "executed_at": "2014-12-15T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-21",
+          "strategy": "multi_agent",
+          "portfolio_return": "0",
+          "benchmark_return": "0.025768304386742204741961878",
+          "turnover": "0",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 260,
+          "model_cost_usd": "0.0025",
+          "order_ids": [],
+          "timing": {
+            "research_cutoff": "2014-12-16T21:05:00Z",
+            "market_timestamp": "2014-12-16T21:00:00Z",
+            "market_retrieved_at": "2014-12-16T21:01:00Z",
+            "decided_at": "2014-12-16T21:05:00Z",
+            "executed_at": "2014-12-16T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-22",
+          "strategy": "multi_agent",
+          "portfolio_return": "0.024039689295192122691856646",
+          "benchmark_return": "0.027359553543232146019042308",
+          "turnover": "1",
+          "won": true,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 260,
+          "model_cost_usd": "0.0025",
+          "order_ids": [
+            "cf89934e-1c6f-5cf7-abd6-0ea67cab8fff"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-17T21:05:00Z",
+            "market_timestamp": "2014-12-17T21:00:00Z",
+            "market_retrieved_at": "2014-12-17T21:01:00Z",
+            "decided_at": "2014-12-17T21:05:00Z",
+            "executed_at": "2014-12-17T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-23",
+          "strategy": "multi_agent",
+          "portfolio_return": "0.0170138358669833570799807290",
+          "benchmark_return": "0.006822769962382121252493639",
+          "turnover": "1.0",
+          "won": true,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 260,
+          "model_cost_usd": "0.0025",
+          "order_ids": [
+            "06f37b59-f3c2-582a-bc1e-546e62e5a656",
+            "1f2ef62e-2c65-5a3e-9397-4aeab5c15e1b"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-18T21:05:00Z",
+            "market_timestamp": "2014-12-18T21:00:00Z",
+            "market_retrieved_at": "2014-12-18T21:01:00Z",
+            "decided_at": "2014-12-18T21:05:00Z",
+            "executed_at": "2014-12-18T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-24",
+          "strategy": "multi_agent",
+          "portfolio_return": "0.00715947239360572768776811125",
+          "benchmark_return": "0.005788951446161013626269967",
+          "turnover": "1.0",
+          "won": true,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 260,
+          "model_cost_usd": "0.0025",
+          "order_ids": [
+            "ef2bd9a5-0eec-5fc6-a4bd-ad7665f5ad6c",
+            "63b0fec8-ca1e-5ebf-b943-2627679706a7"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-19T21:05:00Z",
+            "market_timestamp": "2014-12-19T21:00:00Z",
+            "market_retrieved_at": "2014-12-19T21:01:00Z",
+            "decided_at": "2014-12-19T21:05:00Z",
+            "executed_at": "2014-12-19T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-25",
+          "strategy": "multi_agent",
+          "portfolio_return": "0.00362224464577916609426768355",
+          "benchmark_return": "0.004143204770443059289209754",
+          "turnover": "1.0",
+          "won": true,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 260,
+          "model_cost_usd": "0.0025",
+          "order_ids": [
+            "db4f8ab0-a096-5a3c-9990-d6451cbd9a8c",
+            "943c1db7-0fd3-5d46-b239-ccc5b0272822"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-22T21:05:00Z",
+            "market_timestamp": "2014-12-22T21:00:00Z",
+            "market_retrieved_at": "2014-12-22T21:01:00Z",
+            "decided_at": "2014-12-22T21:05:00Z",
+            "executed_at": "2014-12-22T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-26",
+          "strategy": "multi_agent",
+          "portfolio_return": "-0.00748084242660810633145161850",
+          "benchmark_return": "-0.0062125021038436525649076934",
+          "turnover": "1.0",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 260,
+          "model_cost_usd": "0.0025",
+          "order_ids": [
+            "e7d3cc91-1cba-5aba-b361-e5f0e8fa3393",
+            "02fc32e8-84b6-5e7b-a1df-f0d12bda85e8"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-23T21:05:00Z",
+            "market_timestamp": "2014-12-23T21:00:00Z",
+            "market_retrieved_at": "2014-12-23T21:01:00Z",
+            "decided_at": "2014-12-23T21:05:00Z",
+            "executed_at": "2014-12-23T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-27",
+          "strategy": "multi_agent",
+          "portfolio_return": "-0.00573938680152764230813794295",
+          "benchmark_return": "0.004492338602784711492532557",
+          "turnover": "1.0",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 260,
+          "model_cost_usd": "0.0025",
+          "order_ids": [
+            "7b4c3ffe-b7b3-5da1-8a1f-b8d275ad0353",
+            "4bfd5b6d-db46-51cd-aa25-b91436561859"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-24T21:05:00Z",
+            "market_timestamp": "2014-12-24T21:00:00Z",
+            "market_retrieved_at": "2014-12-24T21:01:00Z",
+            "decided_at": "2014-12-24T21:05:00Z",
+            "executed_at": "2014-12-24T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-28",
+          "strategy": "multi_agent",
+          "portfolio_return": "-0.00147966213608969874750785785",
+          "benchmark_return": "-0.0024581173238475784077897180",
+          "turnover": "1.0",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 260,
+          "model_cost_usd": "0.0025",
+          "order_ids": [
+            "1fc38c63-c920-5281-a412-1635cbaf686b",
+            "3a776c9f-6471-5c9b-9755-a357aa889614"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-26T21:05:00Z",
+            "market_timestamp": "2014-12-26T21:00:00Z",
+            "market_retrieved_at": "2014-12-26T21:01:00Z",
+            "decided_at": "2014-12-26T21:05:00Z",
+            "executed_at": "2014-12-26T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-29",
+          "strategy": "multi_agent",
+          "portfolio_return": "-0.01072199995622730659427716070",
+          "benchmark_return": "-0.0076224149611457364371240230",
+          "turnover": "1.0",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 260,
+          "model_cost_usd": "0.0025",
+          "order_ids": [
+            "e464f0d1-2514-5893-8052-c63843598251",
+            "ed38a93d-4a71-5d27-9892-9c83a4097bae"
+          ],
+          "timing": {
+            "research_cutoff": "2014-12-29T21:05:00Z",
+            "market_timestamp": "2014-12-29T21:00:00Z",
+            "market_retrieved_at": "2014-12-29T21:01:00Z",
+            "decided_at": "2014-12-29T21:05:00Z",
+            "executed_at": "2014-12-29T21:05:00Z"
+          }
+        },
+        {
+          "scenario_id": "hist-2014-30",
+          "strategy": "multi_agent",
+          "portfolio_return": "0",
+          "benchmark_return": "-0.0133359956170157253339905487",
+          "turnover": "0",
+          "won": false,
+          "decision_valid": true,
+          "citation_valid": true,
+          "tool_success": true,
+          "latency_ms": 260,
+          "model_cost_usd": "0.0025",
+          "order_ids": [],
+          "timing": {
+            "research_cutoff": "2014-12-30T21:05:00Z",
+            "market_timestamp": "2014-12-30T21:00:00Z",
+            "market_retrieved_at": "2014-12-30T21:01:00Z",
+            "decided_at": "2014-12-30T21:05:00Z",
+            "executed_at": "2014-12-30T21:05:00Z"
+          }
+        }
+      ]
+    }
+  ],
+  "ablation": {
+    "multi_minus_single_total_return": "-0.017067649836812895746178743",
+    "multi_minus_single_cost_usd": "0.0450",
+    "multi_minus_single_latency_ms": "140"
+  },
+  "leakage_checks_passed": true
+}

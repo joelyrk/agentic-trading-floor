@@ -228,13 +228,13 @@ CI validates the main workflows without external credentials, security assumptio
 
 ### Deliverables
 
-- [ ] Add production containers and a local orchestration file for API, scheduler, and frontend.
-- [ ] Add a seeded read-only demo mode that needs no paid credentials.
-- [ ] Document local setup, architecture, data contracts, evaluation method, limitations, security, and operating modes.
-- [ ] Add `ARCHITECTURE.md`, `EVALUATION.md`, and `SECURITY.md` backed by implemented behavior.
+- [x] Add production containers and a local orchestration file for API, scheduler, and frontend.
+- [x] Add a seeded read-only demo mode that needs no paid credentials.
+- [x] Document local setup, architecture, data contracts, evaluation method, limitations, security, and operating modes.
+- [x] Add `ARCHITECTURE.md`, `EVALUATION.md`, and `SECURITY.md` backed by implemented behavior.
 - [ ] Include an architecture diagram, screenshots, example traces with sensitive data removed, and a short demo video.
-- [ ] Publish evaluation results with dataset/model/prompt versions and honest limitations.
-- [ ] Deploy with server-side secrets only; never send provider keys to the browser.
+- [x] Publish evaluation results with dataset/model/prompt versions and honest limitations.
+- [x] Deploy with server-side secrets only; never send provider keys to the browser.
 
 ### Acceptance gate
 
@@ -275,3 +275,5 @@ Record material architecture decisions here as short dated entries or replace th
 - **2026-08-14:** Phase 5 supervises stable logical MCP services with bounded startup probes, request retries, redacted stderr diagnostics, persisted circuit state, and explicit healthy/degraded/unavailable transitions. Per-trader cycles enforce turn/token/wall-time/spend budgets, disable sensitive trace payload capture, and persist provider-reported usage, configurable cost estimates, latency, trace/run/prompt/market metadata, and decision links for the health API and dashboard.
 - **2026-08-14:** Phase 6 replaces the quadrant-first demo with an accessible decision console centered on portfolio/risk metrics, evidence and control outcomes, data provenance, service health, and cost/latency. Replay sessions persist a decision before allowing a separate idempotent outcome reveal; experiment reports compare model/prompt labels and deterministic single/multi-agent architecture proxies. FastAPI's versioned OpenAPI document is guarded by a frontend route-contract test.
 - **2026-08-14:** Phase 7 makes SQLite evolution transactional and versioned, adds verified backup/restore and bounded retention tools, and records orphaned or shutdown-cancelled cycles as interrupted. Public API mode is opt-in and requires Bearer authentication plus per-client rate limits. The generic fetch MCP is replaced by a bounded public-network-only server; remaining npm MCP packages are exact-pinned. CI enforces tests, formatting, linting, TypeScript checking, secret scanning, builds, and locked dependency audits, with the threat model and recovery procedures recorded in `SECURITY.md`.
+- **2026-08-14:** Phase 8 packages separate backend/frontend production images and a loopback-only Compose demo. `APP_MODE=demo` requires simulated data, seeds a versioned audit snapshot atomically, rejects HTTP mutations and scheduler startup, and exposes the boundary to the UI. Credentialed scheduler services remain an explicit profile with server-only environment secrets. A versioned offline report, architecture/evaluation/security docs, and a sanitized trace are checked in; real screenshots/video remain pending because the required browser capture runtime was unavailable during implementation.
+- **2026-08-14:** The Massive EOD runtime schedules one post-close cycle at 22:30 UTC on weekdays. Traders are sequential by default, cycles are bounded to 8 turns/40k tokens/180 seconds, research output is capped at five concise sources, and OpenAI requests use bounded SDK retries that respect eligible server retry guidance. These controls prevent four-agent request bursts against data that changes only once per trading day.

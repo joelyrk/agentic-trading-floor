@@ -1,5 +1,5 @@
 import {
-  createExperiment, createReplay, getExperiments, getHealth, getMarket, getReplayCatalog, getRiskPolicy,
+  createExperiment, createReplay, getExperiments, getHealth, getMarket, getReplayCatalog, getRiskPolicy, getRuntime,
   getTrader, getTraderDecisions, getTraders, revealReplay,
   type DecisionAudit, type ExperimentReport, type HealthInfo, type MarketInfo,
   type ReplaySession, type RiskPolicyInfo, type TraderDetail,
@@ -11,6 +11,7 @@ initTheme(document.getElementById("btn-theme") as HTMLButtonElement);
 const money = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
 const percent = (value: number) => `${value >= 0 ? "+" : ""}${(value * 100).toFixed(2)}%`;
 const escapeHtml = (value: unknown) => String(value).replace(/[&<>'"]/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" })[char]!);
+const runtimePromise = getRuntime();
 
 document.querySelectorAll<HTMLButtonElement>(".tab").forEach((tab) => tab.addEventListener("click", () => {
   document.querySelectorAll<HTMLButtonElement>(".tab").forEach((item) => {
@@ -41,7 +42,10 @@ function turnover(trader: TraderDetail): number {
 }
 
 async function loadOverview(): Promise<void> {
-  const [market, health, roster, risk, experiments] = await Promise.all([getMarket(), getHealth(), getTraders(), getRiskPolicy(), getExperiments()]);
+  const [runtime, market, health, roster, risk, experiments] = await Promise.all([runtimePromise, getMarket(), getHealth(), getTraders(), getRiskPolicy(), getExperiments()]);
+  const runtimeBadge = document.getElementById("runtime-badge")!;
+  runtimeBadge.textContent = runtime.read_only ? "SEEDED · READ ONLY" : "STANDARD MODE";
+  runtimeBadge.dataset.state = runtime.read_only ? "demo" : "good";
   const traders = await Promise.all(roster.map((item) => getTrader(item.name)));
   const decisions = (await Promise.all(roster.map(async (item) => ({ name: item.name, rows: await getTraderDecisions(item.name) }))));
   renderStatus(market, health);
@@ -112,13 +116,19 @@ function renderCosts(health: HealthInfo): void {
 }
 
 async function loadReplay(): Promise<void> {
-  const catalog = await getReplayCatalog();
+  const [runtime, catalog] = await Promise.all([runtimePromise, getReplayCatalog()]);
   const scenario = document.getElementById("scenario-select") as HTMLSelectElement;
   const strategy = document.getElementById("strategy-select") as HTMLSelectElement;
   scenario.innerHTML = catalog.scenarios.map((item) => `<option value="${escapeHtml(item.scenario_id)}">${escapeHtml(item.scenario_id)} · ${new Date(item.decision_at).toLocaleDateString()}</option>`).join("");
   strategy.innerHTML = catalog.strategies.map((item) => `<option value="${escapeHtml(item)}">${escapeHtml(item.replaceAll("_", " "))}</option>`).join("");
   strategy.value = "multi_agent";
   document.getElementById("dataset-note")!.textContent = `${catalog.dataset.dataset_id} · version ${catalog.dataset.dataset_version} · ${catalog.dataset.scenario_count} scenarios. ${catalog.notice}`;
+  if (runtime.read_only) {
+    const button = document.querySelector<HTMLButtonElement>("#replay-form button")!;
+    button.disabled = true;
+    button.textContent = "Read-only demo";
+    document.getElementById("dataset-note")!.textContent += " Mutations are disabled in the seeded demo.";
+  }
 }
 
 function renderReplay(session: ReplaySession): void {
@@ -149,7 +159,16 @@ function renderExperiments(reports: ExperimentReport[]): void {
   host.innerHTML = `<table><thead><tr><th>Model / prompt</th><th>Architecture</th><th>Return</th><th>vs benchmark</th><th>Drawdown</th><th>Turnover</th><th>Cost</th><th>Latency</th></tr></thead><tbody>${rows}</tbody></table><p class="table-note">All rows use immutable point-in-time fixtures. Identical returns across model labels are expected for the current deterministic architecture proxies.</p>`;
 }
 
-async function loadExperiments(): Promise<void> { renderExperiments(await getExperiments()); }
+async function loadExperiments(): Promise<void> {
+  const [runtime, reports] = await Promise.all([runtimePromise, getExperiments()]);
+  renderExperiments(reports);
+  if (runtime.read_only) {
+    const button = document.querySelector<HTMLButtonElement>("#experiment-form button")!;
+    button.disabled = true;
+    button.textContent = "Published results";
+    for (const field of document.querySelectorAll<HTMLInputElement>("#experiment-form input")) field.disabled = true;
+  }
+}
 document.getElementById("experiment-form")!.addEventListener("submit", async (event) => {
   event.preventDefault();
   const button = (event.currentTarget as HTMLFormElement).querySelector("button")!;

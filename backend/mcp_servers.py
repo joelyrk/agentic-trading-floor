@@ -205,21 +205,28 @@ def researcher_mcp_servers(name: str) -> list[ObservedMCPServerStdio]:
     tavily_env = {}
     if os.getenv("TAVILY_API_KEY"):
         tavily_env["TAVILY_API_KEY"] = os.environ["TAVILY_API_KEY"]
+    memory_dir = Path(os.getenv("MEMORY_DIR", "memory"))
+    memory_dir.mkdir(parents=True, exist_ok=True)
+    preinstalled = os.getenv("PREINSTALLED_MCP_PACKAGES", "false").strip().lower() == "true"
+    tavily_command = "tavily-mcp" if preinstalled else "npx"
+    tavily_args = [] if preinstalled else ["-y", "tavily-mcp@0.2.21"]
+    memory_command = "mcp-memory-libsql" if preinstalled else "npx"
+    memory_args = [] if preinstalled else ["-y", "mcp-memory-libsql@0.0.17"]
     return [
         _server(
             local_server_params("backend.research_fetch_server"),
             "research-fetch",
         ),
         _server(
-            {"command": "npx", "args": ["-y", "tavily-mcp@0.2.21"], "env": tavily_env},
+            {"command": tavily_command, "args": tavily_args, "env": tavily_env},
             "research-search",
             tool_filter=create_static_tool_filter(allowed_tool_names=["tavily_search"]),
         ),
         _server(
             {
-                "command": "npx",
-                "args": ["-y", "mcp-memory-libsql@0.0.17"],
-                "env": {"LIBSQL_URL": f"file:./memory/{name}.db"},
+                "command": memory_command,
+                "args": memory_args,
+                "env": {"LIBSQL_URL": f"file:{(memory_dir / f'{name}.db').resolve()}"},
             },
             f"memory-{name.lower()}",
         ),

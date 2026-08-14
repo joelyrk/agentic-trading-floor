@@ -1,0 +1,29 @@
+{
+  "example": true,
+  "sensitive_payload_capture": false,
+  "cycle": {
+    "cycle_id": "447681f8-cdd4-5495-a193-ccefed7455c4",
+    "run_id": "demo-run-phase8-v1",
+    "account_name": "cathie",
+    "model": "offline-demo-proxy",
+    "prompt_version": "trader-v1",
+    "market_mode": "simulated",
+    "status": "succeeded",
+    "requests": 2,
+    "input_tokens": 900,
+    "output_tokens": 240,
+    "estimated_cost_usd": "0",
+    "latency_ms": 161
+  },
+  "decision": {
+    "decision_id": "884b89a4-c936-5452-b169-96f4c4ed6dc6",
+    "trace_id": "trace_demo_cathie",
+    "outcome": "rejected",
+    "rule": "maximum_order_notional"
+  },
+  "redactions": [
+    "model input/output payloads are not captured",
+    "provider credentials are never persisted",
+    "this checked-in trace is deterministic demo data"
+  ]
+}

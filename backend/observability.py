@@ -66,9 +66,9 @@ class ServiceHealth(BaseModel):
 
 class CycleBudget(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    max_turns: int = Field(default=30, gt=0)
-    max_tokens: int = Field(default=100_000, gt=0)
-    max_wall_seconds: float = Field(default=300, gt=0)
+    max_turns: int = Field(default=8, gt=0)
+    max_tokens: int = Field(default=40_000, gt=0)
+    max_wall_seconds: float = Field(default=180, gt=0)
     max_spend_usd: Decimal = Field(default=Decimal("5"), gt=0)
     input_cost_per_million: Decimal = Field(default=Decimal("0"), ge=0)
     output_cost_per_million: Decimal = Field(default=Decimal("0"), ge=0)
@@ -76,9 +76,9 @@ class CycleBudget(BaseModel):
     @classmethod
     def from_env(cls) -> "CycleBudget":
         return cls(
-            max_turns=os.getenv("CYCLE_MAX_TURNS", "30"),
-            max_tokens=os.getenv("CYCLE_MAX_TOKENS", "100000"),
-            max_wall_seconds=os.getenv("CYCLE_MAX_WALL_SECONDS", "300"),
+            max_turns=os.getenv("CYCLE_MAX_TURNS", "8"),
+            max_tokens=os.getenv("CYCLE_MAX_TOKENS", "40000"),
+            max_wall_seconds=os.getenv("CYCLE_MAX_WALL_SECONDS", "180"),
             max_spend_usd=os.getenv("CYCLE_MAX_SPEND_USD", "5"),
             input_cost_per_million=os.getenv("MODEL_INPUT_COST_PER_MILLION", "0"),
             output_cost_per_million=os.getenv("MODEL_OUTPUT_COST_PER_MILLION", "0"),

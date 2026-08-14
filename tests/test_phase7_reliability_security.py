@@ -1,6 +1,7 @@
 import asyncio
 import sqlite3
 from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime, timezone
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -175,19 +176,38 @@ def test_research_fetch_bounds_and_labels_untrusted_content(monkeypatch) -> None
     assert observed["allow_redirects"] is False
 
 
-def test_external_mcp_packages_are_exactly_pinned() -> None:
+def test_external_mcp_packages_are_exactly_pinned(monkeypatch) -> None:
+    monkeypatch.setenv("PREINSTALLED_MCP_PACKAGES", "true")
     params = [server.params for server in researcher_mcp_servers("Alice")]
-    flattened = [arg for item in params for arg in item.args]
-    assert "tavily-mcp@0.2.21" in flattened
-    assert "mcp-memory-libsql@0.0.17" in flattened
-    assert not any("@latest" in arg for arg in flattened)
+    commands = {item.command for item in params}
+    assert "tavily-mcp" in commands
+    assert "mcp-memory-libsql" in commands
     assert any("backend.research_fetch_server" in item.args for item in params)
+
+    dockerfile = Path("Dockerfile").read_text()
+    assert "tavily-mcp@0.2.21" in dockerfile
+    assert "mcp-memory-libsql@0.0.17" in dockerfile
+    assert "@latest" not in dockerfile
 
 
 def test_runtime_settings_reject_unsafe_bounds() -> None:
     with pytest.raises(ValidationError):
         RuntimeSettings(
             scheduler_interval_minutes=0,
+            mcp_startup_timeout_seconds=20,
+            mcp_request_timeout_seconds=30,
+            mcp_max_retries=2,
+            mcp_retry_backoff_seconds=0.5,
+            mcp_circuit_failure_threshold=3,
+            mcp_circuit_reset_seconds=60,
+            shutdown_grace_seconds=30,
+            accounts_db=Path("accounts.db"),
+        )
+
+    with pytest.raises(ValidationError):
+        RuntimeSettings(
+            scheduler_interval_minutes=60,
+            agent_max_concurrency=0,
             mcp_startup_timeout_seconds=20,
             mcp_request_timeout_seconds=30,
             mcp_max_retries=2,
@@ -224,7 +244,13 @@ def test_scheduler_waits_for_inflight_cycle_during_graceful_shutdown(monkeypatch
     monkeypatch.setattr(
         floor,
         "validate_startup",
-        lambda _component: SimpleNamespace(scheduler_interval_minutes=60, shutdown_grace_seconds=1),
+        lambda _component: SimpleNamespace(
+            scheduler_interval_minutes=60,
+            scheduler_mode="interval",
+            scheduler_daily_time_utc="22:30",
+            agent_max_concurrency=1,
+            shutdown_grace_seconds=1,
+        ),
     )
     monkeypatch.setattr(floor, "is_market_open", lambda: True)
     monkeypatch.setattr(floor.TelemetryRepository, "recover_interrupted_cycles", lambda _self: 0)
@@ -260,7 +286,11 @@ def test_scheduler_cancels_cycle_after_shutdown_grace(monkeypatch) -> None:
         floor,
         "validate_startup",
         lambda _component: SimpleNamespace(
-            scheduler_interval_minutes=60, shutdown_grace_seconds=0.01
+            scheduler_interval_minutes=60,
+            scheduler_mode="interval",
+            scheduler_daily_time_utc="22:30",
+            agent_max_concurrency=1,
+            shutdown_grace_seconds=0.01,
         ),
     )
     monkeypatch.setattr(floor, "is_market_open", lambda: True)
@@ -290,3 +320,51 @@ def test_scheduler_cancels_cycle_after_shutdown_grace(monkeypatch) -> None:
         assert cancelled.is_set()
 
     asyncio.run(scenario())
+
+
+def test_scheduler_serializes_agents_at_concurrency_one() -> None:
+    import backend.trading_floor as floor
+
+    active = 0
+    peak_active = 0
+    completed = []
+
+    class FakeTrader:
+        def __init__(self, name):
+            self.name = name
+
+        async def run(self):
+            nonlocal active, peak_active
+            active += 1
+            peak_active = max(peak_active, active)
+            await asyncio.sleep(0)
+            completed.append(self.name)
+            active -= 1
+
+    asyncio.run(floor._run_cycle([FakeTrader(str(index)) for index in range(4)], 1))
+    assert peak_active == 1
+    assert completed == ["0", "1", "2", "3"]
+
+
+def test_daily_schedule_delay_and_weekday_filter() -> None:
+    import backend.trading_floor as floor
+
+    friday = datetime(2026, 8, 14, 21, 30, tzinfo=timezone.utc)
+    assert floor.seconds_until_daily_run(friday, "22:30") == 3_600
+    assert floor.seconds_until_daily_run(friday.replace(hour=22, minute=30), "22:30") == 86_400
+    assert floor.is_daily_run_day(friday)
+    assert not floor.is_daily_run_day(datetime(2026, 8, 15, 22, 30, tzinfo=timezone.utc))
+
+
+def test_cycle_budget_defaults_are_bounded_for_sequential_agents(monkeypatch) -> None:
+    for name in (
+        "CYCLE_MAX_TURNS",
+        "CYCLE_MAX_TOKENS",
+        "CYCLE_MAX_WALL_SECONDS",
+        "CYCLE_MAX_SPEND_USD",
+    ):
+        monkeypatch.delenv(name, raising=False)
+    budget = CycleBudget.from_env()
+    assert budget.max_turns == 8
+    assert budget.max_tokens == 40_000
+    assert budget.max_wall_seconds == 180

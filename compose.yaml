@@ -1,0 +1,81 @@
+name: agentic-trading-floor
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      APP_MODE: demo
+      MARKET_DATA_MODE: simulated
+      MARKET_DATA_FALLBACK: fail_closed
+      ACCOUNTS_DB: /data/demo.db
+      API_ACCESS_MODE: local
+    volumes:
+      - demo-data:/data
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: frontend
+      dockerfile: Dockerfile
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8080:8080"
+    restart: unless-stopped
+
+  scheduler:
+    profiles: ["live"]
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: ["python", "-m", "backend.trading_floor"]
+    env_file:
+      - path: .env
+        required: true
+    environment:
+      APP_MODE: standard
+      ACCOUNTS_DB: /data/live.db
+      MEMORY_DIR: /data/memory
+    volumes:
+      - live-data:/data
+    restart: unless-stopped
+    healthcheck:
+      disable: true
+
+  live-api:
+    profiles: ["live"]
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - path: .env
+        required: true
+    environment:
+      APP_MODE: standard
+      ACCOUNTS_DB: /data/live.db
+    volumes:
+      - live-data:/data
+    ports:
+      - "127.0.0.1:8000:8000"
+    restart: unless-stopped
+
+  live-frontend:
+    profiles: ["live"]
+    build:
+      context: frontend
+      dockerfile: Dockerfile
+    environment:
+      API_UPSTREAM: live-api:8000
+    depends_on:
+      live-api:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8081:8080"
+    restart: unless-stopped
+
+volumes:
+  demo-data:
+  live-data:
