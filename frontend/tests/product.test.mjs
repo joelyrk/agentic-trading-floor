@@ -33,9 +33,10 @@ test("manual agent runs require confirmation and expose live status", () => {
   assert.match(client, /createManualAgentRun\(crypto\.randomUUID\(\)\)/);
 });
 
-test("overview exposes each agent's current strategy", () => {
-  assert.match(html, /<h3>Agent strategies<\/h3>/);
-  assert.match(html, /id="strategy-list"/);
-  assert.match(client, /renderStrategies\(traders\)/);
+test("overview exposes each agent's strategy in the agent desk grid", () => {
+  assert.match(html, /<h3>Agent desks<\/h3>/);
+  assert.match(html, /id="agent-desk-list"/);
+  assert.match(client, /renderAgentDesks\(traders,/);
   assert.match(client, /trader\.strategy/);
+  assert.match(css, /\.agent-desk-list\{display:grid;grid-template-columns:repeat\(2,/);
 });
