@@ -111,6 +111,29 @@ MIGRATIONS = (
         CREATE INDEX IF NOT EXISTS idx_replay_sessions_created ON replay_sessions(created_at);
     """,
     ),
+    Migration(
+        5,
+        "audited_agent_runs",
+        """
+        CREATE TABLE IF NOT EXISTS agent_runs (
+            run_id TEXT PRIMARY KEY,
+            trigger TEXT NOT NULL CHECK (trigger IN ('scheduled', 'manual')),
+            status TEXT NOT NULL
+            CHECK (status IN ('queued', 'running', 'succeeded', 'failed', 'interrupted')),
+            requested_at TEXT NOT NULL, started_at TEXT, completed_at TEXT,
+            requested_by TEXT NOT NULL, idempotency_key TEXT NOT NULL UNIQUE,
+            market_symbol TEXT NOT NULL, market_timestamp TEXT NOT NULL,
+            market_retrieved_at TEXT NOT NULL, market_mode TEXT NOT NULL,
+            error_summary TEXT
+        );
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_agent_runs_one_active
+        ON agent_runs((1)) WHERE status IN ('queued', 'running');
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_agent_runs_market_snapshot
+        ON agent_runs(market_mode, market_timestamp);
+        CREATE INDEX IF NOT EXISTS idx_agent_runs_requested
+        ON agent_runs(requested_at);
+    """,
+    ),
 )
 
 

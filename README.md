@@ -148,6 +148,16 @@ and exponential backoff with jitter. Set `SCHEDULER_MODE=interval` only for a
 deliberate intraday provider configuration; `RUN_EVERY_N_MINUTES` then controls
 the interval.
 
+In standard mode the overview also exposes **Run EOD cycle** for an intentional
+manual run. It requires browser confirmation and reserves the observed market
+snapshot before launching the same sequential, budgeted orchestration used by
+the scheduler. A shared SQLite lock rejects overlapping runs, idempotency keys
+make request retries safe, and an already-consumed market timestamp is refused.
+The durable run record includes its manual/scheduled trigger, requester class,
+timestamps, data mode, market timestamp, outcome, and safe error summary. Demo
+mode disables the control, and public API mode still requires write
+authentication.
+
 `SHUTDOWN_GRACE_SECONDS` defaults to 30. SIGINT/SIGTERM stops new scheduler
 cycles, gives the active cycle that bounded grace period, then cancels it and
 persists an `interrupted` status. Startup also closes orphaned `running` cycle

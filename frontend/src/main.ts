@@ -1,7 +1,7 @@
 import {
-  createExperiment, createReplay, getExperiments, getHealth, getMarket, getReplayCatalog, getRiskPolicy, getRuntime,
+  createExperiment, createManualAgentRun, createReplay, getAgentRun, getExperiments, getHealth, getLatestAgentRun, getMarket, getReplayCatalog, getRiskPolicy, getRuntime,
   getTrader, getTraderDecisions, getTraders, revealReplay,
-  type DecisionAudit, type ExperimentReport, type HealthInfo, type MarketInfo,
+  type AgentRunRecord, type DecisionAudit, type ExperimentReport, type HealthInfo, type MarketInfo,
   type ReplaySession, type RiskPolicyInfo, type TraderDetail,
 } from "./api";
 import { initTheme } from "./theme";
@@ -12,6 +12,7 @@ const money = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD
 const percent = (value: number) => `${value >= 0 ? "+" : ""}${(value * 100).toFixed(2)}%`;
 const escapeHtml = (value: unknown) => String(value).replace(/[&<>'"]/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" })[char]!);
 const runtimePromise = getRuntime();
+let runPoll: number | undefined;
 
 document.querySelectorAll<HTMLButtonElement>(".tab").forEach((tab) => tab.addEventListener("click", () => {
   document.querySelectorAll<HTMLButtonElement>(".tab").forEach((item) => {
@@ -42,13 +43,15 @@ function turnover(trader: TraderDetail): number {
 }
 
 async function loadOverview(): Promise<void> {
-  const [runtime, market, health, roster, risk, experiments] = await Promise.all([runtimePromise, getMarket(), getHealth(), getTraders(), getRiskPolicy(), getExperiments()]);
+  const [runtime, market, health, roster, risk, experiments, latestRun] = await Promise.all([runtimePromise, getMarket(), getHealth(), getTraders(), getRiskPolicy(), getExperiments(), getLatestAgentRun()]);
   const runtimeBadge = document.getElementById("runtime-badge")!;
   runtimeBadge.textContent = runtime.read_only ? "SEEDED · READ ONLY" : "STANDARD MODE";
   runtimeBadge.dataset.state = runtime.read_only ? "demo" : "good";
   const traders = await Promise.all(roster.map((item) => getTrader(item.name)));
   const decisions = (await Promise.all(roster.map(async (item) => ({ name: item.name, rows: await getTraderDecisions(item.name) }))));
   renderStatus(market, health);
+  renderRunControl(runtime.read_only, market, health, latestRun);
+  if (latestRun && ["queued", "running"].includes(latestRun.status) && runPoll === undefined) pollRunState(latestRun.run_id);
   const total = traders.reduce((sum, item) => sum + item.portfolio_value, 0);
   const initial = traders.reduce((sum, item) => sum + item.portfolio_value - item.pnl, 0);
   const allDecisions = decisions.flatMap((item) => item.rows.map((row) => ({ trader: item.name, row })));
@@ -61,11 +64,82 @@ async function loadOverview(): Promise<void> {
     ["Proposal controls", `${approved} approved`, `${rejected} rejected`],
     ["Latest replay vs benchmark", latestAgent ? percent(Number(latestAgent.metrics.benchmark_relative_return)) : "Not run", latestAgent ? `${experiments[0].metadata.model} · offline` : "Run an experiment to compare"],
   ].map(([label, value, note]) => `<article class="metric"><span>${label}</span><strong>${value}</strong><small>${note}</small></article>`).join("");
+  renderStrategies(traders);
   renderPortfolios(traders, risk);
   renderServices(health);
   renderDecisions(allDecisions);
   renderCosts(health);
 }
+
+function renderStrategies(traders: TraderDetail[]): void {
+  const host = document.getElementById("strategy-list")!;
+  host.className = "strategy-grid";
+  host.innerHTML = traders.map((trader) => {
+    const strategy = trader.strategy.replace(/\s+/g, " ").trim();
+    return `<article class="strategy-card"><div><strong>${escapeHtml(trader.name)} ${escapeHtml(trader.lastname)}</strong><small>${escapeHtml(trader.model_name)}</small></div><p>${escapeHtml(strategy || "No strategy mandate is currently set.")}</p></article>`;
+  }).join("");
+}
+
+function renderRunControl(readOnly: boolean, market: MarketInfo, health: HealthInfo, run: AgentRunRecord | null): void {
+  const button = document.getElementById("run-cycle-button") as HTMLButtonElement;
+  const status = document.getElementById("run-cycle-status")!;
+  const active = run?.status === "queued" || run?.status === "running";
+  const sameSnapshot = Boolean(run && market.last_successful_observation && run.market_mode === market.mode && run.market_timestamp === market.last_successful_observation.market_timestamp);
+  button.textContent = readOnly ? "Read-only demo" : market.mode === "end_of_day" ? "Run EOD cycle" : "Run paper cycle";
+  button.disabled = readOnly || active || sameSnapshot || health.current_cycle_id !== null;
+  if (readOnly) {
+    status.textContent = "Manual agent runs are disabled in the seeded demo.";
+  } else if (!run) {
+    status.textContent = "No coordinated agent run has been recorded yet.";
+  } else if (active) {
+    status.textContent = `${run.trigger} run in progress · four agents execute sequentially`;
+  } else if (sameSnapshot) {
+    status.textContent = `Market snapshot ${new Date(run.market_timestamp).toLocaleString()} was already consumed by the ${run.trigger} run.`;
+  } else {
+    const completed = run.completed_at ? new Date(run.completed_at).toLocaleString() : "not completed";
+    status.textContent = `${run.trigger} run ${run.status} · data ${new Date(run.market_timestamp).toLocaleString()} · ${completed}${run.error_summary ? ` · ${run.error_summary}` : ""}`;
+  }
+}
+
+async function refreshRunControl(runId?: string): Promise<AgentRunRecord | null> {
+  const [runtime, market, health, run] = await Promise.all([runtimePromise, getMarket(), getHealth(), runId ? getAgentRun(runId) : getLatestAgentRun()]);
+  renderRunControl(runtime.read_only, market, health, run);
+  return run;
+}
+
+function pollRunState(runId: string): void {
+  if (runPoll !== undefined) window.clearInterval(runPoll);
+  runPoll = window.setInterval(async () => {
+    try {
+      const run = await refreshRunControl(runId);
+      if (!run || !["queued", "running"].includes(run.status)) {
+        window.clearInterval(runPoll);
+        runPoll = undefined;
+        await loadOverview();
+      }
+    } catch (error) {
+      showError(error);
+    }
+  }, 3000);
+}
+
+document.getElementById("run-cycle-button")!.addEventListener("click", async () => {
+  const confirmed = window.confirm(
+    "Run all four paper-trading agents sequentially using the latest market snapshot? This consumes model and research API quota; deterministic risk controls remain enforced."
+  );
+  if (!confirmed) return;
+  const button = document.getElementById("run-cycle-button") as HTMLButtonElement;
+  button.disabled = true;
+  button.textContent = "Requesting…";
+  try {
+    const run = await createManualAgentRun(crypto.randomUUID());
+    document.getElementById("run-cycle-status")!.textContent = `Manual run ${run.status} · data ${new Date(run.market_timestamp).toLocaleString()}`;
+    pollRunState(run.run_id);
+  } catch (error) {
+    showError(error);
+    await refreshRunControl();
+  }
+});
 
 function renderStatus(market: MarketInfo, health: HealthInfo): void {
   const marketBadge = document.getElementById("market-badge")!;

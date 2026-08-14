@@ -31,10 +31,17 @@
       <section id="overview-view" class="view" aria-labelledby="overview-heading">
         <div class="section-head">
           <div><p class="eyebrow">Live paper accounts</p><h2 id="overview-heading">Controls before performance</h2></div>
-          <p id="freshness-copy" class="context-copy">Loading data provenance…</p>
+          <div class="run-panel">
+            <p id="freshness-copy" class="context-copy">Loading data provenance…</p>
+            <div class="run-action">
+              <button id="run-cycle-button" class="primary" type="button" disabled>Run EOD cycle</button>
+              <small id="run-cycle-status" aria-live="polite">Checking run state…</small>
+            </div>
+          </div>
         </div>
         <div id="overview-metrics" class="metric-grid" aria-live="polite"></div>
         <div class="dashboard-grid">
+          <section class="card span-full"><div class="card-head"><h3>Agent strategies</h3><span>Current stored mandates</span></div><div id="strategy-list" class="strategy-grid loading">Loading strategies…</div></section>
           <section class="card span-2"><div class="card-head"><h3>Portfolio &amp; risk utilization</h3><span>Paper accounts</span></div><div id="portfolio-table" class="table-wrap loading">Loading portfolios…</div></section>
           <section class="card"><div class="card-head"><h3>Service health</h3><span id="service-summary"></span></div><div id="service-list" class="stack loading">Loading services…</div></section>
           <section class="card span-2"><div class="card-head"><h3>Evidence &amp; recommendation timeline</h3><span>Newest first</span></div><div id="decision-list" class="timeline loading">Loading decisions…</div></section>

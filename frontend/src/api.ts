@@ -114,6 +114,22 @@ export interface HealthInfo {
   };
 }
 
+export interface AgentRunRecord {
+  run_id: string;
+  trigger: "scheduled" | "manual";
+  status: "queued" | "running" | "succeeded" | "failed" | "interrupted";
+  requested_at: string;
+  started_at: string | null;
+  completed_at: string | null;
+  requested_by: string;
+  idempotency_key: string;
+  market_symbol: string;
+  market_timestamp: string;
+  market_retrieved_at: string;
+  market_mode: MarketMode;
+  error_summary: string | null;
+}
+
 export interface RiskPolicyInfo {
   max_position_percentage: string;
   max_symbol_concentration: string;
@@ -241,6 +257,21 @@ export function getMarket(): Promise<MarketInfo> {
 
 export function getHealth(): Promise<HealthInfo> {
   return get("/api/health");
+}
+
+export function getLatestAgentRun(): Promise<AgentRunRecord | null> {
+  return get("/api/agent-runs/latest");
+}
+
+export function getAgentRun(runId: string): Promise<AgentRunRecord> {
+  return get(`/api/agent-runs/${encodeURIComponent(runId)}`);
+}
+
+export function createManualAgentRun(idempotencyKey: string): Promise<AgentRunRecord> {
+  return post("/api/agent-runs", {
+    idempotency_key: idempotencyKey,
+    confirm_paper_trading: true,
+  });
 }
 
 export function getRiskPolicy(): Promise<RiskPolicyInfo> {

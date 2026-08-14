@@ -52,6 +52,7 @@ decision, research, risk, order, execution, and evaluation boundaries.
 | `TradeProposal` | stable ID, account, side, integral quantity, rationale, claim IDs, exact observation |
 | `RiskDecision` | stable ID, proposal ID, outcome, evaluation time, rule-level pass/fail reasons |
 | `PaperOrder` / `ExecutionResult` | stable idempotency IDs, approved terms, observation, status, execution price and time |
+| `AgentRunRecord` | manual/scheduled trigger, idempotency key, requester class, reserved market timestamp, lifecycle status |
 | `EvaluationReport` | dataset/model/prompt versions, git SHA, seed, configuration, timestamps, metrics, leakage result |
 
 SQLite schema changes are numbered and transactional in

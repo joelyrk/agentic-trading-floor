@@ -9,22 +9,33 @@ Run it from the 6_mcp directory so it shares the engine's accounts.db:
     uv run uvicorn backend.api:app --port 8000
 """
 
+import asyncio
 from datetime import datetime, timezone
-from uuid import uuid4
+from typing import Literal
+from uuid import UUID, uuid4
 
 from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel, ConfigDict
 
 import backend.startup as startup
 from backend import market
 from backend.access import AccessControlMiddleware, ReadOnlyModeMiddleware
 from backend.accounts import Account
+from backend.agent_runs import AgentRunConflict, AgentRunRepository, UnchangedMarketData
 from backend.config import validate_startup
 from backend.database import read_log, write_market_observation
 from backend.decisions import ExecutionService, RiskPolicy
 from backend.decisions.repository import DecisionRepository, ExecutionConflict
 from backend.observability import TelemetryRepository
 from backend.product import ExperimentRequest, ProductService, ReplayRequest
-from backend.trading_floor import lastnames, names, short_model_names
+from backend.strategies import ensure_default_strategies
+from backend.trading_floor import (
+    execute_agent_run,
+    lastnames,
+    names,
+    reserve_agent_run,
+    short_model_names,
+)
 
 # Mirrors the log colours in demo/ so the frontend reproduces the same panel.
 LOG_COLORS = {
@@ -59,9 +70,31 @@ if startup.application_settings.mode == "demo":
 
     seed_demo_database(startup.runtime_settings.accounts_db)
     market_service.observe("SPY")
+else:
+    ensure_default_strategies()
 decision_repository = DecisionRepository()
 telemetry_repository = TelemetryRepository()
 product_service = ProductService()
+agent_run_repository = AgentRunRepository()
+manual_run_tasks: set[asyncio.Task] = set()
+
+
+class ManualAgentRunRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    idempotency_key: UUID
+    confirm_paper_trading: Literal[True]
+
+
+def _track_manual_run(task: asyncio.Task) -> None:
+    manual_run_tasks.add(task)
+
+    def finished(completed: asyncio.Task) -> None:
+        manual_run_tasks.discard(completed)
+        if not completed.cancelled():
+            completed.exception()
+
+    task.add_done_callback(finished)
 
 
 def average_cost(account: Account, symbol: str) -> float:
@@ -136,6 +169,57 @@ def get_health() -> dict:
     """One credential-safe view of service, cycle, freshness, latency, and cost health."""
     market_status = market_service.status().model_dump(mode="json")
     return telemetry_repository.health_payload(market_status)
+
+
+@app.get("/api/agent-runs/latest")
+def get_latest_agent_run() -> dict | None:
+    """Return the most recent scheduled or manual run request and its audit state."""
+    record = agent_run_repository.latest()
+    return record.model_dump(mode="json") if record else None
+
+
+@app.get("/api/agent-runs/{run_id}")
+def get_agent_run(run_id: UUID) -> dict:
+    """Return one immutable-identity run while its lifecycle fields advance."""
+    record = agent_run_repository.get(str(run_id))
+    if record is None:
+        raise HTTPException(status_code=404, detail=f"unknown agent run {run_id}")
+    return record.model_dump(mode="json")
+
+
+@app.post("/api/agent-runs", status_code=202)
+async def create_manual_agent_run(request: ManualAgentRunRequest) -> dict:
+    """Reserve fresh market data and start one bounded, sequential paper cycle."""
+    try:
+        runtime = validate_startup("scheduler")
+        record, created = await reserve_agent_run(
+            agent_run_repository,
+            trigger="manual",
+            requested_by=(
+                "local-console"
+                if startup.api_access_settings.access_mode == "local"
+                else "authenticated-api"
+            ),
+            idempotency_key=str(request.idempotency_key),
+        )
+    except AgentRunConflict as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except UnchangedMarketData as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except market.MarketDataError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    if created:
+        task = asyncio.create_task(
+            execute_agent_run(
+                record.run_id,
+                repository=agent_run_repository,
+                max_concurrency=runtime.agent_max_concurrency,
+            )
+        )
+        _track_manual_run(task)
+    return record.model_dump(mode="json")
 
 
 @app.get("/api/risk")

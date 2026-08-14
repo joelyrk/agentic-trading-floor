@@ -229,12 +229,12 @@ class Trader:
                 current_trace.metadata["decision_ids"] = decision_ids
             return processed, usage, trace_id
 
-    async def run(self):
+    async def run(self, *, run_id: str | None = None):
         self._budget_hooks = None
         self._last_usage = None
         budget = CycleBudget.from_env()
         context = CycleContext.create(
-            run_id=os.getenv("EVALUATION_RUN_ID"),
+            run_id=run_id or os.getenv("EVALUATION_RUN_ID"),
             scenario_id=os.getenv("EVALUATION_SCENARIO_ID"),
         )
         telemetry = TelemetryRepository()

@@ -10,9 +10,11 @@ from dotenv import load_dotenv
 
 import backend.startup as startup
 
+from .agent_runs import AgentRunConflict, AgentRunRepository, UnchangedMarketData
 from .config import validate_startup
-from .market import is_market_open
+from .market import MarketDataError, get_market_observation, is_market_open
 from .observability import TelemetryRepository
+from .strategies import ensure_default_strategies
 from .tracers import LogTracer
 from .traders import Trader
 
@@ -27,6 +29,7 @@ RUN_EVEN_WHEN_MARKET_IS_CLOSED = (
 USE_MANY_MODELS = os.getenv("USE_MANY_MODELS", "false").strip().lower() == "true"
 DEFAULT_MODEL_NAME = "gpt-5.4-mini"
 _MODEL_NAME_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:/-]{0,99}$")
+_trace_processor_registered = False
 
 
 def configured_model_name(value: str | None) -> str:
@@ -59,18 +62,31 @@ else:
 
 
 def create_traders() -> List[Trader]:
+    ensure_default_strategies()
     traders = []
     for name, lastname, model_name in zip(names, lastnames, model_names):
         traders.append(Trader(name, lastname, model_name))
     return traders
 
 
-async def _run_cycle(traders: list[Trader], max_concurrency: int = 1) -> None:
+def ensure_trace_processor() -> None:
+    global _trace_processor_registered
+    if not _trace_processor_registered:
+        add_trace_processor(LogTracer())
+        _trace_processor_registered = True
+
+
+async def _run_cycle(
+    traders: list[Trader], max_concurrency: int = 1, *, run_id: str | None = None
+) -> None:
     semaphore = asyncio.Semaphore(max_concurrency)
 
     async def run_one(trader: Trader) -> None:
         async with semaphore:
-            await trader.run()
+            if run_id is None:
+                await trader.run()
+            else:
+                await trader.run(run_id=run_id)
 
     await asyncio.gather(*(run_one(trader) for trader in traders))
 
@@ -89,6 +105,55 @@ def is_daily_run_day(now: datetime) -> bool:
     return now.astimezone(timezone.utc).weekday() < 5
 
 
+async def reserve_agent_run(
+    repository: AgentRunRepository,
+    *,
+    trigger: str,
+    requested_by: str,
+    idempotency_key: str | None = None,
+):
+    """Probe a typed snapshot before atomically reserving it for one run."""
+    observation = await asyncio.to_thread(get_market_observation, "SPY")
+    if observation.is_stale:
+        raise MarketDataError(
+            f"{observation.mode.value} market snapshot is stale at "
+            f"{observation.market_timestamp.isoformat()}"
+        )
+    key = idempotency_key or (
+        f"scheduled:{observation.mode.value}:{observation.market_timestamp.isoformat()}"
+    )
+    return repository.request(
+        trigger=trigger,
+        requested_by=requested_by,
+        idempotency_key=key,
+        observation=observation,
+    )
+
+
+async def execute_agent_run(
+    run_id: str,
+    *,
+    repository: AgentRunRepository | None = None,
+    traders: list[Trader] | None = None,
+    max_concurrency: int | None = None,
+):
+    """Execute a reserved run and derive its durable outcome from all trader cycles."""
+    repository = repository or AgentRunRepository()
+    traders = traders or create_traders()
+    concurrency = max_concurrency or startup.runtime_settings.agent_max_concurrency
+    ensure_trace_processor()
+    repository.mark_running(run_id)
+    try:
+        await _run_cycle(traders, max_concurrency=concurrency, run_id=run_id)
+        status, error = repository.cycle_outcome(run_id, len(traders))
+        return repository.finish(run_id, status, error)
+    except asyncio.CancelledError:
+        repository.finish(run_id, "interrupted", "process shutdown interrupted agent run")
+        raise
+    except Exception as exc:
+        return repository.finish(run_id, "failed", exc)
+
+
 async def run_every_n_minutes(
     stop_event: asyncio.Event | None = None,
     traders: list[Trader] | None = None,
@@ -98,7 +163,7 @@ async def run_every_n_minutes(
 ):
     """Run cycles until stopped, allowing bounded completion of in-flight work."""
     runtime = validate_startup("scheduler")
-    add_trace_processor(LogTracer())
+    ensure_trace_processor()
     traders = traders or create_traders()
     stop_event = stop_event or asyncio.Event()
     interval = (
@@ -130,9 +195,45 @@ async def run_every_n_minutes(
             else RUN_EVEN_WHEN_MARKET_IS_CLOSED or is_market_open()
         )
         if should_run:
-            cycle_task = asyncio.create_task(
-                _run_cycle(traders, max_concurrency=runtime.agent_max_concurrency)
-            )
+            if interval_seconds is not None:
+                cycle_task = asyncio.create_task(
+                    _run_cycle(traders, max_concurrency=runtime.agent_max_concurrency)
+                )
+            else:
+                repository = AgentRunRepository()
+                run = None
+                created = False
+                try:
+                    run, created = await reserve_agent_run(
+                        repository,
+                        trigger="scheduled",
+                        requested_by="scheduler",
+                    )
+                except (AgentRunConflict, UnchangedMarketData, MarketDataError) as exc:
+                    print(f"Skipping run: {exc}")
+                    cycle_task = None
+                else:
+                    cycle_task = (
+                        asyncio.create_task(
+                            execute_agent_run(
+                                run.run_id,
+                                repository=repository,
+                                traders=traders,
+                                max_concurrency=runtime.agent_max_concurrency,
+                            )
+                        )
+                        if created
+                        else None
+                    )
+                if run is not None and not created:
+                    print(f"Skipping run: scheduled request {run.run_id} already exists")
+            if cycle_task is None:
+                if not daily_schedule:
+                    try:
+                        await asyncio.wait_for(stop_event.wait(), timeout=interval)
+                    except TimeoutError:
+                        pass
+                continue
             stop_task = asyncio.create_task(stop_event.wait())
             done, _ = await asyncio.wait(
                 {cycle_task, stop_task}, return_when=asyncio.FIRST_COMPLETED
