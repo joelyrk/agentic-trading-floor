@@ -134,6 +134,22 @@ MIGRATIONS = (
         ON agent_runs(requested_at);
     """,
     ),
+    Migration(
+        6,
+        "active_service_inventory",
+        """
+        SELECT 1;
+    """,
+    ),
+    Migration(
+        7,
+        "audited_agent_run_retries",
+        """
+        DROP INDEX IF EXISTS idx_agent_runs_market_snapshot;
+        CREATE INDEX IF NOT EXISTS idx_agent_runs_market_snapshot
+        ON agent_runs(market_mode, market_timestamp);
+    """,
+    ),
 )
 
 
@@ -151,6 +167,11 @@ def _ensure_legacy_columns(conn: sqlite3.Connection) -> None:
         conn.execute(
             "ALTER TABLE service_health ADD COLUMN failure_count INTEGER NOT NULL DEFAULT 0"
         )
+    if health_columns and "active" not in health_columns:
+        conn.execute("ALTER TABLE service_health ADD COLUMN active INTEGER NOT NULL DEFAULT 1")
+    run_columns = {row[1] for row in conn.execute("PRAGMA table_info(agent_runs)")}
+    if run_columns and "retry_of" not in run_columns:
+        conn.execute("ALTER TABLE agent_runs ADD COLUMN retry_of TEXT")
 
 
 def migrate(path: str) -> list[int]:

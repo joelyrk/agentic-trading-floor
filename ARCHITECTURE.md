@@ -12,7 +12,7 @@ flowchart LR
     SCHED[Scheduler] --> TRADERS[Four strategy agents]
     TRADERS --> RESEARCH[Research agent]
     TRADERS --> MARKET[Typed market MCP]
-    RESEARCH --> SEARCH[Bounded search/fetch MCP]
+    RESEARCH --> SEARCH[Project-owned bounded Tavily MCP]
     TRADERS --> PROPOSALS[Structured proposals]
     PROPOSALS --> RISK[Deterministic risk engine]
     RISK -->|approved only| EXEC[Atomic paper execution]
@@ -37,6 +37,10 @@ flowchart LR
 - FastAPI exposes read models and explicitly scoped paper/replay mutations. The
   browser uses only relative `/api` routes; provider credentials remain in the
   API/scheduler environment.
+- A run-progress endpoint joins the coordinated run, per-agent cycle telemetry,
+  and run-correlated safe stage logs. The dashboard polls it while agents run so
+  pending, active, successful, and failed stages are visible without exposing
+  model prompts, responses, or private reasoning.
 - The evaluator loads hashed decision fixtures separately from withheld outcome
   fixtures and uses an injected replay clock.
 

@@ -54,6 +54,13 @@ class ProposedTrade(StrictModel):
         return value.strip().lower()
 
 
+class TraderRecommendation(StrictModel):
+    """Small model-owned decision; validated research is attached by application code."""
+
+    proposals: list[ProposedTrade] = Field(default_factory=list, max_length=10)
+    appraisal: str = Field(min_length=1, max_length=1200)
+
+
 class TradingDecision(StrictModel):
     """Validated structured output returned by a trader agent."""
 

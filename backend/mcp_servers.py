@@ -9,7 +9,7 @@ from contextlib import AbstractAsyncContextManager, asynccontextmanager
 from pathlib import Path
 from time import monotonic
 
-from agents.mcp import MCPServerStdio, create_static_tool_filter
+from agents.mcp import MCPServerStdio
 from dotenv import load_dotenv
 from mcp.client.stdio import stdio_client
 
@@ -28,18 +28,15 @@ CIRCUIT_THRESHOLD = _runtime.mcp_circuit_failure_threshold
 CIRCUIT_RESET_SECONDS = _runtime.mcp_circuit_reset_seconds
 
 telemetry = TelemetryRepository()
-for _service_name in (
+ACTIVE_SERVICE_NAMES = (
     "paper-accounts",
     "notifications",
     "market-data",
-    "research-fetch",
     "research-search",
-    "memory-warren",
-    "memory-george",
-    "memory-ray",
-    "memory-cathie",
-):
+)
+for _service_name in ACTIVE_SERVICE_NAMES:
     telemetry.register_service(_service_name, required=True)
+telemetry.retire_services_except(ACTIVE_SERVICE_NAMES)
 
 
 class CircuitOpenError(RuntimeError):
@@ -177,12 +174,15 @@ def _server(params, name: str, *, tool_filter=None) -> ObservedMCPServerStdio:
     return ObservedMCPServerStdio(params, name=name, tool_filter=tool_filter)
 
 
-def local_server_params(module: str) -> dict:
+def local_server_params(module: str, extra_env: dict[str, str] | None = None) -> dict:
     params = {"command": "uv", "args": ["run", "-m", module], "cwd": PROJECT_DIR}
     # The MCP transport intentionally inherits only a small safe environment. Preserve an
     # explicitly selected uv cache location for sandboxed/read-only home directories.
+    environment = dict(extra_env or {})
     if os.getenv("UV_CACHE_DIR"):
-        params["env"] = {"UV_CACHE_DIR": os.environ["UV_CACHE_DIR"]}
+        environment["UV_CACHE_DIR"] = os.environ["UV_CACHE_DIR"]
+    if environment:
+        params["env"] = environment
     return params
 
 
@@ -200,35 +200,15 @@ def trader_mcp_servers() -> list[ObservedMCPServerStdio]:
     ]
 
 
-def researcher_mcp_servers(name: str) -> list[ObservedMCPServerStdio]:
-    """Narrow research services with one stable, attributable identity each."""
+def researcher_mcp_servers(_name: str) -> list[ObservedMCPServerStdio]:
+    """Expose only the project-owned, response-bounded research search surface."""
     tavily_env = {}
     if os.getenv("TAVILY_API_KEY"):
         tavily_env["TAVILY_API_KEY"] = os.environ["TAVILY_API_KEY"]
-    memory_dir = Path(os.getenv("MEMORY_DIR", "memory"))
-    memory_dir.mkdir(parents=True, exist_ok=True)
-    preinstalled = os.getenv("PREINSTALLED_MCP_PACKAGES", "false").strip().lower() == "true"
-    tavily_command = "tavily-mcp" if preinstalled else "npx"
-    tavily_args = [] if preinstalled else ["-y", "tavily-mcp@0.2.21"]
-    memory_command = "mcp-memory-libsql" if preinstalled else "npx"
-    memory_args = [] if preinstalled else ["-y", "mcp-memory-libsql@0.0.17"]
     return [
         _server(
-            local_server_params("backend.research_fetch_server"),
-            "research-fetch",
-        ),
-        _server(
-            {"command": tavily_command, "args": tavily_args, "env": tavily_env},
+            local_server_params("backend.research_search_server", tavily_env),
             "research-search",
-            tool_filter=create_static_tool_filter(allowed_tool_names=["tavily_search"]),
-        ),
-        _server(
-            {
-                "command": memory_command,
-                "args": memory_args,
-                "env": {"LIBSQL_URL": f"file:{(memory_dir / f'{name}.db').resolve()}"},
-            },
-            f"memory-{name.lower()}",
         ),
     ]
 

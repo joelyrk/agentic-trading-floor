@@ -7,7 +7,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Literal
 from uuid import uuid4
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from backend import database
 from backend.market.models import MarketObservation
@@ -38,6 +38,34 @@ class AgentRunRecord(BaseModel):
     market_retrieved_at: datetime
     market_mode: str
     error_summary: str | None = None
+    retry_of: str | None = None
+
+
+class AgentActivity(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    name: str
+    status: Literal["pending", "running", "succeeded", "failed", "interrupted"]
+    started_at: datetime | None = None
+    completed_at: datetime | None = None
+    requests: int = Field(default=0, ge=0)
+    total_tokens: int = Field(default=0, ge=0)
+    latency_ms: float | None = Field(default=None, ge=0)
+    error_summary: str | None = None
+    current_activity: str
+    logs: list[dict[str, str]]
+
+
+class AgentRunProgress(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    run: AgentRunRecord
+    agents: list[AgentActivity]
+    can_retry: bool = False
+    retry_block_reason: str | None = None
+
+
+AGENT_NAMES = ("warren", "george", "ray", "cathie")
 
 
 def utc_now() -> datetime:
@@ -66,6 +94,140 @@ class AgentRunRepository:
                 "SELECT * FROM agent_runs ORDER BY requested_at DESC LIMIT 1"
             ).fetchone()
         return self._record(row)
+
+    def progress(self, run_id: str, log_limit: int = 12) -> AgentRunProgress | None:
+        """Return run-correlated stage logs and telemetry for the fixed four-agent roster."""
+        run = self.get(run_id)
+        if run is None:
+            return None
+        bounded_limit = min(max(log_limit, 1), 50)
+        with sqlite3.connect(self.path) as conn:
+            conn.row_factory = sqlite3.Row
+            cycles = {
+                row["account_name"]: row
+                for row in conn.execute(
+                    "SELECT * FROM cycle_metrics WHERE run_id=? ORDER BY started_at", (run_id,)
+                ).fetchall()
+            }
+            activities: list[AgentActivity] = []
+            for name in AGENT_NAMES:
+                cycle = cycles.get(name)
+                rows = conn.execute(
+                    """SELECT datetime, type, message FROM logs
+                       WHERE name=? AND message LIKE ? ORDER BY id DESC LIMIT ?""",
+                    (name, f"%Run {run_id}:%", bounded_limit),
+                ).fetchall()
+                logs = [dict(row) for row in reversed(rows)]
+                if cycle is None:
+                    status = "pending"
+                    activity = (
+                        "Waiting for an earlier agent to finish"
+                        if run.status in {"queued", "running"}
+                        else "Not started"
+                    )
+                    activities.append(
+                        AgentActivity(
+                            name=name, status=status, current_activity=activity, logs=logs
+                        )
+                    )
+                    continue
+                status = cycle["status"]
+                activity = logs[-1]["message"].split(": ", 1)[-1] if logs else status
+                activities.append(
+                    AgentActivity(
+                        name=name,
+                        status=status,
+                        started_at=cycle["started_at"],
+                        completed_at=cycle["completed_at"],
+                        requests=cycle["requests"],
+                        total_tokens=cycle["total_tokens"],
+                        latency_ms=cycle["latency_ms"],
+                        error_summary=cycle["error_summary"],
+                        current_activity=activity,
+                        logs=logs,
+                    )
+                )
+        can_retry, retry_block_reason = self.retryability(run_id)
+        return AgentRunProgress(
+            run=run,
+            agents=activities,
+            can_retry=can_retry,
+            retry_block_reason=retry_block_reason,
+        )
+
+    def retryability(self, run_id: str) -> tuple[bool, str | None]:
+        run = self.get(run_id)
+        if run is None:
+            return False, "run does not exist"
+        if run.trigger != "manual":
+            return False, "scheduled runs cannot be retried from the dashboard"
+        if run.status not in {"failed", "interrupted"}:
+            return False, "only failed or interrupted runs can be retried"
+        completed = run.completed_at or utc_now()
+        with sqlite3.connect(self.path) as conn:
+            succeeded = conn.execute(
+                "SELECT 1 FROM cycle_metrics WHERE run_id=? AND status='succeeded' LIMIT 1",
+                (run_id,),
+            ).fetchone()
+            proposals = conn.execute(
+                """SELECT 1 FROM trade_proposals
+                   WHERE created_at >= ? AND created_at <= ? LIMIT 1""",
+                (run.requested_at.isoformat(), completed.isoformat()),
+            ).fetchone()
+        if succeeded or proposals:
+            return False, "the attempt may already have produced paper decisions"
+        return True, None
+
+    def retry(self, run_id: str, idempotency_key: str) -> AgentRunRecord:
+        """Create a new audited attempt for a safe, proposal-free failed manual run."""
+        can_retry, reason = self.retryability(run_id)
+        if not can_retry:
+            raise AgentRunConflict(reason or "run cannot be retried")
+        prior = self.get(run_id)
+        if prior is None:  # pragma: no cover - checked above
+            raise KeyError(run_id)
+        now = utc_now()
+        new_run_id = str(uuid4())
+        with sqlite3.connect(self.path, timeout=30) as conn:
+            conn.row_factory = sqlite3.Row
+            conn.execute("BEGIN IMMEDIATE")
+            existing = conn.execute(
+                "SELECT * FROM agent_runs WHERE idempotency_key=?", (idempotency_key,)
+            ).fetchone()
+            if existing:
+                conn.commit()
+                record = self._record(existing)
+                if record is None:  # pragma: no cover
+                    raise KeyError(idempotency_key)
+                return record
+            active = conn.execute(
+                "SELECT run_id FROM agent_runs WHERE status IN ('queued', 'running') LIMIT 1"
+            ).fetchone()
+            if active:
+                raise AgentRunConflict(f"agent run {active['run_id']} is already active")
+            conn.execute(
+                """INSERT INTO agent_runs
+                   (run_id, trigger, status, requested_at, requested_by, idempotency_key,
+                    market_symbol, market_timestamp, market_retrieved_at, market_mode, retry_of)
+                   VALUES (?, 'manual', 'queued', ?, ?, ?, ?, ?, ?, ?, ?)""",
+                (
+                    new_run_id,
+                    now.isoformat(),
+                    prior.requested_by,
+                    idempotency_key,
+                    prior.market_symbol,
+                    prior.market_timestamp.isoformat(),
+                    prior.market_retrieved_at.isoformat(),
+                    prior.market_mode,
+                    prior.run_id,
+                ),
+            )
+            row = conn.execute("SELECT * FROM agent_runs WHERE run_id=?", (new_run_id,)).fetchone()
+            conn.commit()
+        record = self._record(row)
+        if record is None:  # pragma: no cover
+            raise KeyError(new_run_id)
+        return record
 
     def recover_stale(self, max_age: timedelta = timedelta(minutes=20)) -> int:
         cutoff = (utc_now() - max_age).isoformat()

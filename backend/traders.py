@@ -6,11 +6,20 @@ from datetime import datetime, timezone
 from functools import lru_cache
 from time import monotonic
 
-from agents import Agent, OpenAIChatCompletionsModel, OpenAIResponsesModel, Runner, Tool, trace
+from agents import (
+    Agent,
+    ModelSettings,
+    OpenAIChatCompletionsModel,
+    OpenAIResponsesModel,
+    Runner,
+    Usage,
+    trace,
+)
 from dotenv import load_dotenv
 from openai import AsyncOpenAI
 
 from .accounts_client import read_accounts_resource, read_strategy_resource
+from .database import write_log
 from .decisions import (
     DecisionPipeline,
     ExecutionService,
@@ -19,6 +28,8 @@ from .decisions import (
     RiskEngine,
     RiskPolicy,
     RiskService,
+    SourceRecord,
+    TraderRecommendation,
     TradingDecision,
 )
 from .decisions.repository import DecisionRepository
@@ -34,11 +45,19 @@ from .observability import (
     CycleBudget,
     CycleContext,
     TelemetryRepository,
+    safe_error,
 )
-from .research import RESEARCHER_PROMPT_VERSION, TRADER_PROMPT_VERSION
+from .research import (
+    RESEARCHER_PROMPT_VERSION,
+    TRADER_PROMPT_VERSION,
+    EvidenceClaim,
+    ResearchPolicy,
+    ResearchSynthesis,
+)
+from .research_search_server import BoundedSearchBundle
 from .templates import (
     rebalance_message,
-    research_tool,
+    research_message,
     researcher_instructions,
     trade_message,
     trader_instructions,
@@ -98,20 +117,103 @@ def get_model(model_name: str):
         return OpenAIResponsesModel(model=model_name, openai_client=_openai_client())
 
 
-async def get_researcher(mcp_servers, model_name, decision_cutoff: datetime) -> Agent:
-    researcher = Agent(
+def get_researcher(model_name: str, decision_cutoff: datetime) -> Agent:
+    return Agent(
         name="Researcher",
         instructions=researcher_instructions(decision_cutoff),
         model=get_model(model_name),
-        mcp_servers=mcp_servers,
-        output_type=ResearchBrief,
+        model_settings=ModelSettings(max_tokens=2_500),
+        output_type=ResearchSynthesis,
     )
-    return researcher
 
 
-async def get_researcher_tool(mcp_servers, model_name, decision_cutoff: datetime) -> Tool:
-    researcher = await get_researcher(mcp_servers, model_name, decision_cutoff)
-    return researcher.as_tool(tool_name="Researcher", tool_description=research_tool())
+def bounded_account_report(account: dict) -> str:
+    """Keep model context independent of an account's unbounded transaction history."""
+    transactions = account.get("transactions")
+    recent = transactions[-5:] if isinstance(transactions, list) else []
+    compact_transactions = []
+    for item in recent:
+        if not isinstance(item, dict):
+            continue
+        compact_transactions.append(
+            {
+                "symbol": item.get("symbol"),
+                "quantity": item.get("quantity"),
+                "price": item.get("price"),
+                "timestamp": item.get("timestamp"),
+                "rationale": str(item.get("rationale", ""))[:240],
+            }
+        )
+    return json.dumps(
+        {
+            "name": account.get("name"),
+            "balance": account.get("balance"),
+            "holdings": account.get("holdings", {}),
+            "recent_transactions": compact_transactions,
+        },
+        separators=(",", ":"),
+    )
+
+
+def _search_query(name: str, strategy: str, account: str, now: datetime) -> str:
+    return " ".join(
+        (
+            f"Latest material financial news relevant to {name}'s paper portfolio",
+            f"and strategy as of {now.date().isoformat()}.",
+            f"Strategy: {' '.join(strategy.split())[:260]}.",
+            f"Account: {account[:140]}.",
+        )
+    )[:500]
+
+
+async def _bounded_search(server, query: str) -> BoundedSearchBundle:
+    result = await server.call_tool("search", {"query": query})
+    if getattr(result, "isError", False):
+        raise RuntimeError("bounded research search returned an error")
+    text = next(
+        (item.text for item in result.content if hasattr(item, "text") and item.text),
+        None,
+    )
+    if text is None:
+        raise RuntimeError("bounded research search returned no catalog")
+    return BoundedSearchBundle.model_validate_json(text)
+
+
+def _research_brief(
+    bundle: BoundedSearchBundle,
+    synthesis: ResearchSynthesis,
+    decision_cutoff: datetime,
+) -> ResearchBrief:
+    sources = [
+        SourceRecord(
+            source_id=item.source_id,
+            canonical_url=item.canonical_url,
+            publisher=item.publisher,
+            title=item.title,
+            published_at=item.published_at,
+            retrieved_at=item.retrieved_at,
+            supporting_excerpt=item.snippet[:200],
+            caveats=(
+                [
+                    "Publication time unavailable; retrieval time is the conservative availability bound."
+                ]
+                if item.publication_time_inferred
+                else []
+            ),
+        )
+        for item in bundle.results
+    ]
+    claims = [EvidenceClaim.model_validate(item.model_dump()) for item in synthesis.claims]
+    brief = ResearchBrief(
+        summary=synthesis.summary,
+        as_of=decision_cutoff,
+        sources=sources,
+        claims=claims,
+        caveats=synthesis.caveats,
+        researcher_prompt_version=RESEARCHER_PROMPT_VERSION,
+    )
+    ResearchPolicy.from_env().validate(brief)
+    return brief
 
 
 class Trader:
@@ -123,49 +225,102 @@ class Trader:
         self.do_trade = True
         self._budget_hooks = None
         self._last_usage = None
+        self._run_id: str | None = None
 
-    async def create_agent(
-        self, trader_mcp_servers, researcher_mcp_servers, decision_cutoff: datetime
-    ) -> Agent:
-        tool = await get_researcher_tool(researcher_mcp_servers, self.model_name, decision_cutoff)
+    def _log_stage(self, message: str) -> None:
+        run_label = self._run_id or "uncoordinated"
+        write_log(self.name, "cycle", f"Run {run_label}: {message}")
+
+    def _failure_usage(self):
+        """Preserve completed-stage and partial current-stage usage without double counting."""
+        current = self._budget_hooks.usage if self._budget_hooks is not None else None
+        if self._last_usage is None:
+            return current
+        if current is None:
+            return self._last_usage
+        combined = Usage()
+        combined.add(self._last_usage)
+        combined.add(current)
+        return combined
+
+    async def create_agent(self, trader_mcp_servers, decision_cutoff: datetime) -> Agent:
         self.agent = Agent(
             name=self.name,
             instructions=trader_instructions(self.name, decision_cutoff),
             model=get_model(self.model_name),
-            tools=[tool],
+            model_settings=ModelSettings(max_tokens=2_000),
             mcp_servers=trader_mcp_servers,
-            output_type=TradingDecision,
+            output_type=TraderRecommendation,
         )
         return self.agent
 
     async def get_account_report(self) -> str:
         account = await read_accounts_resource(self.name)
         account_json = json.loads(account)
-        account_json.pop("portfolio_value_time_series", None)
-        return json.dumps(account_json)
+        return bounded_account_report(account_json)
 
-    async def run_agent(self, trader_mcp_servers, researcher_mcp_servers, budget: CycleBudget):
-        decision_cutoff = datetime.now(timezone.utc)
-        self.agent = await self.create_agent(
-            trader_mcp_servers, researcher_mcp_servers, decision_cutoff
-        )
+    async def run_agent(self, trader_mcp_servers, research_search_server, budget: CycleBudget):
+        self._log_stage("reading the paper account and strategy")
         account = await self.get_account_report()
-        strategy = await read_strategy_resource(self.name)
-        message = (
-            trade_message(self.name, strategy, account, decision_cutoff)
-            if self.do_trade
-            else rebalance_message(self.name, strategy, account, decision_cutoff)
+        strategy = " ".join((await read_strategy_resource(self.name)).split())[:2_000]
+        search_started = datetime.now(timezone.utc)
+        self._log_stage("searching a bounded recent-news catalog (maximum 5 snippets)")
+        bundle = await _bounded_search(
+            research_search_server,
+            _search_query(self.name, strategy, account, search_started),
         )
+        decision_cutoff = datetime.now(timezone.utc)
+        researcher = get_researcher(self.model_name, decision_cutoff)
         self._budget_hooks = BudgetHooks(budget)
-        result = await Runner.run(
-            self.agent,
-            message,
-            max_turns=budget.max_turns,
+        self._log_stage(f"synthesizing evidence from {len(bundle.results)} bounded sources")
+        research_result = await Runner.run(
+            researcher,
+            research_message(
+                strategy,
+                account,
+                bundle.model_dump_json(),
+                decision_cutoff,
+            ),
+            max_turns=2,
             hooks=self._budget_hooks,
             run_config={"trace_include_sensitive_data": False},
         )
-        usage = result.context_wrapper.usage
+        research_usage = research_result.context_wrapper.usage
+        self._last_usage = Usage()
+        self._last_usage.add(research_usage)
+        if not isinstance(research_result.final_output, ResearchSynthesis):
+            raise ValueError("researcher did not return ResearchSynthesis")
+        research = _research_brief(bundle, research_result.final_output, decision_cutoff)
+        spent = budget.estimate_cost(research_usage.input_tokens, research_usage.output_tokens)
+        remaining_tokens = budget.max_tokens - research_usage.total_tokens
+        remaining_spend = budget.max_spend_usd - spent
+        if remaining_tokens <= 0 or remaining_spend <= 0:
+            raise BudgetExceeded("research stage exhausted the cycle budget")
+        remaining_budget = budget.model_copy(
+            update={"max_tokens": remaining_tokens, "max_spend_usd": remaining_spend}
+        )
+        self.agent = await self.create_agent(trader_mcp_servers, decision_cutoff)
+        research_json = research.model_dump_json()
+        message = (
+            trade_message(self.name, strategy, account, research_json, decision_cutoff)
+            if self.do_trade
+            else rebalance_message(self.name, strategy, account, research_json, decision_cutoff)
+        )
+        self._budget_hooks = BudgetHooks(remaining_budget)
+        self._log_stage("evaluating the strategy against validated evidence")
+        result = await Runner.run(
+            self.agent,
+            message,
+            max_turns=min(budget.max_turns, 5),
+            hooks=self._budget_hooks,
+            run_config={"trace_include_sensitive_data": False},
+        )
+        trader_usage = result.context_wrapper.usage
+        usage = Usage()
+        usage.add(research_usage)
+        usage.add(trader_usage)
         self._last_usage = usage
+        self._budget_hooks = None
         estimated_cost = budget.estimate_cost(usage.input_tokens, usage.output_tokens)
         if usage.total_tokens > budget.max_tokens:
             raise BudgetExceeded(
@@ -181,19 +336,22 @@ class Trader:
             repository, RiskEngine(RiskPolicy.from_env()), get_market_observation
         )
         pipeline = DecisionPipeline(proposal_service, risk_service, ExecutionService(repository))
-        output = result.final_output
-        if isinstance(output, TradingDecision):
-            output = output.model_copy(
-                update={
-                    "trader_prompt_version": TRADER_PROMPT_VERSION,
-                    "research": output.research.model_copy(
-                        update={"researcher_prompt_version": RESEARCHER_PROMPT_VERSION}
-                    ),
-                }
-            )
+        recommendation = result.final_output
+        if not isinstance(recommendation, TraderRecommendation):
+            raise ValueError("trader did not return TraderRecommendation")
+        output = TradingDecision(
+            research=research,
+            proposals=recommendation.proposals,
+            appraisal=recommendation.appraisal,
+            trader_prompt_version=TRADER_PROMPT_VERSION,
+        )
+        self._log_stage(
+            f"applying deterministic risk controls to {len(recommendation.proposals)} proposals"
+        )
         processed, error = pipeline.safely_process(self.name, output)
         if error:
             raise ValueError(error)
+        self._log_stage(f"completed with {len(processed)} processed paper proposals")
         return processed, usage
 
     async def run_with_mcp_servers(self, budget: CycleBudget):
@@ -201,11 +359,13 @@ class Trader:
             trader_servers = [
                 await stack.enter_async_context(server) for server in trader_mcp_servers()
             ]
-            researcher_servers = [
+            research_servers = [
                 await stack.enter_async_context(server)
                 for server in researcher_mcp_servers(self.name)
             ]
-            return await self.run_agent(trader_servers, researcher_servers, budget)
+            if len(research_servers) != 1:
+                raise RuntimeError("exactly one bounded research search server is required")
+            return await self.run_agent(trader_servers, research_servers[0], budget)
 
     async def run_with_trace(self, context: CycleContext, budget: CycleBudget):
         trace_name = f"{self.name}-trading" if self.do_trade else f"{self.name}-rebalancing"
@@ -237,6 +397,7 @@ class Trader:
             run_id=run_id or os.getenv("EVALUATION_RUN_ID"),
             scenario_id=os.getenv("EVALUATION_SCENARIO_ID"),
         )
+        self._run_id = context.run_id
         telemetry = TelemetryRepository()
         market_mode = get_market_service().status().mode.value
         telemetry.start_cycle(
@@ -263,9 +424,8 @@ class Trader:
                 trace_id=trace_id,
             )
         except asyncio.CancelledError:
-            usage = self._last_usage or (
-                self._budget_hooks.usage if self._budget_hooks is not None else None
-            )
+            usage = self._failure_usage()
+            self._log_stage("interrupted during scheduler shutdown")
             cost = budget.estimate_cost(
                 getattr(usage, "input_tokens", 0), getattr(usage, "output_tokens", 0)
             )
@@ -279,9 +439,8 @@ class Trader:
             )
             raise
         except Exception as e:
-            usage = self._last_usage or (
-                self._budget_hooks.usage if self._budget_hooks is not None else None
-            )
+            usage = self._failure_usage()
+            self._log_stage(f"failed: {safe_error(e)}")
             attribute_runtime_failure(e)
             cost = budget.estimate_cost(
                 getattr(usage, "input_tokens", 0), getattr(usage, "output_tokens", 0)

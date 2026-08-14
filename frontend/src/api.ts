@@ -128,6 +128,27 @@ export interface AgentRunRecord {
   market_retrieved_at: string;
   market_mode: MarketMode;
   error_summary: string | null;
+  retry_of: string | null;
+}
+
+export interface AgentActivity {
+  name: string;
+  status: "pending" | "running" | "succeeded" | "failed" | "interrupted";
+  started_at: string | null;
+  completed_at: string | null;
+  requests: number;
+  total_tokens: number;
+  latency_ms: number | null;
+  error_summary: string | null;
+  current_activity: string;
+  logs: Array<Pick<LogRow, "datetime" | "type" | "message">>;
+}
+
+export interface AgentRunProgress {
+  run: AgentRunRecord;
+  agents: AgentActivity[];
+  can_retry: boolean;
+  retry_block_reason: string | null;
 }
 
 export interface RiskPolicyInfo {
@@ -267,8 +288,23 @@ export function getAgentRun(runId: string): Promise<AgentRunRecord> {
   return get(`/api/agent-runs/${encodeURIComponent(runId)}`);
 }
 
+export function getAgentRunProgress(runId: string): Promise<AgentRunProgress> {
+  return get(`/api/agent-runs/${encodeURIComponent(runId)}/progress`);
+}
+
 export function createManualAgentRun(idempotencyKey: string): Promise<AgentRunRecord> {
   return post("/api/agent-runs", {
+    idempotency_key: idempotencyKey,
+    confirm_paper_trading: true,
+  });
+}
+
+export function cancelAgentRun(runId: string): Promise<AgentRunRecord> {
+  return post(`/api/agent-runs/${encodeURIComponent(runId)}/cancel`, {});
+}
+
+export function retryAgentRun(runId: string, idempotencyKey: string): Promise<AgentRunRecord> {
+  return post(`/api/agent-runs/${encodeURIComponent(runId)}/retry`, {
     idempotency_key: idempotencyKey,
     confirm_paper_trading: true,
   });

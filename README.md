@@ -8,7 +8,6 @@ This is an educational simulation. It does not place real orders and is not fina
 
 - `backend/`: agents, MCP servers, paper accounts, market data, tracing, and API
 - `frontend/`: Vite/TypeScript dashboard
-- `memory/`: runtime location for per-agent MCP memory databases
 - `evals/`: immutable replay fixtures, deterministic baselines, metrics, and reports
 - `backend/migrations.py`: transactional SQLite schema history
 - `SECURITY.md`: threat model, access controls, backup/restore, and retention
@@ -20,6 +19,8 @@ Trader agents cannot mutate accounts. They return validated `TradingDecision` ou
 
 Research is a versioned, point-in-time contract rather than free-form analysis. Each material recommendation cites a structured claim; each claim links to canonicalized source records containing publisher, title, publication/retrieval times, a bounded supporting excerpt and SHA-256 hash, confidence, stance, and caveats. Future publications, broken citations, duplicate URLs/content, conflicting dates, and disallowed domains are rejected before a proposal can reach risk review. Only concise evidence and rationale are stored—private chain-of-thought is neither requested nor exposed.
 
+The live research path uses a project-owned Tavily adapter that requests at most five basic news results, disables raw page content and generated answers, caps snippets and total response bytes, and constructs source metadata in deterministic code. Research synthesis and trader recommendations use smaller model-owned schemas; malformed or policy-invalid research stops that agent before trade analysis.
+
 Runtime dependencies are supervised under stable names. Each MCP subprocess must initialize and list its tools within a bounded startup check; requests use bounded timeout/retry with exponential backoff, and repeated failures open a persisted circuit. Subprocess stderr and stored errors are length-bounded and credential-redacted. Cycle records link model/prompt/market/run metadata to trace IDs and decision IDs, while sensitive trace input and output capture is disabled.
 
 ## Requirements
@@ -28,7 +29,6 @@ Runtime dependencies are supervised under stable names. Each MCP subprocess must
 - `uv`
 - Node.js 22+
 - npm
-- `npx` (used by the Tavily and memory MCP servers)
 
 ## Safe demo in one command
 

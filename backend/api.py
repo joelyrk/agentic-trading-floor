@@ -76,7 +76,7 @@ decision_repository = DecisionRepository()
 telemetry_repository = TelemetryRepository()
 product_service = ProductService()
 agent_run_repository = AgentRunRepository()
-manual_run_tasks: set[asyncio.Task] = set()
+manual_run_tasks: dict[str, asyncio.Task] = {}
 
 
 class ManualAgentRunRequest(BaseModel):
@@ -86,11 +86,11 @@ class ManualAgentRunRequest(BaseModel):
     confirm_paper_trading: Literal[True]
 
 
-def _track_manual_run(task: asyncio.Task) -> None:
-    manual_run_tasks.add(task)
+def _track_manual_run(run_id: str, task: asyncio.Task) -> None:
+    manual_run_tasks[run_id] = task
 
     def finished(completed: asyncio.Task) -> None:
-        manual_run_tasks.discard(completed)
+        manual_run_tasks.pop(run_id, None)
         if not completed.cancelled():
             completed.exception()
 
@@ -187,6 +187,15 @@ def get_agent_run(run_id: UUID) -> dict:
     return record.model_dump(mode="json")
 
 
+@app.get("/api/agent-runs/{run_id}/progress")
+def get_agent_run_progress(run_id: UUID, log_limit: int = 12) -> dict:
+    """Show each agent's current stage and safe run-correlated log tail."""
+    progress = agent_run_repository.progress(str(run_id), log_limit=log_limit)
+    if progress is None:
+        raise HTTPException(status_code=404, detail=f"unknown agent run {run_id}")
+    return progress.model_dump(mode="json")
+
+
 @app.post("/api/agent-runs", status_code=202)
 async def create_manual_agent_run(request: ManualAgentRunRequest) -> dict:
     """Reserve fresh market data and start one bounded, sequential paper cycle."""
@@ -218,7 +227,53 @@ async def create_manual_agent_run(request: ManualAgentRunRequest) -> dict:
                 max_concurrency=runtime.agent_max_concurrency,
             )
         )
-        _track_manual_run(task)
+        _track_manual_run(record.run_id, task)
+    return record.model_dump(mode="json")
+
+
+@app.post("/api/agent-runs/{run_id}/cancel")
+async def cancel_manual_agent_run(run_id: UUID) -> dict:
+    """Cancel one active manual task and let cycle/run handlers persist interruption."""
+    record = agent_run_repository.get(str(run_id))
+    if record is None:
+        raise HTTPException(status_code=404, detail=f"unknown agent run {run_id}")
+    if record.status not in {"queued", "running"}:
+        raise HTTPException(status_code=409, detail="agent run is already complete")
+    task = manual_run_tasks.get(str(run_id))
+    if task is None:
+        raise HTTPException(status_code=409, detail="run is not cancellable from this API process")
+    task.cancel()
+    await asyncio.gather(task, return_exceptions=True)
+    updated = agent_run_repository.get(str(run_id))
+    if updated is None:  # pragma: no cover
+        raise HTTPException(status_code=404, detail=f"unknown agent run {run_id}")
+    if updated.status in {"queued", "running"}:
+        try:
+            updated = agent_run_repository.finish(
+                str(run_id), "interrupted", "cancelled from dashboard"
+            )
+        except AgentRunConflict:
+            updated = agent_run_repository.get(str(run_id)) or updated
+    return updated.model_dump(mode="json")
+
+
+@app.post("/api/agent-runs/{run_id}/retry", status_code=202)
+async def retry_manual_agent_run(run_id: UUID, request: ManualAgentRunRequest) -> dict:
+    """Retry a proposal-free failed attempt against its already-audited EOD snapshot."""
+    try:
+        runtime = validate_startup("scheduler")
+        record = agent_run_repository.retry(str(run_id), str(request.idempotency_key))
+    except AgentRunConflict as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    if record.status == "queued" and record.run_id not in manual_run_tasks:
+        task = asyncio.create_task(
+            execute_agent_run(
+                record.run_id,
+                repository=agent_run_repository,
+                max_concurrency=runtime.agent_max_concurrency,
+            )
+        )
+        _track_manual_run(record.run_id, task)
     return record.model_dump(mode="json")
 
 

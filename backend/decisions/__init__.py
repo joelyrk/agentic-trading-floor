@@ -12,6 +12,7 @@ from .models import (
     RiskOutcome,
     RiskRuleResult,
     TradeProposal,
+    TraderRecommendation,
     TradingDecision,
 )
 from .risk import PortfolioSnapshot, RiskEngine
@@ -37,5 +38,6 @@ __all__ = [
     "RiskRuleResult",
     "RiskService",
     "TradeProposal",
+    "TraderRecommendation",
     "TradingDecision",
 ]

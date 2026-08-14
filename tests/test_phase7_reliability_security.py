@@ -44,7 +44,10 @@ def test_migrations_are_versioned_idempotent_and_upgrade_legacy_columns(tmp_path
         proposal_columns = {row[1] for row in conn.execute("PRAGMA table_info(trade_proposals)")}
         health_columns = {row[1] for row in conn.execute("PRAGMA table_info(service_health)")}
     assert "research_id" in proposal_columns
-    assert {"attempt_count", "failure_count"} <= health_columns
+    assert {"attempt_count", "failure_count", "active"} <= health_columns
+    with sqlite3.connect(path) as conn:
+        run_columns = {row[1] for row in conn.execute("PRAGMA table_info(agent_runs)")}
+    assert "retry_of" in run_columns
 
 
 def test_concurrent_migration_attempts_converge_without_partial_schema(tmp_path) -> None:
@@ -176,18 +179,16 @@ def test_research_fetch_bounds_and_labels_untrusted_content(monkeypatch) -> None
     assert observed["allow_redirects"] is False
 
 
-def test_external_mcp_packages_are_exactly_pinned(monkeypatch) -> None:
-    monkeypatch.setenv("PREINSTALLED_MCP_PACKAGES", "true")
+def test_research_uses_only_project_owned_bounded_mcp_server() -> None:
     params = [server.params for server in researcher_mcp_servers("Alice")]
-    commands = {item.command for item in params}
-    assert "tavily-mcp" in commands
-    assert "mcp-memory-libsql" in commands
-    assert any("backend.research_fetch_server" in item.args for item in params)
+    assert len(params) == 1
+    assert params[0].command == "uv"
+    assert params[0].args == ["run", "-m", "backend.research_search_server"]
 
     dockerfile = Path("Dockerfile").read_text()
-    assert "tavily-mcp@0.2.21" in dockerfile
-    assert "mcp-memory-libsql@0.0.17" in dockerfile
-    assert "@latest" not in dockerfile
+    assert "tavily-mcp" not in dockerfile
+    assert "mcp-memory-libsql" not in dockerfile
+    assert "npx" not in dockerfile
 
 
 def test_runtime_settings_reject_unsafe_bounds() -> None:

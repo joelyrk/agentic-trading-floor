@@ -16,26 +16,20 @@ trade output must pass strict Pydantic schemas and citation policy. Models can
 only propose trades; deterministic risk and execution code independently
 validates and persists every approval or rejection.
 
-The project-owned research fetch server accepts only public HTTP(S) destinations
-on standard ports. It resolves every initial and redirected hostname, rejects
-non-global addresses (including loopback, private, link-local, reserved, and
-cloud metadata ranges), limits redirects, response types, response bytes, and
-timeouts, and labels returned text as untrusted. DNS rebinding remains a
-residual network-level risk; production deployments should also enforce egress
-firewall rules that deny private and metadata networks.
+The live research path calls only Tavily's fixed HTTPS search endpoint through a
+project-owned adapter. It requests basic news search with at most five results,
+disables generated answers, raw page content, and images, caps each snippet and
+the total response bytes, and applies bounded timeouts and retries. Returned
+snippets are labeled untrusted in the research prompt and cannot supply their
+own source metadata.
 
 ### Tool abuse and MCP supply chain
 
 Trading agents receive no account-mutation tools. Account changes are reachable
-only through the deterministic approval/execution service. MCP tool filters
-expose only required search operations, and the generic third-party fetch server
-has been replaced by the project-owned narrow server.
-
-Runtime npm MCP packages use exact versions (`tavily-mcp@0.2.21` and
-`mcp-memory-libsql@0.0.17`) instead of `latest`, git URLs, or branches. Startup
-performs a bounded MCP handshake and attributes failures. Exact top-level pins
-do not eliminate compromised transitive dependencies; review upgrades and npm
-advisories before changing either pin.
+only through the deterministic approval/execution service. The live research
+critical path no longer launches third-party npm MCP packages: its sole search
+surface is the narrow Python server owned by this repository. Startup performs
+a bounded MCP handshake and attributes failures.
 
 ### Secrets and traces
 

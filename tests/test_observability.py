@@ -35,9 +35,7 @@ def test_mcp_servers_have_stable_attributable_names() -> None:
         "market-data",
     ]
     assert [server.name for server in researcher_mcp_servers("Alice")] == [
-        "research-fetch",
         "research-search",
-        "memory-alice",
     ]
 
 
@@ -68,6 +66,15 @@ def test_service_transitions_and_circuit_breaker_are_persisted(tmp_path) -> None
     assert recovered.consecutive_failures == 0
     assert recovered.failure_count == 2
     assert recovered.attempt_count == 3
+
+
+def test_retired_services_are_hidden_without_deleting_health_history(tmp_path) -> None:
+    repository = TelemetryRepository(str(tmp_path / "health.db"))
+    repository.register_service("current", True)
+    repository.register_service("retired", True)
+    repository.retire_services_except(("current",))
+    assert [item.name for item in repository.services()] == ["current"]
+    assert repository.service("retired").active is False
 
 
 def test_cycle_usage_cost_and_decision_trace_metadata_round_trip(tmp_path) -> None:

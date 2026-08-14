@@ -1,8 +1,8 @@
 import {
-  createExperiment, createManualAgentRun, createReplay, getAgentRun, getExperiments, getHealth, getLatestAgentRun, getMarket, getReplayCatalog, getRiskPolicy, getRuntime,
-  getTrader, getTraderDecisions, getTraders, revealReplay,
-  type AgentRunRecord, type DecisionAudit, type ExperimentReport, type HealthInfo, type MarketInfo,
-  type ReplaySession, type RiskPolicyInfo, type TraderDetail,
+  cancelAgentRun, createExperiment, createManualAgentRun, createReplay, getAgentRunProgress, getExperiments, getHealth, getLatestAgentRun, getMarket, getReplayCatalog, getRuntime, retryAgentRun,
+  getTrader, getTraderDecisions, getTraderLogs, getTraders, revealReplay,
+  type AgentRunProgress, type AgentRunRecord, type DecisionAudit, type ExperimentReport, type HealthInfo, type MarketInfo,
+  type ReplaySession, type TraderDetail,
 } from "./api";
 import { initTheme } from "./theme";
 
@@ -13,6 +13,9 @@ const percent = (value: number) => `${value >= 0 ? "+" : ""}${(value * 100).toFi
 const escapeHtml = (value: unknown) => String(value).replace(/[&<>'"]/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" })[char]!);
 const runtimePromise = getRuntime();
 let runPoll: number | undefined;
+let currentRunProgress: AgentRunProgress | null = null;
+let currentTraders: TraderDetail[] = [];
+let currentLogsByAgent = new Map<string, Array<{ datetime: string; type: string; message: string }>>();
 
 document.querySelectorAll<HTMLButtonElement>(".tab").forEach((tab) => tab.addEventListener("click", () => {
   document.querySelectorAll<HTMLButtonElement>(".tab").forEach((item) => {
@@ -37,20 +40,20 @@ function drawdown(points: TraderDetail["time_series"]): number {
   }, 0);
 }
 
-function turnover(trader: TraderDetail): number {
-  const base = trader.portfolio_value - trader.pnl;
-  return base > 0 ? trader.transactions.reduce((sum, tx) => sum + Math.abs(tx.quantity * tx.price), 0) / base : 0;
-}
-
 async function loadOverview(): Promise<void> {
-  const [runtime, market, health, roster, risk, experiments, latestRun] = await Promise.all([runtimePromise, getMarket(), getHealth(), getTraders(), getRiskPolicy(), getExperiments(), getLatestAgentRun()]);
+  const [runtime, market, health, roster, experiments, latestRun] = await Promise.all([runtimePromise, getMarket(), getHealth(), getTraders(), getExperiments(), getLatestAgentRun()]);
   const runtimeBadge = document.getElementById("runtime-badge")!;
   runtimeBadge.textContent = runtime.read_only ? "SEEDED · READ ONLY" : "STANDARD MODE";
   runtimeBadge.dataset.state = runtime.read_only ? "demo" : "good";
   const traders = await Promise.all(roster.map((item) => getTrader(item.name)));
+  const logs = await Promise.all(roster.map(async (item) => ({ name: item.name.toLowerCase(), rows: await getTraderLogs(item.name, 8) })));
+  currentTraders = traders;
+  currentLogsByAgent = new Map(logs.map((item) => [item.name, item.rows]));
   const decisions = (await Promise.all(roster.map(async (item) => ({ name: item.name, rows: await getTraderDecisions(item.name) }))));
   renderStatus(market, health);
-  renderRunControl(runtime.read_only, market, health, latestRun);
+  const progress = latestRun ? await getAgentRunProgress(latestRun.run_id) : null;
+  renderRunControl(runtime.read_only, market, health, latestRun, progress);
+  renderAgentDesks(traders, progress, currentLogsByAgent);
   if (latestRun && ["queued", "running"].includes(latestRun.status) && runPoll === undefined) pollRunState(latestRun.run_id);
   const total = traders.reduce((sum, item) => sum + item.portfolio_value, 0);
   const initial = traders.reduce((sum, item) => sum + item.portfolio_value - item.pnl, 0);
@@ -64,46 +67,100 @@ async function loadOverview(): Promise<void> {
     ["Proposal controls", `${approved} approved`, `${rejected} rejected`],
     ["Latest replay vs benchmark", latestAgent ? percent(Number(latestAgent.metrics.benchmark_relative_return)) : "Not run", latestAgent ? `${experiments[0].metadata.model} · offline` : "Run an experiment to compare"],
   ].map(([label, value, note]) => `<article class="metric"><span>${label}</span><strong>${value}</strong><small>${note}</small></article>`).join("");
-  renderStrategies(traders);
-  renderPortfolios(traders, risk);
   renderServices(health);
   renderDecisions(allDecisions);
   renderCosts(health);
 }
 
-function renderStrategies(traders: TraderDetail[]): void {
-  const host = document.getElementById("strategy-list")!;
-  host.className = "strategy-grid";
+function equityChart(points: TraderDetail["time_series"], chartId: string): string {
+  const values = points.length ? points.map((point) => Number(point.value)) : [0];
+  const width = 1000;
+  const height = 220;
+  const padX = 12;
+  const padY = 18;
+  const low = Math.min(...values);
+  const high = Math.max(...values);
+  const spread = Math.max(high - low, Math.max(Math.abs(high) * 0.02, 1));
+  const floor = low - spread * 0.15;
+  const ceiling = high + spread * 0.15;
+  const coordinates = values.map((value, index) => {
+    const x = padX + (values.length === 1 ? 0 : index / (values.length - 1)) * (width - padX * 2);
+    const y = padY + ((ceiling - value) / (ceiling - floor)) * (height - padY * 2);
+    return [x, y];
+  });
+  const line = coordinates.map(([x, y], index) => `${index ? "L" : "M"}${x.toFixed(1)},${y.toFixed(1)}`).join(" ");
+  const last = coordinates.at(-1)!;
+  const area = `${line} L${last[0].toFixed(1)},${height} L${coordinates[0][0].toFixed(1)},${height} Z`;
+  const firstDate = points[0]?.datetime ? new Date(points[0].datetime).toLocaleDateString(undefined, { month: "short", year: "numeric" }) : "Start";
+  const lastDate = points.at(-1)?.datetime ? new Date(points.at(-1)!.datetime).toLocaleDateString(undefined, { month: "short", year: "numeric" }) : "Now";
+  return `<div class="equity-chart"><svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Portfolio value from ${escapeHtml(firstDate)} to ${escapeHtml(lastDate)}"><defs><linearGradient id="equity-fill-${chartId}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="currentColor" stop-opacity=".32"/><stop offset="1" stop-color="currentColor" stop-opacity="0"/></linearGradient></defs><path class="chart-area" style="fill:url(#equity-fill-${chartId})" d="${area}"/><path class="chart-line" d="${line}"/></svg><span>${escapeHtml(firstDate)}</span><span>${escapeHtml(lastDate)}</span></div>`;
+}
+
+function renderAgentDesks(traders: TraderDetail[], progress: AgentRunProgress | null, logsByAgent: Map<string, Array<{ datetime: string; type: string; message: string }>>): void {
+  currentRunProgress = progress;
+  const summary = document.getElementById("agent-activity-summary")!;
+  summary.textContent = progress ? `${progress.run.trigger} · ${progress.run.status} · ${progress.run.run_id.slice(0, 8)}` : "No run yet";
+  const activityByAgent = new Map(progress?.agents.map((agent) => [agent.name.toLowerCase(), agent]) ?? []);
+  const host = document.getElementById("agent-desk-list")!;
+  host.className = "agent-desk-list";
   host.innerHTML = traders.map((trader) => {
+    const name = trader.name.toLowerCase();
+    const activity = activityByAgent.get(name);
+    const pnlPositive = trader.pnl >= 0;
     const strategy = trader.strategy.replace(/\s+/g, " ").trim();
-    return `<article class="strategy-card"><div><strong>${escapeHtml(trader.name)} ${escapeHtml(trader.lastname)}</strong><small>${escapeHtml(trader.model_name)}</small></div><p>${escapeHtml(strategy || "No strategy mandate is currently set.")}</p></article>`;
+    const cash = Math.max(Number(trader.balance), 0);
+    const total = Math.max(Number(trader.portfolio_value), 1);
+    const allocationItems = [...trader.holdings.map((holding) => ({ label: holding.symbol, value: Number(holding.market_value), detail: money.format(holding.market_value), state: holding.unrealized_pnl >= 0 ? "gain" : "loss" })), { label: "CASH", value: cash, detail: money.format(cash), state: "cash" }].filter((item) => item.value > 0);
+    const allocation = allocationItems.map((item) => `<div class="allocation-block" data-state="${item.state}" style="flex-grow:${Math.max(item.value / total, 0.015)}"><strong>${escapeHtml(item.label)}</strong><span>${escapeHtml(item.detail)}</span></div>`).join("");
+    const agentLogs = activity?.logs.length ? activity.logs : (logsByAgent.get(name) ?? []);
+    const logRows = agentLogs.length ? agentLogs.map((row) => `<li><time>${escapeHtml(new Date(`${row.datetime}Z`).toLocaleTimeString())}</time><b>${escapeHtml(row.type)}</b><span>${escapeHtml(row.message.split(": ", 2).at(-1) ?? row.message)}</span></li>`).join("") : `<li class="muted">No activity recorded yet.</li>`;
+    const trades = trader.transactions.slice(-8).reverse();
+    const tradeRows = trades.length ? trades.map((trade) => `<li><time>${escapeHtml(new Date(trade.timestamp).toLocaleDateString(undefined, { month: "2-digit", day: "2-digit" }))}</time><b data-side="${trade.quantity >= 0 ? "buy" : "sell"}">${trade.quantity >= 0 ? "BUY" : "SELL"}</b><span>${Math.abs(trade.quantity)} ${escapeHtml(trade.symbol)} @ ${money.format(trade.price)}</span></li>`).join("") : `<li class="muted">No paper trades yet.</li>`;
+    return `<article class="agent-desk"><header class="agent-desk-header"><div class="agent-identity"><p>${escapeHtml(trader.name.toUpperCase())}</p><span>${escapeHtml(trader.model_name)} · ${escapeHtml(trader.lastname)}</span></div>${activity ? `<span class="outcome agent-run-state" data-state="${activity.status}">${escapeHtml(activity.status)}</span>` : ""}<strong class="agent-value" data-state="${pnlPositive ? "gain" : "loss"}">${money.format(trader.portfolio_value)}</strong><b class="agent-pnl" data-state="${pnlPositive ? "gain" : "loss"}">${pnlPositive ? "+" : "−"}${money.format(Math.abs(trader.pnl))}</b></header><p class="agent-mandate">${escapeHtml(strategy || "No strategy mandate is currently set.")}</p>${equityChart(trader.time_series, name)}<div class="allocation-strip" aria-label="Current portfolio allocation">${allocation}</div><div class="agent-streams"><section><h4>Activity${activity ? ` · ${escapeHtml(activity.current_activity)}` : ""}</h4><ol class="desk-log">${logRows}</ol></section><section><h4>Recent paper trades</h4><ol class="desk-log trade-log">${tradeRows}</ol></section></div></article>`;
   }).join("");
 }
 
-function renderRunControl(readOnly: boolean, market: MarketInfo, health: HealthInfo, run: AgentRunRecord | null): void {
+function renderRunControl(readOnly: boolean, market: MarketInfo, health: HealthInfo, run: AgentRunRecord | null, progress: AgentRunProgress | null): void {
   const button = document.getElementById("run-cycle-button") as HTMLButtonElement;
   const status = document.getElementById("run-cycle-status")!;
   const active = run?.status === "queued" || run?.status === "running";
   const sameSnapshot = Boolean(run && market.last_successful_observation && run.market_mode === market.mode && run.market_timestamp === market.last_successful_observation.market_timestamp);
-  button.textContent = readOnly ? "Read-only demo" : market.mode === "end_of_day" ? "Run EOD cycle" : "Run paper cycle";
-  button.disabled = readOnly || active || sameSnapshot || health.current_cycle_id !== null;
+  const cancellable = Boolean(active && run?.trigger === "manual");
+  const retryable = Boolean(progress?.can_retry);
+  button.textContent = readOnly
+    ? "Read-only demo"
+    : cancellable
+      ? "Cancel run"
+      : retryable
+        ? "Retry failed run"
+        : market.mode === "end_of_day" ? "Run EOD cycle" : "Run paper cycle";
+  button.disabled = readOnly || (active && !cancellable) || (!active && !retryable && (sameSnapshot || health.current_cycle_id !== null));
   if (readOnly) {
     status.textContent = "Manual agent runs are disabled in the seeded demo.";
   } else if (!run) {
     status.textContent = "No coordinated agent run has been recorded yet.";
   } else if (active) {
-    status.textContent = `${run.trigger} run in progress · four agents execute sequentially`;
+    status.textContent = cancellable
+      ? "Manual run in progress · cancel safely or follow activity below"
+      : "Scheduled run in progress · follow agent activity below";
+  } else if (retryable) {
+    status.textContent = "Failed before producing paper decisions · safe retry available";
   } else if (sameSnapshot) {
-    status.textContent = `Market snapshot ${new Date(run.market_timestamp).toLocaleString()} was already consumed by the ${run.trigger} run.`;
+    status.textContent = progress?.retry_block_reason
+      ? `Retry unavailable · ${progress.retry_block_reason}`
+      : "Latest EOD snapshot already used · waiting for new market data";
   } else {
-    const completed = run.completed_at ? new Date(run.completed_at).toLocaleString() : "not completed";
-    status.textContent = `${run.trigger} run ${run.status} · data ${new Date(run.market_timestamp).toLocaleString()} · ${completed}${run.error_summary ? ` · ${run.error_summary}` : ""}`;
+    const completed = run.completed_at ? ` · ${new Date(run.completed_at).toLocaleString()}` : "";
+    status.textContent = `${run.trigger} run ${run.status}${completed} · see agent activity below`;
   }
 }
 
-async function refreshRunControl(runId?: string): Promise<AgentRunRecord | null> {
-  const [runtime, market, health, run] = await Promise.all([runtimePromise, getMarket(), getHealth(), runId ? getAgentRun(runId) : getLatestAgentRun()]);
-  renderRunControl(runtime.read_only, market, health, run);
+async function refreshRunControl(_runId?: string): Promise<AgentRunRecord | null> {
+  const [runtime, market, health, run] = await Promise.all([runtimePromise, getMarket(), getHealth(), getLatestAgentRun()]);
+  const progress = run ? await getAgentRunProgress(run.run_id) : null;
+  renderRunControl(runtime.read_only, market, health, run, progress);
+  if (currentTraders.length) renderAgentDesks(currentTraders, progress, currentLogsByAgent);
+  else currentRunProgress = progress;
   return run;
 }
 
@@ -124,16 +181,34 @@ function pollRunState(runId: string): void {
 }
 
 document.getElementById("run-cycle-button")!.addEventListener("click", async () => {
-  const confirmed = window.confirm(
-    "Run all four paper-trading agents sequentially using the latest market snapshot? This consumes model and research API quota; deterministic risk controls remain enforced."
-  );
+  const activeRun = currentRunProgress?.run;
+  const action = activeRun && ["queued", "running"].includes(activeRun.status)
+    ? "cancel"
+    : currentRunProgress?.can_retry ? "retry" : "run";
+  const prompt = action === "cancel"
+    ? "Cancel this manual agent run? The active agent will be interrupted and the run will remain in the audit history."
+    : action === "retry"
+      ? "Retry all four agents using the same EOD snapshot? The failed attempt produced no paper decisions; model and research quota will be consumed again."
+      : "Run all four paper-trading agents sequentially using the latest market snapshot? This consumes model and research API quota; deterministic risk controls remain enforced.";
+  const confirmed = window.confirm(prompt);
   if (!confirmed) return;
   const button = document.getElementById("run-cycle-button") as HTMLButtonElement;
   button.disabled = true;
   button.textContent = "Requesting…";
   try {
-    const run = await createManualAgentRun(crypto.randomUUID());
-    document.getElementById("run-cycle-status")!.textContent = `Manual run ${run.status} · data ${new Date(run.market_timestamp).toLocaleString()}`;
+    if (action === "cancel" && activeRun) {
+      button.textContent = "Cancelling…";
+      await cancelAgentRun(activeRun.run_id);
+      if (runPoll !== undefined) window.clearInterval(runPoll);
+      runPoll = undefined;
+      await loadOverview();
+      return;
+    }
+    const run = action === "retry" && activeRun
+      ? await retryAgentRun(activeRun.run_id, crypto.randomUUID())
+      : await createManualAgentRun(crypto.randomUUID());
+    document.getElementById("run-cycle-status")!.textContent = `Manual run ${run.status} · follow agent activity below`;
+    await refreshRunControl(run.run_id);
     pollRunState(run.run_id);
   } catch (error) {
     showError(error);
@@ -152,17 +227,6 @@ function renderStatus(market: MarketInfo, health: HealthInfo): void {
   document.getElementById("freshness-copy")!.textContent = observation
     ? `${market.provider} · ${market.mode.replaceAll("_", " ")} · market timestamp ${new Date(observation.market_timestamp).toLocaleString()} · ${observation.is_stale ? "stale" : "fresh"}`
     : `${market.provider} · ${market.mode.replaceAll("_", " ")} · no observation recorded yet`;
-}
-
-function renderPortfolios(traders: TraderDetail[], risk: RiskPolicyInfo): void {
-  const symbolLimit = Number(risk.max_symbol_concentration);
-  const rows = traders.map((trader) => {
-    const concentration = trader.portfolio_value ? Math.max(0, ...trader.holdings.map((h) => h.market_value / trader.portfolio_value)) : 0;
-    const utilization = symbolLimit > 0 ? Math.min(concentration / symbolLimit, 1) : 0;
-    return `<tr><th scope="row"><strong>${escapeHtml(trader.name)}</strong><small>${escapeHtml(trader.model_name)}</small></th><td>${money.format(trader.portfolio_value)}<small>${percent((trader.portfolio_value - trader.pnl) ? trader.pnl / (trader.portfolio_value - trader.pnl) : 0)} return</small></td><td>${percent(-drawdown(trader.time_series))}</td><td>${percent(turnover(trader))}</td><td><div class="meter" aria-label="${(utilization * 100).toFixed(0)} percent of symbol concentration limit"><i style="width:${utilization * 100}%"></i></div><small>${percent(concentration)} / ${(symbolLimit * 100).toFixed(0)}% limit</small></td></tr>`;
-  }).join("");
-  document.getElementById("portfolio-table")!.className = "table-wrap";
-  document.getElementById("portfolio-table")!.innerHTML = `<table><thead><tr><th>Account</th><th>Portfolio vs start</th><th>Drawdown</th><th>Turnover</th><th>Risk utilization</th></tr></thead><tbody>${rows}</tbody></table>`;
 }
 
 function renderServices(health: HealthInfo): void {

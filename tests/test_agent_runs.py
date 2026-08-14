@@ -72,6 +72,55 @@ def test_agent_run_refuses_an_already_consumed_market_snapshot(tmp_path) -> None
         )
 
 
+def test_failed_proposal_free_manual_run_can_be_retried_with_a_new_audit_id(tmp_path) -> None:
+    repository = AgentRunRepository(str(tmp_path / "runs.db"))
+    run, _ = repository.request(
+        trigger="manual",
+        requested_by="local-console",
+        idempotency_key="request-1",
+        observation=observation(),
+    )
+    repository.mark_running(run.run_id)
+    repository.finish(run.run_id, "failed", "model output failed before proposals")
+
+    assert repository.retryability(run.run_id) == (True, None)
+    retry = repository.retry(run.run_id, "retry-1")
+    assert retry.run_id != run.run_id
+    assert retry.retry_of == run.run_id
+    assert retry.market_timestamp == run.market_timestamp
+    assert retry.status == "queued"
+    assert repository.retry(run.run_id, "retry-1").run_id == retry.run_id
+
+
+def test_retry_is_blocked_after_any_successful_cycle(tmp_path) -> None:
+    path = str(tmp_path / "runs.db")
+    repository = AgentRunRepository(path)
+    telemetry = TelemetryRepository(path)
+    run, _ = repository.request(
+        trigger="manual",
+        requested_by="local-console",
+        idempotency_key="request-1",
+        observation=observation(),
+    )
+    repository.mark_running(run.run_id)
+    context = CycleContext.create(run_id=run.run_id)
+    telemetry.start_cycle(context, "warren", "model", "prompt", "end_of_day", CycleBudget())
+    telemetry.finish_cycle(
+        context.cycle_id,
+        status="succeeded",
+        usage=None,
+        latency_ms=1,
+        estimated_cost=Decimal("0"),
+    )
+    repository.finish(run.run_id, "failed", "later agent failed")
+
+    can_retry, reason = repository.retryability(run.run_id)
+    assert can_retry is False
+    assert "paper decisions" in reason
+    with pytest.raises(AgentRunConflict, match="paper decisions"):
+        repository.retry(run.run_id, "retry-1")
+
+
 def test_agent_run_outcome_requires_every_trader_cycle_to_succeed(tmp_path) -> None:
     path = str(tmp_path / "runs.db")
     runs = AgentRunRepository(path)
@@ -98,6 +147,39 @@ def test_agent_run_outcome_requires_every_trader_cycle_to_succeed(tmp_path) -> N
     status, error = runs.cycle_outcome(run.run_id, 4)
     assert status == "failed"
     assert error == "fourth trader failed"
+
+
+def test_agent_run_progress_correlates_stage_logs_and_pending_agents(tmp_path) -> None:
+    path = str(tmp_path / "runs.db")
+    runs = AgentRunRepository(path)
+    telemetry = TelemetryRepository(path)
+    run, _ = runs.request(
+        trigger="manual",
+        requested_by="local-console",
+        idempotency_key="request-progress",
+        observation=observation(),
+    )
+    runs.mark_running(run.run_id)
+    context = CycleContext.create(run_id=run.run_id)
+    telemetry.start_cycle(context, "warren", "model", "prompt", "end_of_day", CycleBudget())
+    with sqlite3.connect(path) as conn:
+        conn.execute(
+            "INSERT INTO logs(name, datetime, type, message) VALUES (?, datetime('now'), ?, ?)",
+            ("warren", "cycle", f"Run {run.run_id}: synthesizing evidence from 5 sources"),
+        )
+        conn.execute(
+            "INSERT INTO logs(name, datetime, type, message) VALUES (?, datetime('now'), ?, ?)",
+            ("warren", "cycle", "Run another-run: unrelated"),
+        )
+
+    progress = runs.progress(run.run_id)
+    assert progress is not None
+    assert [agent.name for agent in progress.agents] == ["warren", "george", "ray", "cathie"]
+    assert progress.agents[0].status == "running"
+    assert progress.agents[0].current_activity == "synthesizing evidence from 5 sources"
+    assert len(progress.agents[0].logs) == 1
+    assert progress.agents[1].status == "pending"
+    assert "Waiting" in progress.agents[1].current_activity
 
 
 def test_stale_active_agent_run_is_recovered(tmp_path) -> None:

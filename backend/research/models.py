@@ -98,6 +98,26 @@ class EvidenceClaim(StrictModel):
     caveats: list[str] = Field(default_factory=list, max_length=20)
 
 
+class ResearchClaimDraft(StrictModel):
+    """Small model-owned claim; source metadata is constructed deterministically."""
+
+    claim_id: str = Field(min_length=1, max_length=100, pattern=r"^[A-Za-z0-9_.:-]+$")
+    claim: str = Field(min_length=1, max_length=1000)
+    source_ids: list[str] = Field(default_factory=list, max_length=5)
+    stance: EvidenceStance
+    confidence: Annotated[Decimal, Field(ge=0, le=1)]
+    material: bool = True
+    caveats: list[str] = Field(default_factory=list, max_length=5)
+
+
+class ResearchSynthesis(StrictModel):
+    """Bounded researcher output over an application-supplied source catalog."""
+
+    summary: str = Field(min_length=1, max_length=2000)
+    claims: list[ResearchClaimDraft] = Field(default_factory=list, max_length=8)
+    caveats: list[str] = Field(default_factory=list, max_length=8)
+
+
 class ResearchBrief(StrictModel):
     """Concise evidence only. It deliberately has no chain-of-thought field."""
 

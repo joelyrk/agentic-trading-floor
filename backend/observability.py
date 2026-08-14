@@ -62,6 +62,7 @@ class ServiceHealth(BaseModel):
     circuit_open_until: datetime | None = None
     attempt_count: int = Field(default=0, ge=0)
     failure_count: int = Field(default=0, ge=0)
+    active: bool = True
 
 
 class CycleBudget(BaseModel):
@@ -139,10 +140,20 @@ class TelemetryRepository:
     def register_service(self, name: str, required: bool) -> None:
         with sqlite3.connect(self.path) as conn:
             conn.execute(
-                """INSERT INTO service_health (name, state, required, consecutive_failures)
-                   VALUES (?, 'unavailable', ?, 0)
-                   ON CONFLICT(name) DO UPDATE SET required=excluded.required""",
+                """INSERT INTO service_health
+                   (name, state, required, consecutive_failures, active)
+                   VALUES (?, 'unavailable', ?, 0, 1)
+                   ON CONFLICT(name) DO UPDATE SET required=excluded.required, active=1""",
                 (name, int(required)),
+            )
+
+    def retire_services_except(self, names: tuple[str, ...]) -> None:
+        """Hide retired integrations while preserving their historical health records."""
+        placeholders = ",".join("?" for _ in names)
+        with sqlite3.connect(self.path) as conn:
+            conn.execute(
+                f"UPDATE service_health SET active=0 WHERE name NOT IN ({placeholders})",
+                names,
             )
 
     def service(self, name: str) -> ServiceHealth | None:
@@ -154,7 +165,9 @@ class TelemetryRepository:
     def services(self) -> list[ServiceHealth]:
         with sqlite3.connect(self.path) as conn:
             conn.row_factory = sqlite3.Row
-            rows = conn.execute("SELECT * FROM service_health ORDER BY name").fetchall()
+            rows = conn.execute(
+                "SELECT * FROM service_health WHERE active=1 ORDER BY name"
+            ).fetchall()
         return [ServiceHealth.model_validate(dict(row)) for row in rows]
 
     def mark_starting(self, name: str) -> None:

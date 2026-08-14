@@ -322,20 +322,20 @@ def seed_demo_database(path: str | Path) -> bool:
                 ),
             )
         for name, latency in (
+            ("paper-accounts", 3.1),
+            ("notifications", 2.4),
             ("market-data", 4.2),
-            ("research-fetch", 12.8),
             ("research-search", 18.4),
-            ("memory", 2.1),
         ):
             conn.execute(
                 """INSERT INTO service_health
                    (name, state, required, last_success, latency_ms, consecutive_failures,
-                    attempt_count, failure_count)
-                   VALUES (?, 'healthy', 1, ?, ?, 0, 1, 0)
+                    attempt_count, failure_count, active)
+                   VALUES (?, 'healthy', 1, ?, ?, 0, 1, 0, 1)
                    ON CONFLICT(name) DO UPDATE SET state='healthy', required=1,
                        last_success=excluded.last_success, latency_ms=excluded.latency_ms,
                        consecutive_failures=0, error_summary=NULL,
-                       circuit_open_until=NULL, attempt_count=MAX(attempt_count, 1)""",
+                       circuit_open_until=NULL, attempt_count=MAX(attempt_count, 1), active=1""",
                 (name, DEMO_AS_OF.isoformat(), latency),
             )
         conn.execute(
