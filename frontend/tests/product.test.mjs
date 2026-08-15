@@ -5,6 +5,7 @@ import test from "node:test";
 const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
 const css = await readFile(new URL("../src/styles.css", import.meta.url), "utf8");
 const client = await readFile(new URL("../src/main.ts", import.meta.url), "utf8");
+const nginx = await readFile(new URL("../nginx.conf", import.meta.url), "utf8");
 
 test("decision console exposes keyboard and assistive-technology landmarks", () => {
   assert.match(html, /class="skip-link"/);
@@ -39,4 +40,10 @@ test("overview exposes each agent's strategy in the agent desk grid", () => {
   assert.match(client, /renderAgentDesks\(traders,/);
   assert.match(client, /trader\.strategy/);
   assert.match(css, /\.agent-desk-list\{display:grid;grid-template-columns:repeat\(2,/);
+});
+
+test("frontend proxy re-resolves a recreated API container", () => {
+  assert.match(nginx, /resolver 127\.0\.0\.11 valid=10s ipv6=off;/);
+  assert.match(nginx, /set \$api_upstream \$\{API_UPSTREAM\};/);
+  assert.match(nginx, /proxy_pass http:\/\/\$api_upstream;/);
 });

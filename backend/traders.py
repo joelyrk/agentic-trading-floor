@@ -13,6 +13,7 @@ from agents import (
     OpenAIResponsesModel,
     Runner,
     Usage,
+    gen_trace_id,
     trace,
 )
 from dotenv import load_dotenv
@@ -62,7 +63,6 @@ from .templates import (
     trade_message,
     trader_instructions,
 )
-from .tracers import make_trace_id
 
 load_dotenv()
 
@@ -226,6 +226,7 @@ class Trader:
         self._budget_hooks = None
         self._last_usage = None
         self._run_id: str | None = None
+        self._processing_warning: str | None = None
 
     def _log_stage(self, message: str) -> None:
         run_label = self._run_id or "uncoordinated"
@@ -349,9 +350,17 @@ class Trader:
             f"applying deterministic risk controls to {len(recommendation.proposals)} proposals"
         )
         processed, error = pipeline.safely_process(self.name, output)
-        if error:
+        if error and not processed:
             raise ValueError(error)
-        self._log_stage(f"completed with {len(processed)} processed paper proposals")
+        self._processing_warning = error
+        if error:
+            failed_count = len(recommendation.proposals) - len(processed)
+            self._log_stage(
+                f"completed with {len(processed)} processed and {failed_count} skipped proposal; "
+                f"warning: {safe_error(error)}"
+            )
+        else:
+            self._log_stage(f"completed with {len(processed)} processed paper proposals")
         return processed, usage
 
     async def run_with_mcp_servers(self, budget: CycleBudget):
@@ -369,8 +378,9 @@ class Trader:
 
     async def run_with_trace(self, context: CycleContext, budget: CycleBudget):
         trace_name = f"{self.name}-trading" if self.do_trade else f"{self.name}-rebalancing"
-        trace_id = make_trace_id(f"{self.name.lower()}")
+        trace_id = gen_trace_id()
         metadata = {
+            "agent_name": self.name.lower(),
             "cycle_id": context.cycle_id,
             "run_id": context.run_id or "live",
             "scenario_id": context.scenario_id or "live",
@@ -392,6 +402,7 @@ class Trader:
     async def run(self, *, run_id: str | None = None):
         self._budget_hooks = None
         self._last_usage = None
+        self._processing_warning = None
         budget = CycleBudget.from_env()
         context = CycleContext.create(
             run_id=run_id or os.getenv("EVALUATION_RUN_ID"),
@@ -420,6 +431,7 @@ class Trader:
                 usage=usage,
                 latency_ms=(monotonic() - started) * 1000,
                 estimated_cost=cost,
+                error=self._processing_warning,
                 decision_ids=[str(decision.decision_id) for _, decision, _ in processed],
                 trace_id=trace_id,
             )

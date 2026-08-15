@@ -7,7 +7,7 @@ from uuid import NAMESPACE_URL, uuid5
 
 from pydantic import ValidationError
 
-from backend.market import MarketObservation
+from backend.market import MarketDataError, MarketObservation
 from backend.research import ResearchPolicy, ResearchPolicyError
 from backend.research.models import TRADER_PROMPT_VERSION
 
@@ -179,7 +179,7 @@ class DecisionPipeline:
         return results
 
     def safely_process(self, account_name: str, raw_output) -> tuple[list, str | None]:
-        """Validate untrusted agent output; malformed output never reaches execution."""
+        """Validate output and isolate attributable failures between paper proposals."""
         try:
             output = (
                 raw_output
@@ -188,9 +188,32 @@ class DecisionPipeline:
             )
         except (ValidationError, TypeError, ValueError, ResearchPolicyError) as exc:
             return [], f"invalid_agent_output: {exc}"
-        try:
-            return self.process(account_name, output), None
-        except ResearchPolicyError as exc:
-            return [], f"research_policy_rejection: {exc}"
-        except ExecutionConflict as exc:
-            return [], f"execution_conflict: {exc}"
+        if not output.proposals:
+            try:
+                self.proposal_service.record_research(
+                    account_name, output.research, output.trader_prompt_version
+                )
+            except ResearchPolicyError as exc:
+                return [], f"research_policy_rejection: {exc}"
+            return [], None
+
+        results = []
+        errors: list[str] = []
+        for proposed in output.proposals:
+            try:
+                proposal = self.proposal_service.create(
+                    account_name,
+                    proposed,
+                    output.research,
+                    output.trader_prompt_version,
+                )
+                decision = self.risk_service.evaluate(proposal)
+                execution = self.execution_service.execute(proposal, decision)
+                results.append((proposal, decision, execution))
+            except ResearchPolicyError as exc:
+                errors.append(f"{proposed.symbol}: research_policy_rejection: {exc}")
+            except ExecutionConflict as exc:
+                errors.append(f"{proposed.symbol}: execution_conflict: {exc}")
+            except MarketDataError as exc:
+                errors.append(f"{proposed.symbol}: {exc}")
+        return results, "; ".join(errors) or None

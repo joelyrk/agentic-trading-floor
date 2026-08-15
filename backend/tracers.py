@@ -1,46 +1,39 @@
-import secrets
-import string
+from threading import Lock
 
 from agents import Span, Trace, TracingProcessor
 
 from .database import write_log
 from .observability import safe_error
 
-ALPHANUM = string.ascii_lowercase + string.digits
-
-
-def make_trace_id(tag: str) -> str:
-    """
-    Return a string of the form 'trace_<tag><random>',
-    where the total length after 'trace_' is 32 chars.
-    """
-    tag += "0"
-    pad_len = 32 - len(tag)
-    random_suffix = "".join(secrets.choice(ALPHANUM) for _ in range(pad_len))
-    return f"trace_{tag}{random_suffix}"
-
 
 class LogTracer(TracingProcessor):
-    def get_name(self, trace_or_span: Trace | Span) -> str | None:
-        trace_id = trace_or_span.trace_id
-        name = trace_id.split("_")[1]
-        if "0" in name:
-            return name.split("0")[0]
-        else:
-            return None
+    """Mirror SDK trace events to each agent's local activity log."""
+
+    def __init__(self) -> None:
+        self._agent_names: dict[str, str] = {}
+        self._lock = Lock()
+
+    def _get_name(self, trace_or_span: Trace | Span) -> str | None:
+        with self._lock:
+            return self._agent_names.get(trace_or_span.trace_id)
 
     def on_trace_start(self, trace) -> None:
-        name = self.get_name(trace)
+        metadata = getattr(trace, "metadata", None)
+        name = metadata.get("agent_name") if isinstance(metadata, dict) else None
         if name:
+            with self._lock:
+                self._agent_names[trace.trace_id] = str(name)
             write_log(name, "trace", f"Started: {trace.name}")
 
     def on_trace_end(self, trace) -> None:
-        name = self.get_name(trace)
+        name = self._get_name(trace)
         if name:
             write_log(name, "trace", f"Ended: {trace.name}")
+        with self._lock:
+            self._agent_names.pop(trace.trace_id, None)
 
     def on_span_start(self, span) -> None:
-        name = self.get_name(span)
+        name = self._get_name(span)
         type = span.span_data.type if span.span_data else "span"
         if name:
             message = "Started"
@@ -56,7 +49,7 @@ class LogTracer(TracingProcessor):
             write_log(name, type, message)
 
     def on_span_end(self, span) -> None:
-        name = self.get_name(span)
+        name = self._get_name(span)
         type = span.span_data.type if span.span_data else "span"
         if name:
             message = "Ended"

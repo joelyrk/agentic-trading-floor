@@ -24,6 +24,7 @@ from backend.decisions import (
 )
 from backend.decisions.models import ProposedTrade
 from backend.decisions.repository import DecisionRepository, ExecutionConflict
+from backend.market import MarketDataError
 from backend.market.models import DataMode, MarketObservation, ObservationSource
 
 NOW = datetime(2026, 8, 13, 12, tzinfo=timezone.utc)
@@ -260,6 +261,36 @@ def test_malformed_agent_output_is_safely_rejected(tmp_path) -> None:
     assert processed == []
     assert error and error.startswith("invalid_agent_output")
     assert repo.audit_chain("alice") == []
+
+
+def test_pipeline_preserves_completed_proposals_when_later_market_data_fails() -> None:
+    class Proposals:
+        def create(self, account_name, proposed, research, trader_prompt_version):
+            return proposed
+
+    class Risks:
+        def evaluate(self, proposal):
+            if proposal.symbol == "BEAM":
+                raise MarketDataError("provider_error: Massive request failed")
+            return f"approved-{proposal.symbol}"
+
+    class Executions:
+        def execute(self, proposal, decision):
+            return f"executed-{proposal.symbol}"
+
+    decision = output().model_copy(
+        update={
+            "proposals": [
+                output().proposals[0].model_copy(update={"symbol": symbol})
+                for symbol in ("COIN", "RBLX", "BEAM")
+            ]
+        }
+    )
+    processed, error = DecisionPipeline(Proposals(), Risks(), Executions()).safely_process(
+        "Cathie", decision
+    )
+    assert [proposal.symbol for proposal, _, _ in processed] == ["COIN", "RBLX"]
+    assert error == "BEAM: provider_error: Massive request failed"
 
 
 def test_positive_integral_quantity_schema() -> None:
