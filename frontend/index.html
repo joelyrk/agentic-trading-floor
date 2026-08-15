@@ -55,8 +55,8 @@
         </div>
       </section>
       <section id="experiments-view" class="view" aria-labelledby="experiments-heading" hidden>
-        <div class="section-head"><div><p class="eyebrow">Controlled comparisons</p><h2 id="experiments-heading">Experiment registry</h2></div><p class="context-copy">Offline evaluation validates the replay system—not investment merit.</p></div>
-        <form id="experiment-form" class="experiment-bar"><label>Model label<input id="model-input" value="offline-deterministic-proxy" maxlength="120" required /></label><label>Prompt version<input id="prompt-input" value="eval-agent-v1" maxlength="120" required /></label><button class="primary" type="submit">Run experiment</button></form>
+        <div class="section-head"><div><p class="eyebrow">Controlled comparisons</p><h2 id="experiments-heading">Experiment registry</h2></div><p class="context-copy">Deterministic offline proxies validate replay behavior. They do not call live agents or establish investment merit.</p></div>
+        <form id="experiment-form" class="experiment-bar"><p class="experiment-disclosure"><strong>Offline deterministic evaluation.</strong> Model and prompt values below are report labels only: changing them does not call that model or change the proxy strategies.</p><label>Report model label<small>Metadata only</small><input id="model-input" value="offline-deterministic-proxy" maxlength="120" required /></label><label>Report prompt-version label<small>Metadata only</small><input id="prompt-input" value="eval-agent-v1" maxlength="120" required /></label><button class="primary" type="submit">Run deterministic comparison</button></form>
         <div id="experiments-list" class="card table-wrap loading" aria-live="polite">Loading experiment registry…</div>
       </section>
     </main>

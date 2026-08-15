@@ -47,3 +47,19 @@ test("frontend proxy re-resolves a recreated API container", () => {
   assert.match(nginx, /set \$api_upstream \$\{API_UPSTREAM\};/);
   assert.match(nginx, /proxy_pass http:\/\/\$api_upstream;/);
 });
+
+test("experiments disclose metadata-only labels and deterministic proxies", () => {
+  assert.match(html, /Model and prompt values below are report labels only/);
+  assert.match(html, /changing them does not call that model/);
+  assert.match(client, /Architecture proxy/);
+  assert.match(client, /No model API calls occur/);
+});
+
+test("active run polling refreshes decisions and agent account outputs", () => {
+  assert.match(client, /async function refreshLiveAgentOutputs/);
+  assert.match(client, /newlyCompleted = progress\.agents\.filter/);
+  assert.match(client, /await getTrader\(agent\.name\)/);
+  assert.match(client, /await getTraderDecisions\(agent\.name\)/);
+  assert.match(client, /refreshedAgentOutputs\.add\(update\.name\)/);
+  assert.match(client, /if \(currentRunProgress\) await refreshLiveAgentOutputs\(currentRunProgress\)/);
+});

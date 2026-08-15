@@ -16,6 +16,8 @@ let runPoll: number | undefined;
 let currentRunProgress: AgentRunProgress | null = null;
 let currentTraders: TraderDetail[] = [];
 let currentLogsByAgent = new Map<string, Array<{ datetime: string; type: string; message: string }>>();
+let currentDecisionsByAgent = new Map<string, DecisionAudit[]>();
+let refreshedAgentOutputs = new Set<string>();
 
 document.querySelectorAll<HTMLButtonElement>(".tab").forEach((tab) => tab.addEventListener("click", () => {
   document.querySelectorAll<HTMLButtonElement>(".tab").forEach((item) => {
@@ -50,6 +52,7 @@ async function loadOverview(): Promise<void> {
   currentTraders = traders;
   currentLogsByAgent = new Map(logs.map((item) => [item.name, item.rows]));
   const decisions = (await Promise.all(roster.map(async (item) => ({ name: item.name, rows: await getTraderDecisions(item.name) }))));
+  currentDecisionsByAgent = new Map(decisions.map((item) => [item.name.toLowerCase(), item.rows]));
   renderStatus(market, health);
   const progress = latestRun ? await getAgentRunProgress(latestRun.run_id) : null;
   renderRunControl(runtime.read_only, market, health, latestRun, progress);
@@ -164,11 +167,35 @@ async function refreshRunControl(_runId?: string): Promise<AgentRunRecord | null
   return run;
 }
 
+async function refreshLiveAgentOutputs(progress: AgentRunProgress): Promise<void> {
+  const newlyCompleted = progress.agents.filter((agent) =>
+    ["succeeded", "failed", "interrupted"].includes(agent.status)
+    && !refreshedAgentOutputs.has(agent.name.toLowerCase()));
+  if (!newlyCompleted.length) return;
+  const updates = await Promise.all(newlyCompleted.map(async (agent) => ({
+    name: agent.name.toLowerCase(),
+    trader: await getTrader(agent.name),
+    decisions: await getTraderDecisions(agent.name),
+  })));
+  for (const update of updates) {
+    currentTraders = currentTraders.map((trader) =>
+      trader.name.toLowerCase() === update.name ? update.trader : trader);
+    currentDecisionsByAgent.set(update.name, update.decisions);
+    refreshedAgentOutputs.add(update.name);
+  }
+  renderAgentDesks(currentTraders, progress, currentLogsByAgent);
+  const displayNames = new Map(currentTraders.map((trader) => [trader.name.toLowerCase(), trader.name]));
+  renderDecisions([...currentDecisionsByAgent.entries()].flatMap(([trader, rows]) =>
+    rows.map((row) => ({ trader: displayNames.get(trader) ?? trader, row }))));
+}
+
 function pollRunState(runId: string): void {
   if (runPoll !== undefined) window.clearInterval(runPoll);
+  refreshedAgentOutputs = new Set();
   runPoll = window.setInterval(async () => {
     try {
       const run = await refreshRunControl(runId);
+      if (currentRunProgress) await refreshLiveAgentOutputs(currentRunProgress);
       if (!run || !["queued", "running"].includes(run.status)) {
         window.clearInterval(runPoll);
         runPoll = undefined;
@@ -293,8 +320,8 @@ function renderExperiments(reports: ExperimentReport[]): void {
   const host = document.getElementById("experiments-list")!;
   host.className = "card table-wrap";
   if (!reports.length) { host.innerHTML = `<div class="empty-state">No experiments recorded. Run one to compare baselines, single-agent, and multi-agent architectures.</div>`; return; }
-  const rows = reports.flatMap((report) => report.results.filter((item) => ["single_agent", "multi_agent"].includes(item.strategy)).map((item) => `<tr><th scope="row"><strong>${escapeHtml(report.metadata.model)}</strong><small>${escapeHtml(report.metadata.prompt_version)} · seed ${report.metadata.seed}</small></th><td>${escapeHtml(item.strategy.replaceAll("_", " "))}</td><td>${percent(Number(item.metrics.total_return))}</td><td>${percent(Number(item.metrics.benchmark_relative_return))}</td><td>${percent(-Number(item.metrics.max_drawdown))}</td><td>${percent(Number(item.metrics.turnover))}</td><td>$${Number(item.metrics.model_api_cost_usd).toFixed(4)}</td><td>${Number(item.metrics.average_latency_ms).toFixed(0)}ms</td></tr>`)).join("");
-  host.innerHTML = `<table><thead><tr><th>Model / prompt</th><th>Architecture</th><th>Return</th><th>vs benchmark</th><th>Drawdown</th><th>Turnover</th><th>Cost</th><th>Latency</th></tr></thead><tbody>${rows}</tbody></table><p class="table-note">All rows use immutable point-in-time fixtures. Identical returns across model labels are expected for the current deterministic architecture proxies.</p>`;
+  const rows = reports.flatMap((report) => report.results.filter((item) => ["single_agent", "multi_agent"].includes(item.strategy)).map((item) => `<tr><th scope="row"><strong>${escapeHtml(report.metadata.model)}</strong><small>${escapeHtml(report.metadata.prompt_version)} · metadata labels · seed ${report.metadata.seed}</small></th><td>${escapeHtml(item.strategy.replaceAll("_", " "))} proxy</td><td>${percent(Number(item.metrics.total_return))}</td><td>${percent(Number(item.metrics.benchmark_relative_return))}</td><td>${percent(-Number(item.metrics.max_drawdown))}</td><td>${percent(Number(item.metrics.turnover))}</td><td>$${Number(item.metrics.model_api_cost_usd).toFixed(4)}</td><td>${Number(item.metrics.average_latency_ms).toFixed(0)}ms</td></tr>`)).join("");
+  host.innerHTML = `<table><thead><tr><th>Report labels</th><th>Architecture proxy</th><th>Return</th><th>vs benchmark</th><th>Drawdown</th><th>Turnover</th><th>Estimated cost</th><th>Estimated latency</th></tr></thead><tbody>${rows}</tbody></table><p class="table-note">No model API calls occur. Every row uses immutable point-in-time fixtures and deterministic proxy logic; label changes identify reports but do not change decisions.</p>`;
 }
 
 async function loadExperiments(): Promise<void> {
@@ -311,7 +338,7 @@ document.getElementById("experiment-form")!.addEventListener("submit", async (ev
   event.preventDefault();
   const button = (event.currentTarget as HTMLFormElement).querySelector("button")!;
   button.disabled = true; button.textContent = "Running 30 scenarios…";
-  try { await createExperiment((document.getElementById("model-input") as HTMLInputElement).value, (document.getElementById("prompt-input") as HTMLInputElement).value); await loadExperiments(); } catch (error) { showError(error); } finally { button.disabled = false; button.textContent = "Run experiment"; }
+  try { await createExperiment((document.getElementById("model-input") as HTMLInputElement).value, (document.getElementById("prompt-input") as HTMLInputElement).value); await loadExperiments(); } catch (error) { showError(error); } finally { button.disabled = false; button.textContent = "Run deterministic comparison"; }
 });
 
 Promise.all([loadOverview(), loadReplay(), loadExperiments()]).catch(showError);
