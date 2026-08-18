@@ -121,7 +121,7 @@ def test_retry_is_blocked_after_any_successful_cycle(tmp_path) -> None:
         repository.retry(run.run_id, "retry-1")
 
 
-def test_agent_run_outcome_requires_every_trader_cycle_to_succeed(tmp_path) -> None:
+def test_agent_run_outcome_preserves_successes_when_one_trader_fails(tmp_path) -> None:
     path = str(tmp_path / "runs.db")
     runs = AgentRunRepository(path)
     telemetry = TelemetryRepository(path)
@@ -145,8 +145,41 @@ def test_agent_run_outcome_requires_every_trader_cycle_to_succeed(tmp_path) -> N
             error="fourth trader failed" if index == 3 else None,
         )
     status, error = runs.cycle_outcome(run.run_id, 4)
-    assert status == "failed"
+    assert status == "partial_success"
     assert error == "fourth trader failed"
+
+
+def test_agent_run_outcome_is_partial_when_proposal_was_skipped(tmp_path) -> None:
+    path = str(tmp_path / "runs.db")
+    runs = AgentRunRepository(path)
+    telemetry = TelemetryRepository(path)
+    run, _ = runs.request(
+        trigger="manual",
+        requested_by="local-console",
+        idempotency_key="warning-run",
+        observation=observation(),
+    )
+    for index in range(4):
+        context = CycleContext.create(run_id=run.run_id)
+        telemetry.start_cycle(
+            context, f"Trader {index}", "model", "prompt", "end_of_day", CycleBudget()
+        )
+        telemetry.finish_cycle(
+            context.cycle_id,
+            status="succeeded",
+            usage=None,
+            latency_ms=1,
+            estimated_cost=Decimal("0"),
+            error=(
+                "ALKEM: market_data_unavailable: empty_market_day"
+                if index == 2
+                else None
+            ),
+        )
+
+    status, error = runs.cycle_outcome(run.run_id, 4)
+    assert status == "partial_success"
+    assert error == "ALKEM: market_data_unavailable: empty_market_day"
 
 
 def test_agent_run_progress_correlates_stage_logs_and_pending_agents(tmp_path) -> None:

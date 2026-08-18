@@ -215,5 +215,5 @@ class DecisionPipeline:
             except ExecutionConflict as exc:
                 errors.append(f"{proposed.symbol}: execution_conflict: {exc}")
             except MarketDataError as exc:
-                errors.append(f"{proposed.symbol}: {exc}")
+                errors.append(f"{proposed.symbol}: market_data_unavailable: {exc}")
         return results, "; ".join(errors) or None

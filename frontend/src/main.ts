@@ -2,7 +2,7 @@ import {
   cancelAgentRun, createExperiment, createManualAgentRun, createReplay, getAgentRunProgress, getExperiments, getHealth, getLatestAgentRun, getMarket, getReplayCatalog, getRuntime, retryAgentRun,
   getTrader, getTraderDecisions, getTraderLogs, getTraders, revealReplay,
   type AgentRunProgress, type AgentRunRecord, type DecisionAudit, type ExperimentReport, type HealthInfo, type MarketInfo,
-  type ReplaySession, type TraderDetail,
+  type ReplaySession, type TraderDetail, type TraderInfo,
 } from "./api";
 import { initTheme } from "./theme";
 
@@ -14,7 +14,9 @@ const escapeHtml = (value: unknown) => String(value).replace(/[&<>'"]/g, (char) 
 const runtimePromise = getRuntime();
 let runPoll: number | undefined;
 let currentRunProgress: AgentRunProgress | null = null;
+let currentRoster: TraderInfo[] = [];
 let currentTraders: TraderDetail[] = [];
+let currentTraderErrors = new Map<string, string>();
 let currentLogsByAgent = new Map<string, Array<{ datetime: string; type: string; message: string }>>();
 let currentDecisionsByAgent = new Map<string, DecisionAudit[]>();
 let refreshedAgentOutputs = new Set<string>();
@@ -34,6 +36,10 @@ function showError(error: unknown): void {
   host.hidden = false;
 }
 
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : "Account data is temporarily unavailable.";
+}
+
 function drawdown(points: TraderDetail["time_series"]): number {
   let peak = 0;
   return points.reduce((worst, point) => {
@@ -47,11 +53,18 @@ async function loadOverview(): Promise<void> {
   const runtimeBadge = document.getElementById("runtime-badge")!;
   runtimeBadge.textContent = runtime.read_only ? "SEEDED · READ ONLY" : "STANDARD MODE";
   runtimeBadge.dataset.state = runtime.read_only ? "demo" : "good";
-  const traders = await Promise.all(roster.map((item) => getTrader(item.name)));
-  const logs = await Promise.all(roster.map(async (item) => ({ name: item.name.toLowerCase(), rows: await getTraderLogs(item.name, 8) })));
+  currentRoster = roster;
+  const traderResults = await Promise.allSettled(roster.map((item) => getTrader(item.name)));
+  const traders = traderResults.flatMap((result) => result.status === "fulfilled" ? [result.value] : []);
+  currentTraderErrors = new Map(traderResults.flatMap((result, index) => result.status === "rejected"
+    ? [[roster[index].name.toLowerCase(), errorMessage(result.reason)] as const]
+    : []));
+  const logResults = await Promise.allSettled(roster.map(async (item) => ({ name: item.name.toLowerCase(), rows: await getTraderLogs(item.name, 8) })));
+  const logs = logResults.flatMap((result) => result.status === "fulfilled" ? [result.value] : []);
   currentTraders = traders;
   currentLogsByAgent = new Map(logs.map((item) => [item.name, item.rows]));
-  const decisions = (await Promise.all(roster.map(async (item) => ({ name: item.name, rows: await getTraderDecisions(item.name) }))));
+  const decisionResults = await Promise.allSettled(roster.map(async (item) => ({ name: item.name, rows: await getTraderDecisions(item.name) })));
+  const decisions = decisionResults.flatMap((result) => result.status === "fulfilled" ? [result.value] : []);
   currentDecisionsByAgent = new Map(decisions.map((item) => [item.name.toLowerCase(), item.rows]));
   renderStatus(market, health);
   const progress = latestRun ? await getAgentRunProgress(latestRun.run_id) : null;
@@ -106,9 +119,17 @@ function renderAgentDesks(traders: TraderDetail[], progress: AgentRunProgress | 
   const activityByAgent = new Map(progress?.agents.map((agent) => [agent.name.toLowerCase(), agent]) ?? []);
   const host = document.getElementById("agent-desk-list")!;
   host.className = "agent-desk-list";
-  host.innerHTML = traders.map((trader) => {
+  const tradersByName = new Map(traders.map((trader) => [trader.name.toLowerCase(), trader]));
+  const desks = currentRoster.length ? currentRoster : traders;
+  host.innerHTML = desks.map((info) => {
+    const deskName = info.name.toLowerCase();
+    const trader = tradersByName.get(deskName);
+    const activity = activityByAgent.get(deskName);
+    if (!trader) {
+      const message = currentTraderErrors.get(deskName) ?? "Account data is temporarily unavailable.";
+      return `<article class="agent-desk agent-desk-unavailable"><header class="agent-desk-header"><div class="agent-identity"><p>${escapeHtml(info.name.toUpperCase())}</p><span>${escapeHtml(info.model_name)} · ${escapeHtml(info.lastname)}</span></div>${activity ? `<span class="outcome agent-run-state" data-state="${activity.status}">${escapeHtml(activity.status)}</span>` : ""}</header><div class="agent-account-warning"><strong>Account valuation temporarily unavailable</strong><span>${escapeHtml(message)}</span></div></article>`;
+    }
     const name = trader.name.toLowerCase();
-    const activity = activityByAgent.get(name);
     const pnlPositive = trader.pnl >= 0;
     const strategy = trader.strategy.replace(/\s+/g, " ").trim();
     const cash = Math.max(Number(trader.balance), 0);
@@ -119,7 +140,11 @@ function renderAgentDesks(traders: TraderDetail[], progress: AgentRunProgress | 
     const logRows = agentLogs.length ? agentLogs.map((row) => `<li><time>${escapeHtml(new Date(`${row.datetime}Z`).toLocaleTimeString())}</time><b>${escapeHtml(row.type)}</b><span>${escapeHtml(row.message.split(": ", 2).at(-1) ?? row.message)}</span></li>`).join("") : `<li class="muted">No activity recorded yet.</li>`;
     const trades = trader.transactions.slice(-8).reverse();
     const tradeRows = trades.length ? trades.map((trade) => `<li><time>${escapeHtml(new Date(trade.timestamp).toLocaleDateString(undefined, { month: "2-digit", day: "2-digit" }))}</time><b data-side="${trade.quantity >= 0 ? "buy" : "sell"}">${trade.quantity >= 0 ? "BUY" : "SELL"}</b><span>${Math.abs(trade.quantity)} ${escapeHtml(trade.symbol)} @ ${money.format(trade.price)}</span></li>`).join("") : `<li class="muted">No paper trades yet.</li>`;
-    return `<article class="agent-desk"><header class="agent-desk-header"><div class="agent-identity"><p>${escapeHtml(trader.name.toUpperCase())}</p><span>${escapeHtml(trader.model_name)} · ${escapeHtml(trader.lastname)}</span></div>${activity ? `<span class="outcome agent-run-state" data-state="${activity.status}">${escapeHtml(activity.status)}</span>` : ""}<strong class="agent-value" data-state="${pnlPositive ? "gain" : "loss"}">${money.format(trader.portfolio_value)}</strong><b class="agent-pnl" data-state="${pnlPositive ? "gain" : "loss"}">${pnlPositive ? "+" : "−"}${money.format(Math.abs(trader.pnl))}</b></header><p class="agent-mandate">${escapeHtml(strategy || "No strategy mandate is currently set.")}</p>${equityChart(trader.time_series, name)}<div class="allocation-strip" aria-label="Current portfolio allocation">${allocation}</div><div class="agent-streams"><section><h4>Activity${activity ? ` · ${escapeHtml(activity.current_activity)}` : ""}</h4><ol class="desk-log">${logRows}</ol></section><section><h4>Recent paper trades</h4><ol class="desk-log trade-log">${tradeRows}</ol></section></div></article>`;
+    const degraded = trader.valuation_status?.state === "degraded";
+    const valuationWarning = degraded
+      ? `<div class="agent-account-warning"><strong>Using persisted Massive prices</strong><span>${escapeHtml(trader.valuation_status.error_summary ?? "Live valuation is temporarily unavailable.")}</span></div>`
+      : "";
+    return `<article class="agent-desk"><header class="agent-desk-header"><div class="agent-identity"><p>${escapeHtml(trader.name.toUpperCase())}</p><span>${escapeHtml(trader.model_name)} · ${escapeHtml(trader.lastname)}</span></div>${activity ? `<span class="outcome agent-run-state" data-state="${activity.status}">${escapeHtml(activity.status)}</span>` : ""}<strong class="agent-value" data-state="${pnlPositive ? "gain" : "loss"}">${money.format(trader.portfolio_value)}</strong><b class="agent-pnl" data-state="${pnlPositive ? "gain" : "loss"}">${pnlPositive ? "+" : "−"}${money.format(Math.abs(trader.pnl))}</b></header>${valuationWarning}<p class="agent-mandate">${escapeHtml(strategy || "No strategy mandate is currently set.")}</p>${equityChart(trader.time_series, name)}<div class="allocation-strip" aria-label="Current portfolio allocation">${allocation}</div><div class="agent-streams"><section><h4>Activity${activity ? ` · ${escapeHtml(activity.current_activity)}` : ""}</h4><ol class="desk-log">${logRows}</ol></section><section><h4>Recent paper trades</h4><ol class="desk-log trade-log">${tradeRows}</ol></section></div></article>`;
   }).join("");
 }
 
@@ -161,6 +186,9 @@ function renderRunControl(readOnly: boolean, market: MarketInfo, health: HealthI
 async function refreshRunControl(_runId?: string): Promise<AgentRunRecord | null> {
   const [runtime, market, health, run] = await Promise.all([runtimePromise, getMarket(), getHealth(), getLatestAgentRun()]);
   const progress = run ? await getAgentRunProgress(run.run_id) : null;
+  renderStatus(market, health);
+  renderServices(health);
+  renderCosts(health);
   renderRunControl(runtime.read_only, market, health, run, progress);
   if (currentTraders.length) renderAgentDesks(currentTraders, progress, currentLogsByAgent);
   else currentRunProgress = progress;
@@ -172,16 +200,20 @@ async function refreshLiveAgentOutputs(progress: AgentRunProgress): Promise<void
     ["succeeded", "failed", "interrupted"].includes(agent.status)
     && !refreshedAgentOutputs.has(agent.name.toLowerCase()));
   if (!newlyCompleted.length) return;
-  const updates = await Promise.all(newlyCompleted.map(async (agent) => ({
-    name: agent.name.toLowerCase(),
-    trader: await getTrader(agent.name),
-    decisions: await getTraderDecisions(agent.name),
-  })));
-  for (const update of updates) {
-    currentTraders = currentTraders.map((trader) =>
-      trader.name.toLowerCase() === update.name ? update.trader : trader);
-    currentDecisionsByAgent.set(update.name, update.decisions);
-    refreshedAgentOutputs.add(update.name);
+  for (const agent of newlyCompleted) {
+    const name = agent.name.toLowerCase();
+    const [traderResult, decisionResult] = await Promise.allSettled([
+      getTrader(agent.name),
+      getTraderDecisions(agent.name),
+    ]);
+    if (traderResult.status === "fulfilled") {
+      currentTraders = [...currentTraders.filter((trader) => trader.name.toLowerCase() !== name), traderResult.value];
+      currentTraderErrors.delete(name);
+    } else {
+      currentTraderErrors.set(name, errorMessage(traderResult.reason));
+    }
+    if (decisionResult.status === "fulfilled") currentDecisionsByAgent.set(name, decisionResult.value);
+    if (traderResult.status === "fulfilled" && decisionResult.status === "fulfilled") refreshedAgentOutputs.add(name);
   }
   renderAgentDesks(currentTraders, progress, currentLogsByAgent);
   const displayNames = new Map(currentTraders.map((trader) => [trader.name.toLowerCase(), trader.name]));

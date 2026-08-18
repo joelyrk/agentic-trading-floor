@@ -350,7 +350,10 @@ class Trader:
             f"applying deterministic risk controls to {len(recommendation.proposals)} proposals"
         )
         processed, error = pipeline.safely_process(self.name, output)
-        if error and not processed:
+        unavailable_only = bool(error) and all(
+            ": market_data_unavailable:" in item for item in error.split("; ")
+        )
+        if error and not processed and not unavailable_only:
             raise ValueError(error)
         self._processing_warning = error
         if error:

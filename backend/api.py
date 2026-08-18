@@ -23,7 +23,7 @@ from backend.access import AccessControlMiddleware, ReadOnlyModeMiddleware
 from backend.accounts import Account
 from backend.agent_runs import AgentRunConflict, AgentRunRepository, UnchangedMarketData
 from backend.config import validate_startup
-from backend.database import read_log, write_market_observation
+from backend.database import read_latest_market_observation, read_log, write_market_observation
 from backend.decisions import ExecutionService, RiskPolicy
 from backend.decisions.repository import DecisionRepository, ExecutionConflict
 from backend.observability import TelemetryRepository
@@ -106,17 +106,28 @@ def average_cost(account: Account, symbol: str) -> float:
     return spend / bought if bought else 0.0
 
 
-def holdings_detail(account: Account) -> list[dict]:
+def holdings_detail(account: Account) -> tuple[list[dict], dict]:
     """Current holdings enriched with price, market value and unrealised profit."""
     details = []
+    degraded_symbols: list[str] = []
+    errors: list[str] = []
     valuation_id = str(uuid4())
     for symbol, quantity in account.holdings.items():
-        observation = market.get_market_observation(symbol)
-        observation_id = (
-            f"demo-valuation:{account.name}:{symbol}"
-            if startup.application_settings.read_only
-            else write_market_observation(account.name, "valuation", valuation_id, observation)
-        )
+        try:
+            observation = market.get_market_observation(symbol)
+            observation_id = (
+                f"demo-valuation:{account.name}:{symbol}"
+                if startup.application_settings.read_only
+                else write_market_observation(account.name, "valuation", valuation_id, observation)
+            )
+        except market.MarketDataError as exc:
+            persisted = read_latest_market_observation(account.name, symbol)
+            if persisted is None:
+                raise
+            observation = market.MarketObservation.model_validate(persisted["observation"])
+            observation_id = persisted["id"]
+            degraded_symbols.append(symbol)
+            errors.append(f"{symbol}: {exc}")
         price = float(observation.price)
         cost = average_cost(account, symbol)
         details.append(
@@ -131,7 +142,11 @@ def holdings_detail(account: Account) -> list[dict]:
                 "market_observation": observation.model_dump(mode="json"),
             }
         )
-    return details
+    return details, {
+        "state": "degraded" if degraded_symbols else "healthy",
+        "used_persisted_observations": degraded_symbols,
+        "error_summary": "; ".join(errors) or None,
+    }
 
 
 def require_trader(name: str) -> dict:
@@ -289,7 +304,7 @@ def get_trader(name: str) -> dict:
     trader = require_trader(name)
     account = Account.get(name)
     try:
-        holdings = holdings_detail(account)
+        holdings, valuation_status = holdings_detail(account)
     except market.MarketDataError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     portfolio_value = account.balance + sum(h["market_value"] for h in holdings)
@@ -302,6 +317,7 @@ def get_trader(name: str) -> dict:
         "portfolio_value": portfolio_value,
         "pnl": account.calculate_profit_loss(portfolio_value),
         "holdings": holdings,
+        "valuation_status": valuation_status,
         "transactions": account.list_transactions(),
         "time_series": [
             {"datetime": ts, "value": value} for ts, value in account.portfolio_value_time_series

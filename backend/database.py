@@ -129,6 +129,19 @@ def read_market_observations(
     ]
 
 
+def read_latest_market_observation(account_name: str, symbol: str) -> dict | None:
+    """Return the newest persisted, attributed observation for one held symbol."""
+    with sqlite3.connect(DB) as conn:
+        row = conn.execute(
+            """SELECT id, observation, recorded_at FROM market_observations
+               WHERE account_name=? AND symbol=? ORDER BY recorded_at DESC LIMIT 1""",
+            (account_name.lower(), symbol.upper()),
+        ).fetchone()
+    if row is None:
+        return None
+    return {"id": row[0], "observation": json.loads(row[1]), "recorded_at": row[2]}
+
+
 def read_log(name: str, last_n=10):
     """
     Read the most recent log entries for a given name.

@@ -58,8 +58,16 @@ test("experiments disclose metadata-only labels and deterministic proxies", () =
 test("active run polling refreshes decisions and agent account outputs", () => {
   assert.match(client, /async function refreshLiveAgentOutputs/);
   assert.match(client, /newlyCompleted = progress\.agents\.filter/);
-  assert.match(client, /await getTrader\(agent\.name\)/);
-  assert.match(client, /await getTraderDecisions\(agent\.name\)/);
-  assert.match(client, /refreshedAgentOutputs\.add\(update\.name\)/);
+  assert.match(client, /getTrader\(agent\.name\)/);
+  assert.match(client, /getTraderDecisions\(agent\.name\)/);
+  assert.match(client, /refreshedAgentOutputs\.add\(name\)/);
   assert.match(client, /if \(currentRunProgress\) await refreshLiveAgentOutputs\(currentRunProgress\)/);
+});
+
+test("agent refresh failures stay local and live telemetry is repainted", () => {
+  assert.match(client, /Promise\.allSettled\(roster\.map\(\(item\) => getTrader/);
+  assert.match(client, /Account valuation temporarily unavailable/);
+  assert.match(client, /renderCosts\(health\)/);
+  assert.match(client, /renderServices\(health\)/);
+  assert.match(css, /\.agent-account-warning/);
 });

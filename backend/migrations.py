@@ -150,6 +150,56 @@ MIGRATIONS = (
         ON agent_runs(market_mode, market_timestamp);
     """,
     ),
+    Migration(
+        8,
+        "partial_agent_run_outcomes",
+        """
+        DROP INDEX IF EXISTS idx_agent_runs_one_active;
+        DROP INDEX IF EXISTS idx_agent_runs_market_snapshot;
+        DROP INDEX IF EXISTS idx_agent_runs_requested;
+        ALTER TABLE agent_runs RENAME TO agent_runs_v7;
+        CREATE TABLE agent_runs (
+            run_id TEXT PRIMARY KEY,
+            trigger TEXT NOT NULL CHECK (trigger IN ('scheduled', 'manual')),
+            status TEXT NOT NULL
+            CHECK (status IN ('queued', 'running', 'succeeded', 'partial_success', 'failed', 'interrupted')),
+            requested_at TEXT NOT NULL, started_at TEXT, completed_at TEXT,
+            requested_by TEXT NOT NULL, idempotency_key TEXT NOT NULL UNIQUE,
+            market_symbol TEXT NOT NULL, market_timestamp TEXT NOT NULL,
+            market_retrieved_at TEXT NOT NULL, market_mode TEXT NOT NULL,
+            error_summary TEXT, retry_of TEXT
+        );
+        INSERT INTO agent_runs
+            (run_id, trigger, status, requested_at, started_at, completed_at,
+             requested_by, idempotency_key, market_symbol, market_timestamp,
+             market_retrieved_at, market_mode, error_summary, retry_of)
+        SELECT run_id, trigger, status, requested_at, started_at, completed_at,
+               requested_by, idempotency_key, market_symbol, market_timestamp,
+               market_retrieved_at, market_mode, error_summary, retry_of
+        FROM agent_runs_v7;
+        DROP TABLE agent_runs_v7;
+        CREATE UNIQUE INDEX idx_agent_runs_one_active
+        ON agent_runs((1)) WHERE status IN ('queued', 'running');
+        CREATE INDEX idx_agent_runs_market_snapshot
+        ON agent_runs(market_mode, market_timestamp);
+        CREATE INDEX idx_agent_runs_requested
+        ON agent_runs(requested_at);
+    """,
+    ),
+    Migration(
+        9,
+        "backfill_partial_agent_run_outcomes",
+        """
+        UPDATE agent_runs
+        SET status='partial_success'
+        WHERE status='failed'
+          AND EXISTS (
+              SELECT 1 FROM cycle_metrics
+              WHERE cycle_metrics.run_id=agent_runs.run_id
+                AND cycle_metrics.status='succeeded'
+          );
+    """,
+    ),
 )
 
 

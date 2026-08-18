@@ -290,7 +290,7 @@ def test_pipeline_preserves_completed_proposals_when_later_market_data_fails() -
         "Cathie", decision
     )
     assert [proposal.symbol for proposal, _, _ in processed] == ["COIN", "RBLX"]
-    assert error == "BEAM: provider_error: Massive request failed"
+    assert error == "BEAM: market_data_unavailable: provider_error: Massive request failed"
 
 
 def test_positive_integral_quantity_schema() -> None:

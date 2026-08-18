@@ -47,6 +47,11 @@ export interface TraderDetail extends TraderInfo {
   portfolio_value: number;
   pnl: number;
   holdings: Holding[];
+  valuation_status: {
+    state: "healthy" | "degraded";
+    used_persisted_observations: string[];
+    error_summary: string | null;
+  };
   transactions: Transaction[];
   time_series: TimePoint[];
 }
@@ -117,7 +122,7 @@ export interface HealthInfo {
 export interface AgentRunRecord {
   run_id: string;
   trigger: "scheduled" | "manual";
-  status: "queued" | "running" | "succeeded" | "failed" | "interrupted";
+  status: "queued" | "running" | "succeeded" | "partial_success" | "failed" | "interrupted";
   requested_at: string;
   started_at: string | null;
   completed_at: string | null;
@@ -237,10 +242,16 @@ export interface EvidenceChain {
   } | null;
 }
 
-async function get<T>(path: string): Promise<T> {
-  const r = await fetch(path);
-  if (!r.ok) throw new Error(`${path} failed: ${r.status}`);
-  return r.json() as Promise<T>;
+async function get<T>(path: string, retries = 0): Promise<T> {
+  for (let attempt = 0; ; attempt += 1) {
+    const r = await fetch(path);
+    if (r.ok) return r.json() as Promise<T>;
+    if (r.status !== 503 || attempt >= retries) {
+      const payload = await r.json().catch(() => null) as { detail?: string } | null;
+      throw new Error(payload?.detail ?? `${path} failed: ${r.status}`);
+    }
+    await new Promise((resolve) => window.setTimeout(resolve, 300 * (attempt + 1)));
+  }
 }
 
 async function post<T>(path: string, body?: unknown): Promise<T> {
@@ -265,7 +276,7 @@ export function getRuntime(): Promise<RuntimeInfo> {
 }
 
 export function getTrader(name: string): Promise<TraderDetail> {
-  return get(`/api/traders/${encodeURIComponent(name)}`);
+  return get(`/api/traders/${encodeURIComponent(name)}`, 2);
 }
 
 export function getTraderLogs(name: string, lastN = 13): Promise<LogRow[]> {

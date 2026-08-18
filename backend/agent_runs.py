@@ -27,7 +27,9 @@ class AgentRunRecord(BaseModel):
 
     run_id: str
     trigger: Literal["scheduled", "manual"]
-    status: Literal["queued", "running", "succeeded", "failed", "interrupted"]
+    status: Literal[
+        "queued", "running", "succeeded", "partial_success", "failed", "interrupted"
+    ]
     requested_at: datetime
     started_at: datetime | None = None
     completed_at: datetime | None = None
@@ -317,7 +319,10 @@ class AgentRunRepository:
         return record
 
     def finish(
-        self, run_id: str, status: Literal["succeeded", "failed", "interrupted"], error=None
+        self,
+        run_id: str,
+        status: Literal["succeeded", "partial_success", "failed", "interrupted"],
+        error=None,
     ) -> AgentRunRecord:
         with sqlite3.connect(self.path, timeout=30) as conn:
             cursor = conn.execute(
@@ -338,10 +343,14 @@ class AgentRunRepository:
             rows = conn.execute(
                 "SELECT status, error_summary FROM cycle_metrics WHERE run_id=?", (run_id,)
             ).fetchall()
-        if len(rows) == expected_cycles and all(row["status"] == "succeeded" for row in rows):
+        succeeded = [row for row in rows if row["status"] == "succeeded"]
+        warnings = [row["error_summary"] for row in succeeded if row["error_summary"]]
+        if len(rows) == expected_cycles and len(succeeded) == expected_cycles and not warnings:
             return "succeeded", None
         errors = [row["error_summary"] for row in rows if row["error_summary"]]
         summary = (
             "; ".join(errors) if errors else f"only {len(rows)}/{expected_cycles} cycles completed"
         )
+        if succeeded:
+            return "partial_success", summary
         return "failed", summary
