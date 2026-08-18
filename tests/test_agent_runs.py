@@ -170,11 +170,7 @@ def test_agent_run_outcome_is_partial_when_proposal_was_skipped(tmp_path) -> Non
             usage=None,
             latency_ms=1,
             estimated_cost=Decimal("0"),
-            error=(
-                "ALKEM: market_data_unavailable: empty_market_day"
-                if index == 2
-                else None
-            ),
+            error=("ALKEM: market_data_unavailable: empty_market_day" if index == 2 else None),
         )
 
     status, error = runs.cycle_outcome(run.run_id, 4)

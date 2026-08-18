@@ -27,9 +27,7 @@ class AgentRunRecord(BaseModel):
 
     run_id: str
     trigger: Literal["scheduled", "manual"]
-    status: Literal[
-        "queued", "running", "succeeded", "partial_success", "failed", "interrupted"
-    ]
+    status: Literal["queued", "running", "succeeded", "partial_success", "failed", "interrupted"]
     requested_at: datetime
     started_at: datetime | None = None
     completed_at: datetime | None = None
