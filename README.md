@@ -84,6 +84,13 @@ USE_MANY_MODELS=false
 
 `MODEL_NAME` defaults to `gpt-5.4-mini` when omitted and is shown verbatim in the API, dashboard, traces, and cycle telemetry. `USE_MANY_MODELS=true` retains the fixed four-provider comparison roster and ignores `MODEL_NAME`; the corresponding provider keys are then required.
 
+The Agents SDK exports traces with `OPENAI_API_KEY`. If the OpenAI account has
+multiple projects, set `OPENAI_PROJECT_ID` (and, when needed,
+`OPENAI_ORG_ID`) in `.env`, then select that same project on the Platform
+Traces page. Trace metadata is intentionally string-valued to match the ingest
+API contract; paper decision IDs remain in the local audit telemetry linked by
+the trace ID.
+
 Risk policy is configured with these optional environment variables:
 
 ```dotenv

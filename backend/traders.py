@@ -78,6 +78,27 @@ OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 MODEL_MAX_RETRIES = int(os.getenv("MODEL_MAX_RETRIES", "4"))
 
 
+def trader_trace_metadata(
+    *, name: str, context: CycleContext, model_name: str, market_mode: str
+) -> dict[str, str]:
+    """Build metadata accepted by OpenAI's trace ingest API.
+
+    Trace metadata values must be strings. Decision IDs are persisted with the
+    cycle telemetry after processing because they do not exist when the root
+    trace is exported at context entry.
+    """
+    return {
+        "agent_name": name.lower(),
+        "cycle_id": context.cycle_id,
+        "run_id": context.run_id or "live",
+        "scenario_id": context.scenario_id or "live",
+        "prompt_version": TRADER_PROMPT_VERSION,
+        "market_mode": market_mode,
+        "model": model_name,
+        "sensitive_payload_capture": "false",
+    }
+
+
 @lru_cache(maxsize=1)
 def _openai_client() -> AsyncOpenAI:
     """Official client honors Retry-After and applies bounded backoff with jitter."""
@@ -382,24 +403,14 @@ class Trader:
     async def run_with_trace(self, context: CycleContext, budget: CycleBudget):
         trace_name = f"{self.name}-trading" if self.do_trade else f"{self.name}-rebalancing"
         trace_id = gen_trace_id()
-        metadata = {
-            "agent_name": self.name.lower(),
-            "cycle_id": context.cycle_id,
-            "run_id": context.run_id or "live",
-            "scenario_id": context.scenario_id or "live",
-            "prompt_version": TRADER_PROMPT_VERSION,
-            "market_mode": get_market_service().status().mode.value,
-            "model": self.model_name,
-            "decision_ids": [],
-            "sensitive_payload_capture": False,
-        }
-        with trace(
-            trace_name, trace_id=trace_id, group_id=context.run_id, metadata=metadata
-        ) as current_trace:
+        metadata = trader_trace_metadata(
+            name=self.name,
+            context=context,
+            model_name=self.model_name,
+            market_mode=get_market_service().status().mode.value,
+        )
+        with trace(trace_name, trace_id=trace_id, group_id=context.run_id, metadata=metadata):
             processed, usage = await self.run_with_mcp_servers(budget)
-            decision_ids = [str(decision.decision_id) for _, decision, _ in processed]
-            if hasattr(current_trace, "metadata"):
-                current_trace.metadata["decision_ids"] = decision_ids
             return processed, usage, trace_id
 
     async def run(self, *, run_id: str | None = None):

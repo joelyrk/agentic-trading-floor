@@ -3,7 +3,9 @@ from unittest.mock import Mock
 
 from agents import gen_trace_id
 
+from backend.observability import CycleContext
 from backend.tracers import LogTracer
+from backend.traders import trader_trace_metadata
 
 
 def test_sdk_trace_ids_use_platform_format() -> None:
@@ -12,6 +14,23 @@ def test_sdk_trace_ids_use_platform_format() -> None:
     assert trace_id.startswith("trace_")
     assert len(trace_id) == 38
     assert all(character in "0123456789abcdef" for character in trace_id.removeprefix("trace_"))
+
+
+def test_trader_trace_metadata_uses_only_ingest_compatible_strings() -> None:
+    context = CycleContext.create(run_id="run-1", scenario_id="scenario-1")
+
+    metadata = trader_trace_metadata(
+        name="Cathie",
+        context=context,
+        model_name="gpt-5.4-mini",
+        market_mode="end_of_day",
+    )
+
+    assert metadata["agent_name"] == "cathie"
+    assert metadata["run_id"] == "run-1"
+    assert metadata["sensitive_payload_capture"] == "false"
+    assert "decision_ids" not in metadata
+    assert all(isinstance(value, str) for value in metadata.values())
 
 
 def test_log_tracer_uses_agent_metadata_for_trace_and_spans(monkeypatch) -> None:
