@@ -232,7 +232,10 @@ CI validates the main workflows without external credentials, security assumptio
 - [x] Add a seeded read-only demo mode that needs no paid credentials.
 - [x] Document local setup, architecture, data contracts, evaluation method, limitations, security, and operating modes.
 - [x] Add `ARCHITECTURE.md`, `EVALUATION.md`, and `SECURITY.md` backed by implemented behavior.
-- [ ] Include an architecture diagram, screenshots, example traces with sensitive data removed, and a short demo video.
+- [x] Include an architecture diagram.
+- [x] Include screenshots captured from the real live and seeded Compose deployments.
+- [x] Include example traces with sensitive data removed.
+- [ ] Include a short demo video.
 - [x] Publish evaluation results with dataset/model/prompt versions and honest limitations.
 - [x] Deploy with server-side secrets only; never send provider keys to the browser.
 

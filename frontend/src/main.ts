@@ -11,6 +11,7 @@ initTheme(document.getElementById("btn-theme") as HTMLButtonElement);
 const money = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
 const percent = (value: number) => `${value >= 0 ? "+" : ""}${(value * 100).toFixed(2)}%`;
 const escapeHtml = (value: unknown) => String(value).replace(/[&<>'"]/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" })[char]!);
+const timestampDate = (value: string) => new Date(/(?:Z|[+-]\d{2}:\d{2})$/.test(value) ? value : `${value}Z`);
 const runtimePromise = getRuntime();
 let runPoll: number | undefined;
 let currentRunProgress: AgentRunProgress | null = null;
@@ -139,7 +140,7 @@ function renderAgentDesks(traders: TraderDetail[], progress: AgentRunProgress | 
     const allocationItems = [...trader.holdings.map((holding) => ({ label: holding.symbol, value: Number(holding.market_value), detail: money.format(holding.market_value), state: holding.unrealized_pnl >= 0 ? "gain" : "loss" })), { label: "CASH", value: cash, detail: money.format(cash), state: "cash" }].filter((item) => item.value > 0);
     const allocation = allocationItems.map((item) => `<div class="allocation-block" data-state="${item.state}" style="flex-grow:${Math.max(item.value / total, 0.015)}"><strong>${escapeHtml(item.label)}</strong><span>${escapeHtml(item.detail)}</span></div>`).join("");
     const agentLogs = activity?.logs.length ? activity.logs : (logsByAgent.get(name) ?? []);
-    const logRows = agentLogs.length ? agentLogs.map((row) => `<li><time>${escapeHtml(new Date(`${row.datetime}Z`).toLocaleTimeString())}</time><b>${escapeHtml(row.type)}</b><span>${escapeHtml(row.message.split(": ", 2).at(-1) ?? row.message)}</span></li>`).join("") : `<li class="muted">No activity recorded yet.</li>`;
+    const logRows = agentLogs.length ? agentLogs.map((row) => `<li><time>${escapeHtml(timestampDate(row.datetime).toLocaleTimeString())}</time><b>${escapeHtml(row.type)}</b><span>${escapeHtml(row.message.split(": ", 2).at(-1) ?? row.message)}</span></li>`).join("") : `<li class="muted">No activity recorded yet.</li>`;
     const trades = trader.transactions.slice(-8).reverse();
     const tradeRows = trades.length ? trades.map((trade) => `<li><time>${escapeHtml(new Date(trade.timestamp).toLocaleDateString(undefined, { month: "2-digit", day: "2-digit" }))}</time><b data-side="${trade.quantity >= 0 ? "buy" : "sell"}">${trade.quantity >= 0 ? "BUY" : "SELL"}</b><span>${Math.abs(trade.quantity)} ${escapeHtml(trade.symbol)} @ ${money.format(trade.price)}</span></li>`).join("") : `<li class="muted">No paper trades yet.</li>`;
     const degraded = trader.valuation_status?.state === "degraded";

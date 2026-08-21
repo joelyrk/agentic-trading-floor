@@ -4,6 +4,20 @@ A multi-agent paper-trading application built with the OpenAI Agents SDK and Mod
 
 This is an educational simulation. It does not place real orders and is not financial advice.
 
+## Product tour
+
+### Auditable live-agent overview
+
+![Credentialed Massive EOD overview showing portfolio controls and live agent results](media/screenshots/overview.jpg)
+
+### Point-in-time replay lab
+
+![Replay lab showing the sealed-outcome boundary](media/screenshots/replay-lab.jpg)
+
+### Published experiment comparison
+
+![Experiment registry disclosing deterministic offline proxy limitations](media/screenshots/experiments.jpg)
+
 ## Architecture
 
 - `backend/`: agents, MCP servers, paper accounts, market data, tracing, and API

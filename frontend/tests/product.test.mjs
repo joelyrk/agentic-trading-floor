@@ -82,3 +82,9 @@ test("agent refresh failures stay local and live telemetry is repainted", () => 
   assert.match(client, /renderServices\(health\)/);
   assert.match(css, /\.agent-account-warning/);
 });
+
+test("activity timestamps preserve existing timezone offsets", () => {
+  assert.match(client, /timestampDate/);
+  assert.match(client, /\(\?:Z\|\[\+-\]/);
+  assert.doesNotMatch(client, /new Date\(`\$\{row\.datetime\}Z`\)/);
+});
