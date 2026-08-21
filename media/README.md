@@ -20,7 +20,7 @@ The following screenshots were captured from the portfolio application:
 - [`screenshots/overview.jpg`](screenshots/overview.jpg) — captured from the
   credentialed live Compose profile on 2026-08-22, showing Massive EOD data,
   portfolio controls, persisted run status, live paper accounts, and portfolio
-  history (exported at 1800 × 856).
+  history (exported at 2902 × 1714).
 - [`screenshots/overview-audit.jpg`](screenshots/overview-audit.jpg) — the live
   overview's service health, evidence-backed recommendation timeline, and
   observed cost and latency telemetry (exported at 1800 × 1153).
