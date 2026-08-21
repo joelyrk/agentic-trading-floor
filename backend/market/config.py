@@ -53,9 +53,7 @@ class MarketSettings(BaseModel):
                 os.getenv("MARKET_DATA_FRESHNESS_SECONDS", str(default_freshness))
             ),
             request_timeout_seconds=float(os.getenv("MARKET_DATA_TIMEOUT_SECONDS", "10")),
-            cache_ttl_seconds=int(
-                os.getenv("MARKET_DATA_CACHE_SECONDS", str(default_cache_ttl))
-            ),
+            cache_ttl_seconds=int(os.getenv("MARKET_DATA_CACHE_SECONDS", str(default_cache_ttl))),
         )
 
 

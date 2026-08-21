@@ -58,7 +58,11 @@ class MarketService:
         if self.settings.mode != DataMode.END_OF_DAY or self.settings.cache_ttl_seconds == 0:
             return None
         cached = self._last_good_by_symbol.get(symbol)
-        if cached is None or cached.source != self.provider.source or cached.mode != self.provider.mode:
+        if (
+            cached is None
+            or cached.source != self.provider.source
+            or cached.mode != self.provider.mode
+        ):
             return None
         age = self.clock.now() - cached.retrieved_at
         if age > timedelta(seconds=self.settings.cache_ttl_seconds):
