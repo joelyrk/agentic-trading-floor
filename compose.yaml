@@ -54,6 +54,7 @@ services:
         required: true
     environment:
       APP_MODE: standard
+      PUBLIC_SHOWCASE: ${PUBLIC_SHOWCASE:-false}
       ACCOUNTS_DB: /data/live.db
     volumes:
       - live-data:/data

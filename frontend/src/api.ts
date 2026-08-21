@@ -10,6 +10,8 @@ export interface TraderInfo {
 export interface RuntimeInfo {
   mode: "standard" | "demo";
   read_only: boolean;
+  public_showcase: boolean;
+  scheduled_ai_enabled: boolean;
   paper_trading_only: true;
   credentials_required: boolean | null;
 }

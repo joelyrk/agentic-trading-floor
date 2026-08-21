@@ -53,11 +53,14 @@ class AccessControlMiddleware:
 
 
 class ReadOnlyModeMiddleware:
-    """Enforce demo immutability before a mutating endpoint can run."""
+    """Enforce deployment immutability before a mutating endpoint can run."""
 
-    def __init__(self, app: ASGIApp, read_only: bool):
+    def __init__(
+        self, app: ASGIApp, read_only: bool, detail: str = "seeded demo mode is read-only"
+    ):
         self.app = app
         self.read_only = read_only
+        self.detail = detail
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         if (
@@ -66,7 +69,7 @@ class ReadOnlyModeMiddleware:
             and scope["method"] not in {"GET", "HEAD", "OPTIONS"}
         ):
             await JSONResponse(
-                {"detail": "seeded demo mode is read-only"},
+                {"detail": self.detail},
                 status_code=403,
             )(scope, receive, send)
             return

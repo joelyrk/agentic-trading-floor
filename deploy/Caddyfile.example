@@ -1,0 +1,8 @@
+# Replace this hostname before installing the file as /etc/caddy/Caddyfile.
+trading.example.com {
+    # Defense in depth: the application also rejects every showcase mutation.
+    @writes method POST PUT PATCH DELETE
+    respond @writes 403
+
+    reverse_proxy 127.0.0.1:8081
+}

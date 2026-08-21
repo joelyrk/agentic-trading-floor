@@ -39,14 +39,24 @@ class ApplicationSettings(BaseModel):
     """Deployment behavior that must be visible to API and UI callers."""
 
     mode: Literal["standard", "demo"] = "standard"
+    public_showcase: bool = False
 
     @property
     def read_only(self) -> bool:
-        return self.mode == "demo"
+        """Whether HTTP callers may mutate application state."""
+        return self.mode == "demo" or self.public_showcase
+
+    @property
+    def scheduled_ai_enabled(self) -> bool:
+        """Showcase mode remains live; only seeded demo mode disables AI runs."""
+        return self.mode == "standard"
 
     @classmethod
     def from_env(cls) -> "ApplicationSettings":
-        return cls(mode=os.getenv("APP_MODE", "standard").strip().lower())
+        return cls(
+            mode=os.getenv("APP_MODE", "standard").strip().lower(),
+            public_showcase=os.getenv("PUBLIC_SHOWCASE", "false").strip().lower() == "true",
+        )
 
 
 class RuntimeSettings(BaseModel):
@@ -87,7 +97,7 @@ def validate_startup(component: Literal["api", "scheduler"]) -> RuntimeSettings:
     """Validate all deterministic configuration before starting a process."""
     runtime = RuntimeSettings.from_env()
     application = ApplicationSettings.from_env()
-    APIAccessSettings.from_env()
+    api_access = APIAccessSettings.from_env()
     if runtime.accounts_db.exists() and runtime.accounts_db.is_dir():
         raise ValueError(f"ACCOUNTS_DB points to a directory: {runtime.accounts_db}")
     # Lazy imports keep path validation ahead of any SQLite initialization.
@@ -96,12 +106,16 @@ def validate_startup(component: Literal["api", "scheduler"]) -> RuntimeSettings:
     from backend.observability import CycleBudget
 
     market = MarketSettings.from_env()
+    if application.public_showcase and application.mode != "standard":
+        raise ValueError("PUBLIC_SHOWCASE=true requires APP_MODE=standard")
+    if application.public_showcase and api_access.access_mode != "public":
+        raise ValueError("PUBLIC_SHOWCASE=true requires API_ACCESS_MODE=public")
     if application.mode == "demo" and market.mode.value != "simulated":
         raise ValueError("APP_MODE=demo requires MARKET_DATA_MODE=simulated")
     RiskPolicy.from_env()
     CycleBudget.from_env()
     if component == "scheduler":
-        if application.read_only:
+        if not application.scheduled_ai_enabled:
             raise ValueError("APP_MODE=demo is read-only and cannot run the scheduler")
         model = os.getenv("MODEL_NAME", "gpt-5.4-mini")
         use_many = os.getenv("USE_MANY_MODELS", "false").strip().lower() == "true"

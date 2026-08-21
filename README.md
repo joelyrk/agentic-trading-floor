@@ -204,6 +204,12 @@ between the scheduler and API. The default read-only demo may remain at `8080`.
 Provider secrets are supplied only to backend containers and never built into or
 sent to the frontend.
 
+For a recruiter-facing deployment, set `PUBLIC_SHOWCASE=true` together with
+`APP_MODE=standard` and `API_ACCESS_MODE=public`. This rejects all public HTTP
+mutations while the separate credentialed scheduler continues its daily AI
+cycle. Follow the VPS, HTTPS, persistence, verification, backup, and update
+runbook in [`docs/SHOWCASE_DEPLOYMENT.md`](docs/SHOWCASE_DEPLOYMENT.md).
+
 ## Market-data contract
 
 Every observation includes `symbol`, `price`, `currency`, `market_timestamp`, `retrieved_at`, `source`, `mode`, `is_stale`, and `provider_endpoint`. Timestamps are timezone-aware UTC values, and future-dated market observations are rejected. The exact observation behind each holding valuation is returned by the trader API and stored in `market_observations`; each new paper transaction also embeds and references its execution observation.

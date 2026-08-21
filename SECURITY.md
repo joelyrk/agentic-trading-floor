@@ -63,6 +63,15 @@ persist observations, and the scheduler refuses to start. This makes the
 default container demo inspectable without turning it into a writable public
 service. It is not an authorization system for standard mode.
 
+`PUBLIC_SHOWCASE=true` is the live, recruiter-facing boundary. Startup requires
+`APP_MODE=standard`, `API_ACCESS_MODE=public`, and the corresponding strong API
+token. Every non-safe HTTP method receives `403`, and valuation reads do not
+persist observations, while the separate scheduler remains enabled and writes
+credentialed daily AI results directly to the shared database. The token must
+remain server-side; it is defense in depth and is not embedded in the public UI.
+Use the additional reverse-proxy method restriction documented in
+[`docs/SHOWCASE_DEPLOYMENT.md`](docs/SHOWCASE_DEPLOYMENT.md).
+
 ## Container operations
 
 The default Compose ports bind to loopback. For an internet-facing deployment,

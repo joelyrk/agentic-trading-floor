@@ -2,7 +2,7 @@ import {
   cancelAgentRun, createExperiment, createManualAgentRun, createReplay, getAgentRunProgress, getExperiments, getHealth, getLatestAgentRun, getMarket, getReplayCatalog, getRuntime, retryAgentRun,
   getTrader, getTraderDecisions, getTraderLogs, getTraders, revealReplay,
   type AgentRunProgress, type AgentRunRecord, type DecisionAudit, type ExperimentReport, type HealthInfo, type MarketInfo,
-  type ReplaySession, type TraderDetail, type TraderInfo,
+  type ReplaySession, type RuntimeInfo, type TraderDetail, type TraderInfo,
 } from "./api";
 import { initTheme } from "./theme";
 
@@ -51,8 +51,10 @@ function drawdown(points: TraderDetail["time_series"]): number {
 async function loadOverview(): Promise<void> {
   const [runtime, market, health, roster, experiments, latestRun] = await Promise.all([runtimePromise, getMarket(), getHealth(), getTraders(), getExperiments(), getLatestAgentRun()]);
   const runtimeBadge = document.getElementById("runtime-badge")!;
-  runtimeBadge.textContent = runtime.read_only ? "SEEDED · READ ONLY" : "STANDARD MODE";
-  runtimeBadge.dataset.state = runtime.read_only ? "demo" : "good";
+  runtimeBadge.textContent = runtime.public_showcase
+    ? "LIVE AI · VIEW ONLY"
+    : runtime.read_only ? "SEEDED · READ ONLY" : "STANDARD MODE";
+  runtimeBadge.dataset.state = runtime.read_only && !runtime.public_showcase ? "demo" : "good";
   currentRoster = roster;
   const traderResults = await Promise.allSettled(roster.map((item) => getTrader(item.name)));
   const traders = traderResults.flatMap((result) => result.status === "fulfilled" ? [result.value] : []);
@@ -68,7 +70,7 @@ async function loadOverview(): Promise<void> {
   currentDecisionsByAgent = new Map(decisions.map((item) => [item.name.toLowerCase(), item.rows]));
   renderStatus(market, health);
   const progress = latestRun ? await getAgentRunProgress(latestRun.run_id) : null;
-  renderRunControl(runtime.read_only, market, health, latestRun, progress);
+  renderRunControl(runtime, market, health, latestRun, progress);
   renderAgentDesks(traders, progress, currentLogsByAgent);
   if (latestRun && ["queued", "running"].includes(latestRun.status) && runPoll === undefined) pollRunState(latestRun.run_id);
   const total = traders.reduce((sum, item) => sum + item.portfolio_value, 0);
@@ -148,22 +150,24 @@ function renderAgentDesks(traders: TraderDetail[], progress: AgentRunProgress | 
   }).join("");
 }
 
-function renderRunControl(readOnly: boolean, market: MarketInfo, health: HealthInfo, run: AgentRunRecord | null, progress: AgentRunProgress | null): void {
+function renderRunControl(runtime: RuntimeInfo, market: MarketInfo, health: HealthInfo, run: AgentRunRecord | null, progress: AgentRunProgress | null): void {
   const button = document.getElementById("run-cycle-button") as HTMLButtonElement;
   const status = document.getElementById("run-cycle-status")!;
   const active = run?.status === "queued" || run?.status === "running";
   const sameSnapshot = Boolean(run && market.last_successful_observation && run.market_mode === market.mode && run.market_timestamp === market.last_successful_observation.market_timestamp);
   const cancellable = Boolean(active && run?.trigger === "manual");
   const retryable = Boolean(progress?.can_retry);
-  button.textContent = readOnly
-    ? "Read-only demo"
+  button.textContent = runtime.read_only
+    ? runtime.public_showcase ? "Scheduled daily" : "Read-only demo"
     : cancellable
       ? "Cancel run"
       : retryable
         ? "Retry failed run"
         : market.mode === "end_of_day" ? "Run EOD cycle" : "Run paper cycle";
-  button.disabled = readOnly || (active && !cancellable) || (!active && !retryable && (sameSnapshot || health.current_cycle_id !== null));
-  if (readOnly) {
+  button.disabled = runtime.read_only || (active && !cancellable) || (!active && !retryable && (sameSnapshot || health.current_cycle_id !== null));
+  if (runtime.public_showcase) {
+    status.textContent = "Real AI analysis refreshes automatically once per trading day; public controls are disabled.";
+  } else if (runtime.read_only) {
     status.textContent = "Manual agent runs are disabled in the seeded demo.";
   } else if (!run) {
     status.textContent = "No coordinated agent run has been recorded yet.";
@@ -189,7 +193,7 @@ async function refreshRunControl(_runId?: string): Promise<AgentRunRecord | null
   renderStatus(market, health);
   renderServices(health);
   renderCosts(health);
-  renderRunControl(runtime.read_only, market, health, run, progress);
+  renderRunControl(runtime, market, health, run, progress);
   if (currentTraders.length) renderAgentDesks(currentTraders, progress, currentLogsByAgent);
   else currentRunProgress = progress;
   return run;
@@ -327,8 +331,10 @@ async function loadReplay(): Promise<void> {
   if (runtime.read_only) {
     const button = document.querySelector<HTMLButtonElement>("#replay-form button")!;
     button.disabled = true;
-    button.textContent = "Read-only demo";
-    document.getElementById("dataset-note")!.textContent += " Mutations are disabled in the seeded demo.";
+    button.textContent = runtime.public_showcase ? "View only" : "Read-only demo";
+    document.getElementById("dataset-note")!.textContent += runtime.public_showcase
+      ? " Public showcase visitors can inspect published results but cannot create records."
+      : " Mutations are disabled in the seeded demo.";
   }
 }
 

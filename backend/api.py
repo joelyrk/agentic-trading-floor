@@ -63,7 +63,15 @@ app = FastAPI(
     ),
 )
 app.add_middleware(AccessControlMiddleware, settings=startup.api_access_settings)
-app.add_middleware(ReadOnlyModeMiddleware, read_only=startup.application_settings.read_only)
+app.add_middleware(
+    ReadOnlyModeMiddleware,
+    read_only=startup.application_settings.read_only,
+    detail=(
+        "public showcase is read-only; scheduled AI runs remain enabled"
+        if startup.application_settings.public_showcase
+        else "seeded demo mode is read-only"
+    ),
+)
 market_service = market.get_market_service()  # Fail startup on invalid capability config.
 if startup.application_settings.mode == "demo":
     from backend.demo import seed_demo_database
@@ -168,8 +176,10 @@ def get_runtime() -> dict:
     return {
         "mode": startup.application_settings.mode,
         "read_only": startup.application_settings.read_only,
+        "public_showcase": startup.application_settings.public_showcase,
+        "scheduled_ai_enabled": startup.application_settings.scheduled_ai_enabled,
         "paper_trading_only": True,
-        "credentials_required": False if startup.application_settings.read_only else None,
+        "credentials_required": False if startup.application_settings.mode == "demo" else None,
     }
 
 

@@ -34,6 +34,12 @@ test("manual agent runs require confirmation and expose live status", () => {
   assert.match(client, /createManualAgentRun\(crypto\.randomUUID\(\)\)/);
 });
 
+test("public showcase clearly separates view-only access from scheduled live AI", () => {
+  assert.match(client, /LIVE AI · VIEW ONLY/);
+  assert.match(client, /Real AI analysis refreshes automatically once per trading day/);
+  assert.match(client, /runtime\.public_showcase/);
+});
+
 test("overview exposes each agent's strategy in the agent desk grid", () => {
   assert.match(html, /<h3>Agent desks<\/h3>/);
   assert.match(html, /id="agent-desk-list"/);
