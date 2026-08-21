@@ -124,12 +124,28 @@ class RiskDecision(StrictModel):
     outcome: RiskOutcome
     evaluated_at: datetime
     rules: list[RiskRuleResult] = Field(min_length=1)
+    requested_quantity: Annotated[int, Field(strict=True, gt=0)] | None = None
+    approved_quantity: Annotated[int, Field(strict=True, gt=0)] | None = None
     human_approved_at: datetime | None = None
 
     @model_validator(mode="after")
     def outcome_matches_rules(self) -> "RiskDecision":
         if self.outcome != RiskOutcome.REJECTED and any(not rule.passed for rule in self.rules):
             raise ValueError("only rejected decisions may contain failed rules")
+        if self.outcome == RiskOutcome.REJECTED and self.approved_quantity is not None:
+            raise ValueError("rejected decisions cannot contain an approved quantity")
+        if (
+            self.outcome != RiskOutcome.REJECTED
+            and self.requested_quantity is not None
+            and self.approved_quantity is None
+        ):
+            raise ValueError("new approvals must contain an approved quantity")
+        if (
+            self.requested_quantity is not None
+            and self.approved_quantity is not None
+            and self.approved_quantity > self.requested_quantity
+        ):
+            raise ValueError("approved quantity cannot exceed requested quantity")
         return self
 
 

@@ -64,6 +64,11 @@ test("active run polling refreshes decisions and agent account outputs", () => {
   assert.match(client, /if \(currentRunProgress\) await refreshLiveAgentOutputs\(currentRunProgress\)/);
 });
 
+test("resized paper decisions show requested and approved quantities", () => {
+  assert.match(client, /requested →/);
+  assert.match(client, /approved_quantity/);
+});
+
 test("agent refresh failures stay local and live telemetry is repainted", () => {
   assert.match(client, /Promise\.allSettled\(roster\.map\(\(item\) => getTrader/);
   assert.match(client, /Account valuation temporarily unavailable/);

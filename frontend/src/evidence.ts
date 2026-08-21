@@ -21,7 +21,11 @@ export class EvidenceView {
     details.className = "evidence-item";
     const summary = document.createElement("summary");
     const outcome = row.risk_decision?.outcome ?? "not evaluated";
-    summary.textContent = `${row.proposal.side.toUpperCase()} ${row.proposal.quantity} ${row.proposal.symbol} · ${outcome}`;
+    const approvedQuantity = row.risk_decision?.approved_quantity;
+    const quantity = approvedQuantity && approvedQuantity !== row.proposal.quantity
+      ? `${row.proposal.quantity} requested → ${approvedQuantity} approved`
+      : String(row.proposal.quantity);
+    summary.textContent = `${row.proposal.side.toUpperCase()} ${quantity} ${row.proposal.symbol} · ${outcome}`;
     const body = document.createElement("div");
     body.className = "evidence-body";
     body.textContent = "Open to load evidence";

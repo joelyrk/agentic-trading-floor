@@ -214,9 +214,16 @@ export interface TradeProposal {
   market_observation: MarketObservation;
 }
 
+export interface RiskDecisionAudit {
+  outcome: "approved" | "rejected" | "pending_human";
+  requested_quantity?: number | null;
+  approved_quantity?: number | null;
+  rules: Array<{ rule: string; passed: boolean; reason: string }>;
+}
+
 export interface DecisionAudit {
   proposal: TradeProposal;
-  risk_decision: { outcome: "approved" | "rejected" | "pending_human" } | null;
+  risk_decision: RiskDecisionAudit | null;
   order: unknown | null;
   execution: { status: string } | null;
 }
@@ -226,7 +233,7 @@ export interface EvidenceChain {
   prompt_versions: { researcher: string; trader: string };
   proposal: TradeProposal;
   market_observation: MarketObservation;
-  risk_decision: { outcome: string; rules: Array<{ rule: string; passed: boolean; reason: string }> } | null;
+  risk_decision: RiskDecisionAudit | null;
   order: unknown | null;
   execution: { status: string; executed_at: string } | null;
   telemetry: {

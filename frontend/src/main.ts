@@ -301,7 +301,11 @@ function renderDecisions(items: Array<{ trader: string; row: DecisionAudit }>): 
   const sorted = items.sort((a, b) => b.row.proposal.created_at.localeCompare(a.row.proposal.created_at));
   host.innerHTML = sorted.length ? sorted.slice(0, 10).map(({ trader, row }) => {
     const outcome = row.risk_decision?.outcome ?? "pending";
-    return `<article class="timeline-item"><span class="status-mark" data-state="${outcome}"></span><div><strong>${escapeHtml(trader)} · ${row.proposal.side.toUpperCase()} ${row.proposal.quantity} ${escapeHtml(row.proposal.symbol)}</strong><p>${escapeHtml(row.proposal.rationale)}</p><small>${new Date(row.proposal.created_at).toLocaleString()} · ${row.proposal.evidence_claim_ids.length} cited claims</small></div><span class="outcome" data-state="${outcome}">${escapeHtml(outcome.replaceAll("_", " "))}</span></article>`;
+    const approvedQuantity = row.risk_decision?.approved_quantity;
+    const quantity = approvedQuantity && approvedQuantity !== row.proposal.quantity
+      ? `${row.proposal.quantity} requested → ${approvedQuantity} approved`
+      : String(row.proposal.quantity);
+    return `<article class="timeline-item"><span class="status-mark" data-state="${outcome}"></span><div><strong>${escapeHtml(trader)} · ${row.proposal.side.toUpperCase()} ${escapeHtml(quantity)} ${escapeHtml(row.proposal.symbol)}</strong><p>${escapeHtml(row.proposal.rationale)}</p><small>${new Date(row.proposal.created_at).toLocaleString()} · ${row.proposal.evidence_claim_ids.length} cited claims</small></div><span class="outcome" data-state="${outcome}">${escapeHtml(outcome.replaceAll("_", " "))}</span></article>`;
   }).join("") : `<div class="empty-state">No proposals yet. Once an agent proposes a paper trade, its evidence and control outcome will appear here.</div>`;
 }
 

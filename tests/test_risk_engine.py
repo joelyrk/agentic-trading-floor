@@ -188,6 +188,50 @@ def test_exact_limits_pass_and_stable_decision_id() -> None:
     assert first.decision_id == second.decision_id
 
 
+def test_oversized_buy_is_deterministically_reduced_to_largest_compliant_quantity() -> None:
+    trade = proposal(quantity=50)
+    decision = RiskEngine(
+        generous_policy(maximum_order_notional=Decimal("2500"))
+    ).evaluate(trade, snapshot(), NOW)
+
+    assert decision.outcome == RiskOutcome.APPROVED
+    assert decision.requested_quantity == 50
+    assert decision.approved_quantity == 24
+    sizing = next(rule for rule in decision.rules if rule.rule == "deterministic_order_sizing")
+    assert sizing.passed
+    assert sizing.reason == (
+        "requested quantity 50 reduced to 24 whole shares to satisfy maximum_order_notional"
+    )
+    notional = next(rule for rule in decision.rules if rule.rule == "maximum_order_notional")
+    assert notional.passed
+    assert "2404.800" in notional.reason
+    assert "is within limit 2500" in notional.reason
+
+
+def test_concentration_limit_deterministically_sizes_buy() -> None:
+    decision = RiskEngine(
+        generous_policy(
+            max_position_percentage=Decimal("0.30"),
+            max_symbol_concentration=Decimal("0.30"),
+        )
+    ).evaluate(proposal(quantity=50), snapshot(), NOW)
+
+    assert decision.outcome == RiskOutcome.APPROVED
+    assert decision.approved_quantity == 30
+
+
+def test_unsatisfiable_limit_rejects_with_truthful_reason() -> None:
+    decision = RiskEngine(
+        generous_policy(maximum_order_notional=Decimal("100"))
+    ).evaluate(proposal(), snapshot(), NOW)
+
+    assert decision.outcome == RiskOutcome.REJECTED
+    assert decision.approved_quantity is None
+    notional = next(rule for rule in decision.rules if rule.rule == "maximum_order_notional")
+    assert not notional.passed
+    assert notional.reason == "order notional 100.200 exceeds limit 100"
+
+
 def test_human_approval_policy_and_replay_override() -> None:
     trade = proposal()
     pending = RiskEngine(

@@ -135,6 +135,7 @@ class ExecutionService:
     def execute(self, proposal: TradeProposal, decision: RiskDecision) -> ExecutionResult | None:
         if decision.outcome != RiskOutcome.APPROVED:
             return None
+        approved_quantity = decision.approved_quantity or proposal.quantity
         order_id = uuid5(NAMESPACE_URL, f"order:{decision.decision_id}")
         order = PaperOrder(
             order_id=order_id,
@@ -143,7 +144,7 @@ class ExecutionService:
             account_name=proposal.account_name,
             symbol=proposal.symbol,
             side=proposal.side,
-            quantity=proposal.quantity,
+            quantity=approved_quantity,
             observation=proposal.market_observation,
             submitted_at=self.clock(),
         )

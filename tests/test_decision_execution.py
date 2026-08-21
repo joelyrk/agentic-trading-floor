@@ -120,6 +120,51 @@ def test_pipeline_persists_auditable_chain_and_exact_observation(tmp_path) -> No
     assert account["balance"] == pytest.approx(9799.6)
 
 
+def test_pipeline_persists_requested_size_and_executes_only_approved_size(tmp_path) -> None:
+    repo, proposals, risks, executions = services(
+        tmp_path, policy(maximum_order_notional=Decimal("250.5"))
+    )
+    proposal, decision, execution = DecisionPipeline(proposals, risks, executions).process(
+        "Alice", output(quantity=50)
+    )[0]
+
+    assert proposal.quantity == 50
+    assert decision.requested_quantity == 50
+    assert decision.approved_quantity == 2
+    assert execution and execution.quantity == 2
+    chain = repo.audit_chain("alice")[0]
+    assert chain["proposal"]["quantity"] == 50
+    assert chain["risk_decision"]["requested_quantity"] == 50
+    assert chain["risk_decision"]["approved_quantity"] == 2
+    assert chain["order"]["quantity"] == 2
+    assert repo.load_account_data("alice")["holdings"] == {"AAPL": 2}
+
+
+def test_execution_rejects_quantity_above_persisted_approved_size(tmp_path) -> None:
+    repo, proposals, risks, _ = services(
+        tmp_path, policy(maximum_order_notional=Decimal("250.5"))
+    )
+    proposal = proposals.create("Alice", output(quantity=50).proposals[0], output().research)
+    decision = risks.evaluate(proposal)
+    from uuid import NAMESPACE_URL, uuid5
+
+    from backend.decisions import PaperOrder
+
+    order = PaperOrder(
+        order_id=uuid5(NAMESPACE_URL, f"order:{decision.decision_id}"),
+        decision_id=decision.decision_id,
+        proposal_id=proposal.proposal_id,
+        account_name="alice",
+        symbol="AAPL",
+        side=OrderSide.BUY,
+        quantity=proposal.quantity,
+        observation=proposal.market_observation,
+        submitted_at=NOW,
+    )
+    with pytest.raises(ExecutionConflict, match="order terms differ"):
+        repo.execute_atomic(order, proposal.rationale)
+
+
 def test_rejection_is_persisted_and_never_executes(tmp_path) -> None:
     repo, proposals, risks, executions = services(tmp_path, policy(allowed_universe={"MSFT"}))
     proposal, decision, execution = DecisionPipeline(proposals, risks, executions).process(

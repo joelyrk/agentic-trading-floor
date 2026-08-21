@@ -15,7 +15,7 @@ This is an educational simulation. It does not place real orders and is not fina
 
 All agents use the project-owned typed market MCP server. Behind it, the configured provider is either Massive's previous-close endpoint (`end_of_day`) or the deterministic simulator (`simulated`). The application never probes progressively more privileged Massive endpoints and never silently changes to synthetic prices.
 
-Trader agents cannot mutate accounts. They return validated `TradingDecision` output containing a research brief and zero or more proposals. Deterministic services fetch and persist the exact observation, evaluate every risk rule, and only execute a persisted approval. Paper execution uses stable IDs and a single SQLite transaction for cash, holdings, the transaction record, its observation, the order, result, and audit log.
+Trader agents cannot mutate accounts. They return validated `TradingDecision` output containing a research brief and zero or more proposals. Deterministic services fetch and persist the exact observation, reduce an oversized request to the largest policy-compliant whole-share quantity when at least one share is permitted, evaluate every risk rule, and only execute a persisted approval. The immutable proposal retains the requested quantity while the risk decision and paper order record the approved quantity. Paper execution uses stable IDs and a single SQLite transaction for cash, holdings, the transaction record, its observation, the order, result, and audit log.
 
 Research is a versioned, point-in-time contract rather than free-form analysis. Each material recommendation cites a structured claim; each claim links to canonicalized source records containing publisher, title, publication/retrieval times, a bounded supporting excerpt and SHA-256 hash, confidence, stance, and caveats. Future publications, broken citations, duplicate URLs/content, conflicting dates, and disallowed domains are rejected before a proposal can reach risk review. Only concise evidence and rationale are stored—private chain-of-thought is neither requested nor exposed.
 
@@ -109,7 +109,7 @@ RISK_HUMAN_APPROVAL_NOTIONAL=2000
 AUTOMATED_REPLAY=false
 ```
 
-An empty allowed universe permits any syntactically valid ticker. Sector classification never trusts the model: configured mappings are authoritative and unmapped symbols share the conservative `unclassified` bucket. Human approval is off by default and is bypassed only when `AUTOMATED_REPLAY=true`; that replay setting does not bypass any deterministic risk rule.
+An empty allowed universe permits any syntactically valid ticker. Sector classification never trusts the model: configured mappings are authoritative and unmapped symbols share the conservative `unclassified` bucket. Quantity-dependent order-notional, turnover, cash-reserve, position, symbol, and sector limits deterministically reduce oversized proposals; non-quantity failures such as stale data, a disallowed symbol, overselling, or the drawdown kill switch still reject the proposal. Human approval is off by default and is bypassed only when `AUTOMATED_REPLAY=true`; that replay setting does not bypass any deterministic risk rule.
 
 Research source policy is optional and deterministic:
 

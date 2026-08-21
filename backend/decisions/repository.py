@@ -263,6 +263,12 @@ class DecisionRepository:
             if proposal_row is None:
                 raise ExecutionConflict("no persisted proposal for order")
             proposal = TradeProposal.model_validate_json(proposal_row[0])
+            if (
+                decision.requested_quantity is not None
+                and decision.requested_quantity != proposal.quantity
+            ):
+                raise ExecutionConflict("approved decision does not match requested quantity")
+            approved_quantity = decision.approved_quantity or proposal.quantity
             observation_row = conn.execute(
                 """SELECT observation FROM market_observations
                    WHERE usage_kind = 'proposal' AND related_id = ?""",
@@ -280,7 +286,7 @@ class DecisionRepository:
                 order.account_name != proposal.account_name
                 or order.symbol != proposal.symbol
                 or order.side != proposal.side
-                or order.quantity != proposal.quantity
+                or order.quantity != approved_quantity
             ):
                 raise ExecutionConflict("order terms differ from approved proposal")
 
