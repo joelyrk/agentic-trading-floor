@@ -49,9 +49,7 @@ class RiskEngine:
         notional = risk_price * quantity
         current_qty = portfolio.holdings.get(proposal.symbol, 0)
         resulting_qty = (
-            current_qty + quantity
-            if proposal.side == OrderSide.BUY
-            else current_qty - quantity
+            current_qty + quantity if proposal.side == OrderSide.BUY else current_qty - quantity
         )
         resulting_cash = (
             portfolio.cash - notional
@@ -65,8 +63,7 @@ class RiskEngine:
         other_sector_value = sum(
             portfolio.prices.get(symbol, Decimal("0")) * held_quantity
             for symbol, held_quantity in portfolio.holdings.items()
-            if portfolio.sectors.get(symbol, "unclassified") == sector
-            and symbol != proposal.symbol
+            if portfolio.sectors.get(symbol, "unclassified") == sector and symbol != proposal.symbol
         )
         sector_value = other_sector_value + position_value
         sector_concentration = (
@@ -122,9 +119,7 @@ class RiskEngine:
         observation = proposal.market_observation
         requested_quantity = proposal.quantity
         sized_quantity = self._size_quantity(proposal, portfolio)
-        requested_sizing_failures = self._sizing_failures(
-            proposal, portfolio, requested_quantity
-        )
+        requested_sizing_failures = self._sizing_failures(proposal, portfolio, requested_quantity)
         evaluated_quantity = sized_quantity if sized_quantity > 0 else requested_quantity
         metrics = self._quantity_metrics(proposal, portfolio, evaluated_quantity)
         notional = metrics["notional"]

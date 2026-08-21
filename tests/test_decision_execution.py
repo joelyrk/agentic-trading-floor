@@ -141,9 +141,7 @@ def test_pipeline_persists_requested_size_and_executes_only_approved_size(tmp_pa
 
 
 def test_execution_rejects_quantity_above_persisted_approved_size(tmp_path) -> None:
-    repo, proposals, risks, _ = services(
-        tmp_path, policy(maximum_order_notional=Decimal("250.5"))
-    )
+    repo, proposals, risks, _ = services(tmp_path, policy(maximum_order_notional=Decimal("250.5")))
     proposal = proposals.create("Alice", output(quantity=50).proposals[0], output().research)
     decision = risks.evaluate(proposal)
     from uuid import NAMESPACE_URL, uuid5

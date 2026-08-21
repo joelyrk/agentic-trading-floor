@@ -190,9 +190,9 @@ def test_exact_limits_pass_and_stable_decision_id() -> None:
 
 def test_oversized_buy_is_deterministically_reduced_to_largest_compliant_quantity() -> None:
     trade = proposal(quantity=50)
-    decision = RiskEngine(
-        generous_policy(maximum_order_notional=Decimal("2500"))
-    ).evaluate(trade, snapshot(), NOW)
+    decision = RiskEngine(generous_policy(maximum_order_notional=Decimal("2500"))).evaluate(
+        trade, snapshot(), NOW
+    )
 
     assert decision.outcome == RiskOutcome.APPROVED
     assert decision.requested_quantity == 50
@@ -221,9 +221,9 @@ def test_concentration_limit_deterministically_sizes_buy() -> None:
 
 
 def test_unsatisfiable_limit_rejects_with_truthful_reason() -> None:
-    decision = RiskEngine(
-        generous_policy(maximum_order_notional=Decimal("100"))
-    ).evaluate(proposal(), snapshot(), NOW)
+    decision = RiskEngine(generous_policy(maximum_order_notional=Decimal("100"))).evaluate(
+        proposal(), snapshot(), NOW
+    )
 
     assert decision.outcome == RiskOutcome.REJECTED
     assert decision.approved_quantity is None
