@@ -1,3 +1,4 @@
+import json
 import sqlite3
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
@@ -244,9 +245,29 @@ def test_reserved_run_executes_all_cycles_under_one_run_id(tmp_path, monkeypatch
     )
     observed_run_ids = []
 
+    with sqlite3.connect(path) as conn:
+        for name in ("warren", "george", "ray", "cathie"):
+            conn.execute(
+                "INSERT INTO accounts(name, account) VALUES (?, ?)",
+                (
+                    name,
+                    json.dumps(
+                        {
+                            "name": name,
+                            "balance": 10_000,
+                            "strategy": "test",
+                            "holdings": {},
+                            "transactions": [],
+                            "portfolio_value_time_series": [],
+                        }
+                    ),
+                ),
+            )
+
     class FakeTrader:
         def __init__(self, index: int):
             self.index = index
+            self.name = ("Warren", "George", "Ray", "Cathie")[index]
 
         async def run(self, *, run_id: str):
             observed_run_ids.append(run_id)
@@ -278,3 +299,6 @@ def test_reserved_run_executes_all_cycles_under_one_run_id(tmp_path, monkeypatch
     )
     assert result.status == "succeeded"
     assert observed_run_ids == [run.run_id] * 4
+    with sqlite3.connect(path) as conn:
+        rows = conn.execute("SELECT account FROM accounts ORDER BY name").fetchall()
+    assert all(len(json.loads(row[0])["portfolio_value_time_series"]) == 2 for row in rows)

@@ -120,6 +120,21 @@ def test_pipeline_persists_auditable_chain_and_exact_observation(tmp_path) -> No
     assert account["balance"] == pytest.approx(9799.6)
 
 
+def test_completed_cycle_snapshot_values_holdings_and_seeds_baseline(tmp_path) -> None:
+    repo, proposals, risks, executions = services(tmp_path)
+    DecisionPipeline(proposals, risks, executions).process("Alice", output())
+    completed_at = NOW.replace(minute=NOW.minute + 1)
+
+    assert repo.record_portfolio_snapshot("Alice", completed_at) is True
+    assert repo.record_portfolio_snapshot("Alice", completed_at) is False
+
+    series = repo.load_account_data("alice")["portfolio_value_time_series"]
+    assert len(series) == 2
+    assert series[0][1] == 10_000
+    assert series[1][0] == completed_at.isoformat()
+    assert series[1][1] == pytest.approx(9_999.6)
+
+
 def test_pipeline_persists_requested_size_and_executes_only_approved_size(tmp_path) -> None:
     repo, proposals, risks, executions = services(
         tmp_path, policy(maximum_order_notional=Decimal("250.5"))

@@ -12,8 +12,9 @@ import backend.startup as startup
 
 from .agent_runs import AgentRunConflict, AgentRunRepository, UnchangedMarketData
 from .config import validate_startup
+from .decisions.repository import DecisionRepository
 from .market import MarketDataError, get_market_observation, is_market_open
-from .observability import TelemetryRepository
+from .observability import TelemetryRepository, safe_error
 from .strategies import ensure_default_strategies
 from .tracers import LogTracer
 from .traders import Trader
@@ -146,7 +147,16 @@ async def execute_agent_run(
     try:
         await _run_cycle(traders, max_concurrency=concurrency, run_id=run_id)
         status, error = repository.cycle_outcome(run_id, len(traders))
-        return repository.finish(run_id, status, error)
+        record = repository.finish(run_id, status, error)
+        snapshots = DecisionRepository(repository.path)
+        for trader in traders:
+            try:
+                snapshots.record_portfolio_snapshot(
+                    trader.name, record.completed_at or datetime.now(timezone.utc)
+                )
+            except Exception as exc:
+                print(f"Portfolio snapshot failed for {trader.name}: {safe_error(exc)}")
+        return record
     except asyncio.CancelledError:
         repository.finish(run_id, "interrupted", "process shutdown interrupted agent run")
         raise

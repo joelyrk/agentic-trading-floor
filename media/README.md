@@ -5,8 +5,8 @@ deployments; generated mockups are not acceptable evidence. Capture at least:
 
 1. the credentialed overview at `http://localhost:8081` with `STANDARD MODE`,
    `END OF DAY`, and service-health badges visible;
-2. the seeded replay and published experiment comparison at
-   `http://localhost:8080`, with read-only and limitation copy visible; and
+2. the replay and published experiment comparison, with the point-in-time and
+   offline-evaluation limitation copy visible; and
 3. a 30–60 second walkthrough moving from overview to replay and experiments.
 
 Before capture, verify `POST /api/replays` returns `403` and that browser network
@@ -15,23 +15,26 @@ local filesystem paths, and unrelated tabs.
 
 ## Captured screenshots
 
-The following screenshots were captured at a 1265 × 712 browser viewport:
+The following screenshots were captured from the portfolio application:
 
 - [`screenshots/overview.jpg`](screenshots/overview.jpg) — captured from the
   credentialed live Compose profile on 2026-08-22, showing Massive EOD data,
-  healthy services, persisted scheduled-run status, and live paper accounts.
+  portfolio controls, persisted run status, live paper accounts, and portfolio
+  history (exported at 1800 × 856).
+- [`screenshots/overview-audit.jpg`](screenshots/overview-audit.jpg) — the live
+  overview's service health, evidence-backed recommendation timeline, and
+  observed cost and latency telemetry (exported at 1800 × 1153).
 - [`screenshots/replay-lab.jpg`](screenshots/replay-lab.jpg) — point-in-time replay
-  configuration captured from the seeded demo on 2026-08-21, with the
-  sealed-outcome and read-only boundaries visible.
+  configuration captured from the standard Compose profile on 2026-08-22,
+  before scenario execution, with the sealed-outcome boundary visible
+  (exported at 1800 × 868).
 - [`screenshots/experiments.jpg`](screenshots/experiments.jpg) — published
-  single-agent/multi-agent proxy comparison captured from the seeded demo on
-  2026-08-21, with the offline limitation copy.
+  single-agent/multi-agent proxy comparison captured from the standard Compose
+  profile on 2026-08-22, with the offline limitation copy and metadata-only
+  labels visible (exported at 1800 × 839).
 
-The seeded pre-capture `POST /api/replays` check returned `403` with
-`seeded demo mode is read-only`. Both capture-session access logs contained only
-same-origin static assets and documented `GET /api/...` paths; neither contained
-a provider credential or provider-key query parameter. The live capture did not
-trigger a manual run or any HTTP mutation. Browser chrome, unrelated tabs,
-personal information, and local filesystem paths are absent from the images.
+The earlier seeded pre-capture `POST /api/replays` check returned `403` with
+`seeded demo mode is read-only`. Browser chrome, unrelated tabs, personal
+information, and local filesystem paths are absent from the published images.
 
 The 30–60 second walkthrough video remains to be recorded.

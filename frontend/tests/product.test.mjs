@@ -91,6 +91,8 @@ test("account warnings reserve a grid row without shifting charts or allocation"
   assert.match(css, />\.agent-streams\{grid-row:6\}/);
   assert.match(css, /\.agent-streams h4\{min-height:32px/);
   assert.doesNotMatch(css, /\.agent-streams h4\{height:32px/);
+  assert.match(css, /\.agent-streams>section\{display:grid;grid-row:span 2;grid-template-rows:subgrid/);
+  assert.match(css, /@media\(max-width:1200px\).*\.agent-streams>section\{display:block;grid-row:auto\}/);
   assert.match(css, /@media\(max-width:900px\).*grid-template-rows:150px auto auto 210px 90px auto/);
 });
 

@@ -8,7 +8,9 @@ This is an educational simulation. It does not place real orders and is not fina
 
 ### Auditable live-agent overview
 
-![Credentialed Massive EOD overview showing portfolio controls and live agent results](media/screenshots/overview.jpg)
+![Credentialed Massive EOD overview showing portfolio controls, live agent results, and portfolio history](media/screenshots/overview.jpg)
+
+![Live service health, evidence-backed recommendations, and observed run telemetry](media/screenshots/overview-audit.jpg)
 
 ### Point-in-time replay lab
 

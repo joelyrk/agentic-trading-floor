@@ -2,7 +2,7 @@
 
 import json
 import sqlite3
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
 from backend import database
@@ -222,6 +222,59 @@ class DecisionRepository:
                 "portfolio_value_time_series": [],
             }
         )
+
+    def record_portfolio_snapshot(self, account_name: str, recorded_at: datetime) -> bool:
+        """Append one point-in-time portfolio value after a coordinated agent run."""
+        timestamp = recorded_at.astimezone(timezone.utc)
+        with sqlite3.connect(self.db_path, timeout=30) as conn:
+            conn.row_factory = sqlite3.Row
+            conn.execute("BEGIN IMMEDIATE")
+            row = conn.execute(
+                "SELECT account FROM accounts WHERE name=?", (account_name.lower(),)
+            ).fetchone()
+            if row is None:
+                return False
+            account = json.loads(row["account"])
+            value = Decimal(str(account["balance"]))
+            for symbol, quantity in account.get("holdings", {}).items():
+                observed = conn.execute(
+                    """SELECT observation FROM market_observations
+                       WHERE account_name=? AND symbol=? AND recorded_at<=?
+                       ORDER BY recorded_at DESC LIMIT 1""",
+                    (account_name.lower(), symbol.upper(), timestamp.isoformat()),
+                ).fetchone()
+                if observed is None:
+                    return False
+                observation = json.loads(observed["observation"])
+                value += Decimal(str(observation["price"])) * int(quantity)
+
+            series = account.setdefault("portfolio_value_time_series", [])
+            if series:
+                latest = datetime.fromisoformat(series[-1][0])
+                if latest >= timestamp:
+                    return False
+            else:
+                candidates = [
+                    datetime.fromisoformat(item["timestamp"])
+                    for item in account.get("transactions", [])
+                    if item.get("timestamp")
+                ]
+                first_cycle = conn.execute(
+                    "SELECT MIN(started_at) AS started_at FROM cycle_metrics WHERE account_name=?",
+                    (account_name.lower(),),
+                ).fetchone()["started_at"]
+                if first_cycle:
+                    candidates.append(datetime.fromisoformat(first_cycle))
+                baseline_at = min(candidates, default=timestamp) - timedelta(microseconds=1)
+                series.append((baseline_at.isoformat(), INITIAL_BALANCE))
+
+            series.append((timestamp.isoformat(), float(value)))
+            account["portfolio_value_time_series"] = series[-512:]
+            conn.execute(
+                "UPDATE accounts SET account=? WHERE name=?",
+                (json.dumps(account), account_name.lower()),
+            )
+        return True
 
     def execute_atomic(
         self,
