@@ -28,8 +28,10 @@ class StubProvider:
         self.mode = mode
         self.clock = clock
         self.error = error
+        self.calls: list[str] = []
 
     def observe(self, symbol: str) -> MarketObservation:
+        self.calls.append(symbol)
         if self.error:
             raise self.error
         return MarketObservation(
@@ -48,13 +50,14 @@ class StubProvider:
         return True
 
 
-def settings(policy=FallbackPolicy.FAIL_CLOSED, threshold=60) -> MarketSettings:
+def settings(policy=FallbackPolicy.FAIL_CLOSED, threshold=60, cache_ttl=0) -> MarketSettings:
     return MarketSettings(
         mode=DataMode.END_OF_DAY,
         fallback_policy=policy,
         massive_api_key="key",
         freshness_threshold_seconds=threshold,
         request_timeout_seconds=5,
+        cache_ttl_seconds=cache_ttl,
     )
 
 
@@ -69,6 +72,44 @@ def test_freshness_boundary_with_injected_clock() -> None:
     assert service._with_freshness(original).is_stale is False
     clock.value += timedelta(microseconds=1)
     assert service._with_freshness(original).is_stale is True
+
+
+def test_eod_observation_cache_avoids_provider_calls_until_expiry() -> None:
+    start = datetime(2026, 8, 13, 12, tzinfo=timezone.utc)
+    clock = MutableClock(start)
+    provider = StubProvider(ObservationSource.MASSIVE, DataMode.END_OF_DAY, clock)
+    service = MarketService(settings(cache_ttl=3_600), provider, clock)
+
+    original = service.observe("AAPL")
+    clock.value = start + timedelta(minutes=30)
+    cached = service.observe("aapl")
+
+    assert cached.retrieved_at == original.retrieved_at
+    assert provider.calls == ["AAPL"]
+
+    clock.value = start + timedelta(hours=1, microseconds=1)
+    refreshed = service.observe("AAPL")
+    assert refreshed.retrieved_at == clock.value
+    assert provider.calls == ["AAPL", "AAPL"]
+
+
+def test_recent_persisted_observation_can_warm_eod_cache_after_restart() -> None:
+    start = datetime(2026, 8, 13, 12, tzinfo=timezone.utc)
+    clock = MutableClock(start)
+    original_provider = StubProvider(ObservationSource.MASSIVE, DataMode.END_OF_DAY, clock)
+    original = MarketService(settings(cache_ttl=3_600), original_provider, clock).observe("AAPL")
+
+    clock.value = start + timedelta(minutes=30)
+    restarted_provider = StubProvider(ObservationSource.MASSIVE, DataMode.END_OF_DAY, clock)
+    restarted = MarketService(settings(cache_ttl=3_600), restarted_provider, clock)
+
+    assert restarted.prime_cache(original) is True
+    assert restarted.observe("AAPL").retrieved_at == original.retrieved_at
+    assert restarted_provider.calls == []
+
+    clock.value = start + timedelta(hours=2)
+    expired = MarketService(settings(cache_ttl=3_600), restarted_provider, clock)
+    assert expired.prime_cache(original) is False
 
 
 def test_massive_failure_is_fail_closed_without_silent_simulator() -> None:

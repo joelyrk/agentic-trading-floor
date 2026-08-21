@@ -83,6 +83,17 @@ test("agent refresh failures stay local and live telemetry is repainted", () => 
   assert.match(css, /\.agent-account-warning/);
 });
 
+test("account warnings reserve a grid row without shifting charts or allocation", () => {
+  assert.match(css, /grid-template-rows:150px auto 108px 230px 90px auto/);
+  assert.match(css, />\.agent-account-warning\{grid-row:2\}/);
+  assert.match(css, />\.equity-chart\{grid-row:4\}/);
+  assert.match(css, />\.allocation-strip\{grid-row:5\}/);
+  assert.match(css, />\.agent-streams\{grid-row:6\}/);
+  assert.match(css, /\.agent-streams h4\{min-height:32px/);
+  assert.doesNotMatch(css, /\.agent-streams h4\{height:32px/);
+  assert.match(css, /@media\(max-width:900px\).*grid-template-rows:150px auto auto 210px 90px auto/);
+});
+
 test("activity timestamps preserve existing timezone offsets", () => {
   assert.match(client, /timestampDate/);
   assert.match(client, /\(\?:Z\|\[\+-\]/);

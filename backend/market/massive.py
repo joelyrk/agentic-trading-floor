@@ -18,6 +18,15 @@ from .provider import (
 )
 
 PREVIOUS_CLOSE_ENDPOINT = "/v2/aggs/ticker/{symbol}/prev"
+MAX_CONNECTIONS_PER_HOST = 10
+
+
+def _configure_connection_pool(client: Any) -> None:
+    """Allow the shared SDK client to serve concurrent API valuations."""
+    pool_manager = getattr(client, "client", None)
+    pool_options = getattr(pool_manager, "connection_pool_kw", None)
+    if isinstance(pool_options, dict):
+        pool_options["maxsize"] = MAX_CONNECTIONS_PER_HOST
 
 
 def _status_code(exc: Exception) -> int | None:
@@ -66,6 +75,7 @@ class MassiveEodProvider:
             connect_timeout=timeout_seconds,
             read_timeout=timeout_seconds,
         )
+        _configure_connection_pool(self._client)
 
     def observe(self, symbol: str) -> MarketObservation:
         normalized = symbol.strip().upper()

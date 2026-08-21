@@ -40,6 +40,11 @@ class FakeClient:
         return self.result
 
 
+class FakePoolManager:
+    def __init__(self):
+        self.connection_pool_kw = {"maxsize": 1}
+
+
 def provider(client: FakeClient, now: datetime | None = None) -> MassiveEodProvider:
     captured = {}
 
@@ -66,6 +71,15 @@ def test_massive_previous_close_success_uses_one_intentional_endpoint() -> None:
     assert float(result.price) == 199.75
     assert result.provider_endpoint == "/v2/aggs/ticker/AAPL/prev"
     assert client.calls == ["AAPL"]
+
+
+def test_massive_expands_the_shared_connection_pool_for_parallel_valuations() -> None:
+    client = FakeClient([])
+    client.client = FakePoolManager()
+
+    provider(client)
+
+    assert client.client.connection_pool_kw["maxsize"] == 10
 
 
 @pytest.mark.parametrize(

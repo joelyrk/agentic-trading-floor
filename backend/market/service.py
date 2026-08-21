@@ -54,11 +54,37 @@ class MarketService:
             self._error_summary = None
         return observation
 
+    def _cached_observation(self, symbol: str) -> MarketObservation | None:
+        if self.settings.mode != DataMode.END_OF_DAY or self.settings.cache_ttl_seconds == 0:
+            return None
+        cached = self._last_good_by_symbol.get(symbol)
+        if cached is None or cached.source != self.provider.source or cached.mode != self.provider.mode:
+            return None
+        age = self.clock.now() - cached.retrieved_at
+        if age > timedelta(seconds=self.settings.cache_ttl_seconds):
+            return None
+        return cached
+
+    def prime_cache(self, observation: MarketObservation) -> bool:
+        """Warm the bounded EOD cache from an already-attributed persisted observation."""
+        if self.settings.mode != DataMode.END_OF_DAY or self.settings.cache_ttl_seconds == 0:
+            return False
+        if observation.source != self.provider.source or observation.mode != self.provider.mode:
+            return False
+        age = self.clock.now() - observation.retrieved_at
+        if age < timedelta(0) or age > timedelta(seconds=self.settings.cache_ttl_seconds):
+            return False
+        self._last_good_by_symbol[observation.symbol] = self._with_freshness(observation)
+        return True
+
     def observe(self, symbol: str) -> MarketObservation:
         try:
             normalized = normalize_symbol(symbol)
         except (AttributeError, ValueError) as exc:
             raise MarketDataError(f"invalid_symbol: {exc}") from exc
+        cached = self._cached_observation(normalized)
+        if cached is not None:
+            return self._success(cached)
         try:
             return self._success(self.provider.observe(normalized))
         except (MarketProviderError, ValidationError) as exc:

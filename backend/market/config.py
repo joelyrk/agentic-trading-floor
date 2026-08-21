@@ -17,6 +17,7 @@ class MarketSettings(BaseModel):
     massive_api_key: str | None = None
     freshness_threshold_seconds: int = Field(gt=0)
     request_timeout_seconds: float = Field(gt=0, le=120)
+    cache_ttl_seconds: int = Field(default=0, ge=0, le=86_400)
 
     @model_validator(mode="after")
     def validate_capabilities(self) -> "MarketSettings":
@@ -43,6 +44,7 @@ class MarketSettings(BaseModel):
         fallback_text = os.getenv("MARKET_DATA_FALLBACK", "").strip().lower()
         fallback = FallbackPolicy(fallback_text or FallbackPolicy.FAIL_CLOSED.value)
         default_freshness = 345_600 if mode == DataMode.END_OF_DAY else 300
+        default_cache_ttl = 3_600 if mode == DataMode.END_OF_DAY else 0
         return cls(
             mode=mode,
             fallback_policy=fallback,
@@ -51,6 +53,9 @@ class MarketSettings(BaseModel):
                 os.getenv("MARKET_DATA_FRESHNESS_SECONDS", str(default_freshness))
             ),
             request_timeout_seconds=float(os.getenv("MARKET_DATA_TIMEOUT_SECONDS", "10")),
+            cache_ttl_seconds=int(
+                os.getenv("MARKET_DATA_CACHE_SECONDS", str(default_cache_ttl))
+            ),
         )
 
 

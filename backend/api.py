@@ -15,7 +15,7 @@ from typing import Literal
 from uuid import UUID, uuid4
 
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, ValidationError
 
 import backend.startup as startup
 from backend import market
@@ -121,6 +121,17 @@ def holdings_detail(account: Account) -> tuple[list[dict], dict]:
     errors: list[str] = []
     valuation_id = str(uuid4())
     for symbol, quantity in account.holdings.items():
+        persisted = read_latest_market_observation(account.name, symbol)
+        persisted_observation: market.MarketObservation | None = None
+        if persisted is not None:
+            try:
+                persisted_observation = market.MarketObservation.model_validate(
+                    persisted["observation"]
+                )
+            except ValidationError:
+                persisted = None
+            else:
+                market.get_market_service().prime_cache(persisted_observation)
         try:
             observation = market.get_market_observation(symbol)
             observation_id = (
@@ -129,10 +140,9 @@ def holdings_detail(account: Account) -> tuple[list[dict], dict]:
                 else write_market_observation(account.name, "valuation", valuation_id, observation)
             )
         except market.MarketDataError as exc:
-            persisted = read_latest_market_observation(account.name, symbol)
-            if persisted is None:
+            if persisted is None or persisted_observation is None:
                 raise
-            observation = market.MarketObservation.model_validate(persisted["observation"])
+            observation = persisted_observation
             observation_id = persisted["id"]
             degraded_symbols.append(symbol)
             errors.append(f"{symbol}: {exc}")
