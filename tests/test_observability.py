@@ -135,12 +135,13 @@ def test_failed_mcp_startup_attributes_redacted_subprocess_diagnostic(
             ],
         },
         name="broken-test-service",
+        telemetry_repository=repository,
     )
-    server.telemetry = repository
-    repository.register_service(server.name, True)
     with pytest.raises(Exception):
         asyncio.run(server.connect())
     health = repository.service(server.name)
     assert health.state == "degraded"
     assert "never-store-this" not in health.error_summary
     assert "[REDACTED]" in health.error_summary
+    live_health = servers.telemetry.service(server.name)
+    assert live_health is None or not live_health.active

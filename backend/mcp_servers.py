@@ -62,9 +62,17 @@ async def _captured_stdio(params, server):
 class ObservedMCPServerStdio(MCPServerStdio):
     """MCP stdio client with startup probing, redacted diagnostics, and circuit state."""
 
-    def __init__(self, params, *, name: str, required: bool = True, tool_filter=None):
+    def __init__(
+        self,
+        params,
+        *,
+        name: str,
+        required: bool = True,
+        tool_filter=None,
+        telemetry_repository: TelemetryRepository | None = None,
+    ):
         self.required = required
-        self.telemetry = telemetry
+        self.telemetry = telemetry_repository or telemetry
         self._last_diagnostic: str | None = None
         self.telemetry.register_service(name, required)
         super().__init__(
