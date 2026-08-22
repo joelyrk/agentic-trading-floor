@@ -22,6 +22,27 @@ This is an educational simulation. It does not place real orders and is not fina
 
 ## Architecture
 
+Models research and propose; deterministic code owns policy, accounting,
+persistence, and paper execution. See [ARCHITECTURE.md](ARCHITECTURE.md) for the
+detailed runtime, data-contract, and operating-mode documentation.
+
+```mermaid
+flowchart LR
+    UI[Vite decision console] -->|same-origin /api| API[FastAPI]
+    API --> DB[(SQLite audit store)]
+    API --> REPLAY[Point-in-time replay evaluator]
+    SCHED[Scheduler] --> TRADERS[Four strategy agents]
+    TRADERS --> RESEARCH[Research agent]
+    TRADERS --> MARKET[Typed market MCP]
+    RESEARCH --> SEARCH[Project-owned bounded Tavily MCP]
+    TRADERS --> PROPOSALS[Structured proposals]
+    PROPOSALS --> RISK[Deterministic risk engine]
+    RISK -->|approved only| EXEC[Atomic paper execution]
+    RISK -->|approved or rejected| DB
+    EXEC --> DB
+    MARKET -->|Massive EOD or explicit simulator| DB
+```
+
 - `backend/`: agents, MCP servers, paper accounts, market data, tracing, and API
 - `frontend/`: Vite/TypeScript dashboard
 - `evals/`: immutable replay fixtures, deterministic baselines, metrics, and reports
