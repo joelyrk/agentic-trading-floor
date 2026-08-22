@@ -26,8 +26,8 @@ The following screenshots were captured from the portfolio application:
   observed cost and latency telemetry (exported at 1800 × 1153).
 - [`screenshots/replay-lab.jpg`](screenshots/replay-lab.jpg) — point-in-time replay
   configuration captured from the standard Compose profile on 2026-08-22,
-  before scenario execution, with the sealed-outcome boundary visible
-  (exported at 1800 × 868).
+  showing a completed multi-agent decision and the outcome revealed only after
+  execution (exported at 3786 × 1826).
 - [`screenshots/experiments.jpg`](screenshots/experiments.jpg) — published
   single-agent/multi-agent proxy comparison captured from the standard Compose
   profile on 2026-08-22, with the offline limitation copy and metadata-only
