@@ -1,7 +1,7 @@
 import {
   cancelAgentRun, createExperiment, createManualAgentRun, createReplay, getAgentRunProgress, getExperiments, getHealth, getLatestAgentRun, getMarket, getReplayCatalog, getRuntime, retryAgentRun,
   getTrader, getTraderDecisions, getTraderLogs, getTraders, revealReplay,
-  type AgentRunProgress, type AgentRunRecord, type DecisionAudit, type ExperimentReport, type HealthInfo, type MarketInfo,
+  type AgentActivity, type AgentRunProgress, type AgentRunRecord, type DecisionAudit, type ExperimentReport, type HealthInfo, type MarketInfo,
   type ReplaySession, type RuntimeInfo, type TraderDetail, type TraderInfo,
 } from "./api";
 import { initTheme } from "./theme";
@@ -39,6 +39,25 @@ function showError(error: unknown): void {
 
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : "Account data is temporarily unavailable.";
+}
+
+function summarizeActivityError(error: string): string {
+  const unsupported = error.match(/unsupported evidence claims:\s*\[([^\]]+)\]/i)?.[1];
+  const claimIds = unsupported?.match(/[A-Za-z0-9_.:-]+/g) ?? [];
+  if (claimIds.length) {
+    return `Unsupported evidence claim${claimIds.length === 1 ? "" : "s"}: ${claimIds.join(", ")}`;
+  }
+  if (/invalid json/i.test(error)) return "Model returned invalid JSON";
+  if (/market_data_unavailable|market data unavailable/i.test(error)) return "Market data was unavailable";
+  if (/max turns/i.test(error)) return "Agent exceeded its turn limit";
+  if (/budget/i.test(error)) return "Agent exceeded its run budget";
+  return "Technical diagnostic available";
+}
+
+function activityLabel(activity: AgentActivity): string {
+  if (activity.status === "failed" || activity.status === "interrupted") return activity.status;
+  if (activity.status === "succeeded" && activity.error_summary) return "completed with warnings";
+  return activity.current_activity;
 }
 
 function drawdown(points: TraderDetail["time_series"]): number {
@@ -147,7 +166,10 @@ function renderAgentDesks(traders: TraderDetail[], progress: AgentRunProgress | 
     const valuationWarning = degraded
       ? `<div class="agent-account-warning"><strong>Using persisted Massive prices</strong><span>${escapeHtml(trader.valuation_status.error_summary ?? "Live valuation is temporarily unavailable.")}</span></div>`
       : "";
-    return `<article class="agent-desk"><header class="agent-desk-header"><div class="agent-identity"><p>${escapeHtml(trader.name.toUpperCase())}</p><span>${escapeHtml(trader.model_name)} · ${escapeHtml(trader.lastname)}</span></div>${activity ? `<span class="outcome agent-run-state" data-state="${activity.status}">${escapeHtml(activity.status)}</span>` : ""}<strong class="agent-value" data-state="${pnlPositive ? "gain" : "loss"}">${money.format(trader.portfolio_value)}</strong><b class="agent-pnl" data-state="${pnlPositive ? "gain" : "loss"}">${pnlPositive ? "+" : "−"}${money.format(Math.abs(trader.pnl))}</b></header>${valuationWarning}<p class="agent-mandate">${escapeHtml(strategy || "No strategy mandate is currently set.")}</p>${equityChart(trader.time_series, name)}<div class="allocation-strip" aria-label="Current portfolio allocation">${allocation}</div><div class="agent-streams"><section><h4>Activity${activity ? ` · ${escapeHtml(activity.current_activity)}` : ""}</h4><ol class="desk-log">${logRows}</ol></section><section><h4>Recent paper trades</h4><ol class="desk-log trade-log">${tradeRows}</ol></section></div></article>`;
+    const activityDiagnostic = activity?.error_summary
+      ? `<details class="activity-diagnostic" data-state="${activity.status}"><summary><i aria-hidden="true">›</i><b>${escapeHtml(summarizeActivityError(activity.error_summary))}</b><span>Details</span></summary><p>${escapeHtml(activity.error_summary)}</p></details>`
+      : "";
+    return `<article class="agent-desk"><header class="agent-desk-header"><div class="agent-identity"><p>${escapeHtml(trader.name.toUpperCase())}</p><span>${escapeHtml(trader.model_name)} · ${escapeHtml(trader.lastname)}</span></div>${activity ? `<span class="outcome agent-run-state" data-state="${activity.status}">${escapeHtml(activity.status)}</span>` : ""}<strong class="agent-value" data-state="${pnlPositive ? "gain" : "loss"}">${money.format(trader.portfolio_value)}</strong><b class="agent-pnl" data-state="${pnlPositive ? "gain" : "loss"}">${pnlPositive ? "+" : "−"}${money.format(Math.abs(trader.pnl))}</b></header>${valuationWarning}<p class="agent-mandate">${escapeHtml(strategy || "No strategy mandate is currently set.")}</p>${equityChart(trader.time_series, name)}<div class="allocation-strip" aria-label="Current portfolio allocation">${allocation}</div><div class="agent-streams"><section><div class="agent-stream-head"><h4>Activity${activity ? ` · ${escapeHtml(activityLabel(activity))}` : ""}</h4>${activityDiagnostic}</div><ol class="desk-log">${logRows}</ol></section><section><div class="agent-stream-head"><h4>Recent paper trades</h4></div><ol class="desk-log trade-log">${tradeRows}</ol></section></div></article>`;
   }).join("");
 }
 

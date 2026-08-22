@@ -101,3 +101,15 @@ test("activity timestamps preserve existing timezone offsets", () => {
   assert.match(client, /\(\?:Z\|\[\+-\]/);
   assert.doesNotMatch(client, /new Date\(`\$\{row\.datetime\}Z`\)/);
 });
+
+test("agent failures use concise headings with optional technical detail", () => {
+  assert.match(client, /function summarizeActivityError/);
+  assert.match(client, /Unsupported evidence claim/);
+  assert.match(client, /activity\.status === "failed"/);
+  assert.match(client, /<details class="activity-diagnostic"/);
+  assert.match(client, /<span>Details<\/span>/);
+  assert.match(css, /\.agent-stream-head\{display:flex;min-width:0;min-height:72px;flex-direction:column;justify-content:flex-end;gap:7px\}/);
+  assert.match(css, /grid-template-columns:10px minmax\(0,1fr\) auto/);
+  assert.match(css, /\.activity-diagnostic summary::\-webkit-details-marker\{display:none\}/);
+  assert.match(css, /grid-template-rows:minmax\(72px,max-content\) 150px/);
+});
