@@ -22,9 +22,8 @@ class PushModelArgs(BaseModel):
 @mcp.tool()
 def push(args: PushModelArgs):
     """Send a push notification with this brief message"""
-    print(f"Push: {args.message}")
     if not pushover_user or not pushover_token:
-        return "Push notification disabled: credentials are not configured"
+        raise RuntimeError("Push notification unavailable: credentials are not configured")
     payload = {"user": pushover_user, "token": pushover_token, "message": args.message}
     response = requests.post(pushover_url, data=payload, timeout=10)
     response.raise_for_status()

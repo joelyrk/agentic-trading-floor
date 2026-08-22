@@ -128,6 +128,11 @@ Traces page. Trace metadata is intentionally string-valued to match the ingest
 API contract; paper decision IDs remain in the local audit telemetry linked by
 the trace ID.
 
+Optional Pushover delivery requires both `PUSHOVER_USER` and `PUSHOVER_TOKEN`.
+Only those two provider credentials are forwarded to the isolated notification
+subprocess. A missing credential or rejected Pushover request is recorded as a
+notification-service failure rather than a successful disabled delivery.
+
 Risk policy is configured with these optional environment variables:
 
 ```dotenv
