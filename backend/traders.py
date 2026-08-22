@@ -8,6 +8,7 @@ from time import monotonic
 
 from agents import (
     Agent,
+    ModelBehaviorError,
     ModelSettings,
     OpenAIChatCompletionsModel,
     OpenAIResponsesModel,
@@ -31,7 +32,6 @@ from .decisions import (
     RiskService,
     SourceRecord,
     TraderRecommendation,
-    TradingDecision,
 )
 from .decisions.repository import DecisionRepository
 from .market import get_market_observation, get_market_service
@@ -76,6 +76,7 @@ GROK_BASE_URL = "https://api.x.ai/v1"
 GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/openai/"
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 MODEL_MAX_RETRIES = int(os.getenv("MODEL_MAX_RETRIES", "4"))
+MODEL_OUTPUT_REPAIR_ATTEMPTS = 1
 
 
 def trader_trace_metadata(
@@ -237,6 +238,35 @@ def _research_brief(
     return brief
 
 
+def trader_research_context(research: ResearchBrief) -> str:
+    """Expose only material, cited claim IDs to the proposal-generating model."""
+    eligible_claims = [claim for claim in research.claims if claim.material and claim.source_ids]
+    eligible_source_ids = {source_id for claim in eligible_claims for source_id in claim.source_ids}
+    return json.dumps(
+        {
+            "summary": research.summary,
+            "as_of": research.as_of.isoformat(),
+            "eligible_evidence_claim_ids": [claim.claim_id for claim in eligible_claims],
+            "claims": [claim.model_dump(mode="json") for claim in eligible_claims],
+            "sources": [
+                source.model_dump(mode="json")
+                for source in research.sources
+                if source.source_id in eligible_source_ids
+            ],
+            "caveats": research.caveats,
+        },
+        separators=(",", ":"),
+    )
+
+
+def only_skippable_proposal_errors(error: str | None) -> bool:
+    """Identify proposal-local evidence or market-data failures that should not fail a cycle."""
+    return bool(error) and all(
+        ": market_data_unavailable:" in item or ": evidence_rejection:" in item
+        for item in error.split("; ")
+    )
+
+
 class Trader:
     def __init__(self, name: str, lastname="Trader", model_name="gpt-5.4-mini"):
         self.name = name
@@ -264,6 +294,69 @@ class Trader:
         combined.add(self._last_usage)
         combined.add(current)
         return combined
+
+    @staticmethod
+    def _combined_usage(prior: Usage | None, current: Usage | None) -> Usage:
+        combined = Usage()
+        if prior is not None:
+            combined.add(prior)
+        if current is not None:
+            combined.add(current)
+        return combined
+
+    async def _run_structured_stage(
+        self,
+        agent: Agent,
+        message: str,
+        *,
+        stage_name: str,
+        stage_budget: CycleBudget,
+        max_turns: int,
+        prior_usage: Usage | None = None,
+    ) -> tuple[object, Usage]:
+        """Retry malformed structured output once while preserving usage and budgets."""
+        stage_usage = Usage()
+        active_message = message
+        for repair_attempt in range(MODEL_OUTPUT_REPAIR_ATTEMPTS + 1):
+            spent = stage_budget.estimate_cost(stage_usage.input_tokens, stage_usage.output_tokens)
+            remaining_tokens = stage_budget.max_tokens - stage_usage.total_tokens
+            remaining_spend = stage_budget.max_spend_usd - spent
+            if remaining_tokens <= 0 or remaining_spend <= 0:
+                raise BudgetExceeded(f"{stage_name} repair exhausted the cycle budget")
+            attempt_budget = stage_budget.model_copy(
+                update={
+                    "max_tokens": remaining_tokens,
+                    "max_spend_usd": remaining_spend,
+                }
+            )
+            self._budget_hooks = BudgetHooks(attempt_budget)
+            try:
+                result = await Runner.run(
+                    agent,
+                    active_message,
+                    max_turns=max_turns,
+                    hooks=self._budget_hooks,
+                    run_config={"trace_include_sensitive_data": False},
+                )
+            except ModelBehaviorError:
+                if self._budget_hooks.usage is not None:
+                    stage_usage.add(self._budget_hooks.usage)
+                self._last_usage = self._combined_usage(prior_usage, stage_usage)
+                self._budget_hooks = None
+                if repair_attempt >= MODEL_OUTPUT_REPAIR_ATTEMPTS:
+                    raise
+                self._log_stage(f"repairing invalid {stage_name} structured output")
+                active_message = (
+                    message + "\nThe previous response failed structured-output validation. "
+                    "Return a fresh response that exactly matches the required schema. "
+                    "Do not add prose outside the structured response."
+                )
+                continue
+            stage_usage.add(result.context_wrapper.usage)
+            self._last_usage = self._combined_usage(prior_usage, stage_usage)
+            self._budget_hooks = None
+            return result, stage_usage
+        raise AssertionError("structured repair loop did not return")
 
     async def create_agent(self, trader_mcp_servers, decision_cutoff: datetime) -> Agent:
         self.agent = Agent(
@@ -293,9 +386,8 @@ class Trader:
         )
         decision_cutoff = datetime.now(timezone.utc)
         researcher = get_researcher(self.model_name, decision_cutoff)
-        self._budget_hooks = BudgetHooks(budget)
         self._log_stage(f"synthesizing evidence from {len(bundle.results)} bounded sources")
-        research_result = await Runner.run(
+        research_result, research_usage = await self._run_structured_stage(
             researcher,
             research_message(
                 strategy,
@@ -303,13 +395,10 @@ class Trader:
                 bundle.model_dump_json(),
                 decision_cutoff,
             ),
+            stage_name="research",
+            stage_budget=budget,
             max_turns=2,
-            hooks=self._budget_hooks,
-            run_config={"trace_include_sensitive_data": False},
         )
-        research_usage = research_result.context_wrapper.usage
-        self._last_usage = Usage()
-        self._last_usage.add(research_usage)
         if not isinstance(research_result.final_output, ResearchSynthesis):
             raise ValueError("researcher did not return ResearchSynthesis")
         research = _research_brief(bundle, research_result.final_output, decision_cutoff)
@@ -322,27 +411,25 @@ class Trader:
             update={"max_tokens": remaining_tokens, "max_spend_usd": remaining_spend}
         )
         self.agent = await self.create_agent(trader_mcp_servers, decision_cutoff)
-        research_json = research.model_dump_json()
+        research_json = trader_research_context(research)
         message = (
             trade_message(self.name, strategy, account, research_json, decision_cutoff)
             if self.do_trade
             else rebalance_message(self.name, strategy, account, research_json, decision_cutoff)
         )
-        self._budget_hooks = BudgetHooks(remaining_budget)
         self._log_stage("evaluating the strategy against validated evidence")
-        result = await Runner.run(
+        result, trader_usage = await self._run_structured_stage(
             self.agent,
             message,
+            stage_name="trader",
+            stage_budget=remaining_budget,
             max_turns=min(budget.max_turns, 5),
-            hooks=self._budget_hooks,
-            run_config={"trace_include_sensitive_data": False},
+            prior_usage=research_usage,
         )
-        trader_usage = result.context_wrapper.usage
         usage = Usage()
         usage.add(research_usage)
         usage.add(trader_usage)
         self._last_usage = usage
-        self._budget_hooks = None
         estimated_cost = budget.estimate_cost(usage.input_tokens, usage.output_tokens)
         if usage.total_tokens > budget.max_tokens:
             raise BudgetExceeded(
@@ -361,20 +448,17 @@ class Trader:
         recommendation = result.final_output
         if not isinstance(recommendation, TraderRecommendation):
             raise ValueError("trader did not return TraderRecommendation")
-        output = TradingDecision(
-            research=research,
-            proposals=recommendation.proposals,
-            appraisal=recommendation.appraisal,
-            trader_prompt_version=TRADER_PROMPT_VERSION,
-        )
         self._log_stage(
             f"applying deterministic risk controls to {len(recommendation.proposals)} proposals"
         )
-        processed, error = pipeline.safely_process(self.name, output)
-        unavailable_only = bool(error) and all(
-            ": market_data_unavailable:" in item for item in error.split("; ")
+        processed, error = pipeline.safely_process_recommendation(
+            self.name,
+            research,
+            recommendation,
+            TRADER_PROMPT_VERSION,
         )
-        if error and not processed and not unavailable_only:
+        skippable_only = only_skippable_proposal_errors(error)
+        if error and not processed and not skippable_only:
             raise ValueError(error)
         self._processing_warning = error
         if error:

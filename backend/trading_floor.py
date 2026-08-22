@@ -14,6 +14,7 @@ from .agent_runs import AgentRunConflict, AgentRunRepository, UnchangedMarketDat
 from .config import validate_startup
 from .decisions.repository import DecisionRepository
 from .market import MarketDataError, get_market_observation, is_market_open
+from .notifications import enqueue_run_notifications, publish_run_notifications
 from .observability import TelemetryRepository, safe_error
 from .strategies import ensure_default_strategies
 from .tracers import LogTracer
@@ -156,12 +157,25 @@ async def execute_agent_run(
                 )
             except Exception as exc:
                 print(f"Portfolio snapshot failed for {trader.name}: {safe_error(exc)}")
+        try:
+            await publish_run_notifications(record, repository.path)
+        except Exception as exc:
+            print(f"Notification publication failed: {safe_error(exc)}")
         return record
     except asyncio.CancelledError:
-        repository.finish(run_id, "interrupted", "process shutdown interrupted agent run")
+        record = repository.finish(run_id, "interrupted", "process shutdown interrupted agent run")
+        try:
+            enqueue_run_notifications(record, repository.path)
+        except Exception as exc:
+            print(f"Notification enqueue failed: {safe_error(exc)}")
         raise
     except Exception as exc:
-        return repository.finish(run_id, "failed", exc)
+        record = repository.finish(run_id, "failed", exc)
+        try:
+            await publish_run_notifications(record, repository.path)
+        except Exception as notification_exc:
+            print(f"Notification publication failed: {safe_error(notification_exc)}")
+        return record
 
 
 async def run_every_n_minutes(

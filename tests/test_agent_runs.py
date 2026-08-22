@@ -289,6 +289,13 @@ def test_reserved_run_executes_all_cycles_under_one_run_id(tmp_path, monkeypatch
             )
 
     monkeypatch.setattr(floor, "ensure_trace_processor", lambda: None)
+    published = []
+
+    async def publish(record, path):
+        published.append((record.run_id, path))
+        raise RuntimeError("notification provider unavailable")
+
+    monkeypatch.setattr(floor, "publish_run_notifications", publish)
     result = asyncio.run(
         floor.execute_agent_run(
             run.run_id,
@@ -299,6 +306,7 @@ def test_reserved_run_executes_all_cycles_under_one_run_id(tmp_path, monkeypatch
     )
     assert result.status == "succeeded"
     assert observed_run_ids == [run.run_id] * 4
+    assert published == [(run.run_id, path)]
     with sqlite3.connect(path) as conn:
         rows = conn.execute("SELECT account FROM accounts ORDER BY name").fetchall()
     assert all(len(json.loads(row[0])["portfolio_value_time_series"]) == 2 for row in rows)

@@ -121,6 +121,12 @@ USE_MANY_MODELS=false
 
 `MODEL_NAME` defaults to `gpt-5.4-mini` when omitted and is shown verbatim in the API, dashboard, traces, and cycle telemetry. `USE_MANY_MODELS=true` retains the fixed four-provider comparison roster and ignores `MODEL_NAME`; the corresponding provider keys are then required.
 
+Each research and trader stage gets one budget-accounted repair attempt when
+the provider returns malformed structured output. Proposal generation receives
+only material, cited evidence claim IDs. Invalid evidence references and missing
+market observations are skipped per proposal so they cannot erase other valid
+paper decisions; the skips remain visible as run warnings.
+
 The Agents SDK exports traces with `OPENAI_API_KEY`. If the OpenAI account has
 multiple projects, set `OPENAI_PROJECT_ID` (and, when needed,
 `OPENAI_ORG_ID`) in `.env`, then select that same project on the Platform
@@ -130,8 +136,11 @@ the trace ID.
 
 Optional Pushover delivery requires both `PUSHOVER_USER` and `PUSHOVER_TOKEN`.
 Only those two provider credentials are forwarded to the isolated notification
-subprocess. A missing credential or rejected Pushover request is recorded as a
-notification-service failure rather than a successful disabled delivery.
+subprocess. Models never trigger notifications directly. After deterministic
+policy review, decision outcomes and one run summary enter an idempotent SQLite
+outbox and are delivered with bounded retries. A missing credential or rejected
+Pushover request remains auditable as a failed outbox event and a degraded
+notification service rather than a successful disabled delivery.
 
 Risk policy is configured with these optional environment variables:
 

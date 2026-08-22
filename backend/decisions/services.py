@@ -19,7 +19,9 @@ from .models import (
     RiskDecision,
     RiskOutcome,
     TradeProposal,
+    TraderRecommendation,
     TradingDecision,
+    validate_proposal_evidence,
 )
 from .repository import DecisionRepository, ExecutionConflict
 from .risk import PortfolioSnapshot, RiskEngine
@@ -207,6 +209,45 @@ class DecisionPipeline:
                     proposed,
                     output.research,
                     output.trader_prompt_version,
+                )
+                decision = self.risk_service.evaluate(proposal)
+                execution = self.execution_service.execute(proposal, decision)
+                results.append((proposal, decision, execution))
+            except ResearchPolicyError as exc:
+                errors.append(f"{proposed.symbol}: research_policy_rejection: {exc}")
+            except ExecutionConflict as exc:
+                errors.append(f"{proposed.symbol}: execution_conflict: {exc}")
+            except MarketDataError as exc:
+                errors.append(f"{proposed.symbol}: market_data_unavailable: {exc}")
+        return results, "; ".join(errors) or None
+
+    def safely_process_recommendation(
+        self,
+        account_name: str,
+        research: ResearchBrief,
+        recommendation: TraderRecommendation,
+        trader_prompt_version: str = TRADER_PROMPT_VERSION,
+    ) -> tuple[list, str | None]:
+        """Persist research once, then reject bad evidence references proposal by proposal."""
+        try:
+            self.proposal_service.record_research(account_name, research, trader_prompt_version)
+        except ResearchPolicyError as exc:
+            return [], f"research_policy_rejection: {exc}"
+
+        results = []
+        errors: list[str] = []
+        for proposed in recommendation.proposals:
+            try:
+                validate_proposal_evidence(research, proposed)
+            except ValueError as exc:
+                errors.append(f"{proposed.symbol}: evidence_rejection: {exc}")
+                continue
+            try:
+                proposal = self.proposal_service.create(
+                    account_name,
+                    proposed,
+                    research,
+                    trader_prompt_version,
                 )
                 decision = self.risk_service.evaluate(proposal)
                 execution = self.execution_service.execute(proposal, decision)

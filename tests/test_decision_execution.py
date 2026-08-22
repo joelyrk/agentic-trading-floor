@@ -20,6 +20,7 @@ from backend.decisions import (
     RiskPolicy,
     RiskService,
     SourceRecord,
+    TraderRecommendation,
     TradingDecision,
 )
 from backend.decisions.models import ProposedTrade
@@ -349,6 +350,29 @@ def test_pipeline_preserves_completed_proposals_when_later_market_data_fails() -
     )
     assert [proposal.symbol for proposal, _, _ in processed] == ["COIN", "RBLX"]
     assert error == "BEAM: market_data_unavailable: provider_error: Massive request failed"
+
+
+def test_pipeline_rejects_bad_evidence_per_proposal_and_preserves_valid_work(
+    tmp_path,
+) -> None:
+    repo, proposals, risks, executions = services(tmp_path)
+    valid = output().proposals[0]
+    invalid = valid.model_copy(update={"symbol": "MSFT", "evidence_claim_ids": ["missing"]})
+    recommendation = TraderRecommendation(
+        proposals=[valid, invalid], appraisal="mixed proposal validity"
+    )
+
+    processed, error = DecisionPipeline(proposals, risks, executions).safely_process_recommendation(
+        "Alice",
+        output().research,
+        recommendation,
+    )
+
+    assert [proposal.symbol for proposal, _, _ in processed] == ["AAPL"]
+    assert error == (
+        "MSFT: evidence_rejection: proposal has unknown evidence claim IDs: ['missing']"
+    )
+    assert [item["proposal"]["symbol"] for item in repo.audit_chain("alice")] == ["AAPL"]
 
 
 def test_positive_integral_quantity_schema() -> None:

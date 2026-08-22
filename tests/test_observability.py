@@ -7,6 +7,7 @@ import pytest
 
 from backend.mcp_servers import (
     ObservedMCPServerStdio,
+    notification_mcp_server,
     researcher_mcp_servers,
     trader_mcp_servers,
 )
@@ -30,10 +31,8 @@ def market_status() -> dict:
 
 
 def test_mcp_servers_have_stable_attributable_names() -> None:
-    assert [server.name for server in trader_mcp_servers()] == [
-        "notifications",
-        "market-data",
-    ]
+    assert notification_mcp_server().name == "notifications"
+    assert [server.name for server in trader_mcp_servers()] == ["market-data"]
     assert [server.name for server in researcher_mcp_servers("Alice")] == [
         "research-search",
     ]

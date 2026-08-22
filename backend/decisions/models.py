@@ -61,6 +61,21 @@ class TraderRecommendation(StrictModel):
     appraisal: str = Field(min_length=1, max_length=1200)
 
 
+def validate_proposal_evidence(research: ResearchBrief, proposal: ProposedTrade) -> None:
+    """Reject one proposal whose evidence references are absent or non-material."""
+    claims = {claim.claim_id: claim for claim in research.claims}
+    broken = set(proposal.evidence_claim_ids) - claims.keys()
+    if broken:
+        raise ValueError(f"proposal has unknown evidence claim IDs: {sorted(broken)}")
+    unsupported = [
+        claim_id
+        for claim_id in proposal.evidence_claim_ids
+        if not claims[claim_id].material or not claims[claim_id].source_ids
+    ]
+    if unsupported:
+        raise ValueError(f"proposal cites unsupported evidence claims: {unsupported}")
+
+
 class TradingDecision(StrictModel):
     """Validated structured output returned by a trader agent."""
 
@@ -71,18 +86,8 @@ class TradingDecision(StrictModel):
 
     @model_validator(mode="after")
     def proposals_reference_supported_claims(self) -> "TradingDecision":
-        claims = {claim.claim_id: claim for claim in self.research.claims}
         for proposal in self.proposals:
-            broken = set(proposal.evidence_claim_ids) - claims.keys()
-            if broken:
-                raise ValueError(f"proposal has unknown evidence claim IDs: {sorted(broken)}")
-            unsupported = [
-                claim_id
-                for claim_id in proposal.evidence_claim_ids
-                if not claims[claim_id].material or not claims[claim_id].source_ids
-            ]
-            if unsupported:
-                raise ValueError(f"proposal cites unsupported evidence claims: {unsupported}")
+            validate_proposal_evidence(self.research, proposal)
         return self
 
 

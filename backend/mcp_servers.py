@@ -194,16 +194,23 @@ def local_server_params(module: str, extra_env: dict[str, str] | None = None) ->
     return params
 
 
-def trader_mcp_servers() -> list[ObservedMCPServerStdio]:
-    """Model-facing tools cannot mutate accounts; execution follows structured output."""
+def notification_mcp_server(
+    telemetry_repository: TelemetryRepository | None = None,
+) -> ObservedMCPServerStdio:
+    """Build the app-owned notification transport with only provider credentials."""
     notification_env = {
         name: os.environ[name] for name in ("PUSHOVER_USER", "PUSHOVER_TOKEN") if os.getenv(name)
     }
+    return ObservedMCPServerStdio(
+        local_server_params("backend.push_server", notification_env),
+        name="notifications",
+        telemetry_repository=telemetry_repository,
+    )
+
+
+def trader_mcp_servers() -> list[ObservedMCPServerStdio]:
+    """Model-facing tools cannot mutate accounts or trigger external notifications."""
     return [
-        _server(
-            local_server_params("backend.push_server", notification_env),
-            "notifications",
-        ),
         _server(
             local_server_params("backend.market_server"),
             "market-data",
