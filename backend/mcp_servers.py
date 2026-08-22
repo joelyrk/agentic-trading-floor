@@ -197,9 +197,7 @@ def local_server_params(module: str, extra_env: dict[str, str] | None = None) ->
 def trader_mcp_servers() -> list[ObservedMCPServerStdio]:
     """Model-facing tools cannot mutate accounts; execution follows structured output."""
     notification_env = {
-        name: os.environ[name]
-        for name in ("PUSHOVER_USER", "PUSHOVER_TOKEN")
-        if os.getenv(name)
+        name: os.environ[name] for name in ("PUSHOVER_USER", "PUSHOVER_TOKEN") if os.getenv(name)
     }
     return [
         _server(
