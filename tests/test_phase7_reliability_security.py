@@ -13,7 +13,7 @@ from pydantic import SecretStr, ValidationError
 from backend.access import AccessControlMiddleware
 from backend.config import APIAccessSettings, RuntimeSettings, validate_startup
 from backend.database_admin import backup, integrity_check, restore
-from backend.mcp_servers import researcher_mcp_servers
+from backend.mcp_servers import researcher_mcp_servers, trader_mcp_servers
 from backend.migrations import MIGRATIONS, current_version, migrate
 from backend.observability import CycleBudget, CycleContext, TelemetryRepository
 from backend.security import UnsafeURLError, validate_public_http_url
@@ -189,6 +189,21 @@ def test_research_uses_only_project_owned_bounded_mcp_server() -> None:
     assert "tavily-mcp" not in dockerfile
     assert "mcp-memory-libsql" not in dockerfile
     assert "npx" not in dockerfile
+
+
+def test_market_mcp_receives_only_allowlisted_runtime_settings(monkeypatch) -> None:
+    monkeypatch.setenv("MARKET_DATA_MODE", "end_of_day")
+    monkeypatch.setenv("MARKET_DATA_FALLBACK", "fail_closed")
+    monkeypatch.setenv("MASSIVE_API_KEY", "test-key")
+    monkeypatch.setenv("UNRELATED_SECRET", "must-not-propagate")
+
+    environment = trader_mcp_servers()[0].params.env
+
+    assert environment is not None
+    assert environment["MARKET_DATA_MODE"] == "end_of_day"
+    assert environment["MARKET_DATA_FALLBACK"] == "fail_closed"
+    assert environment["MASSIVE_API_KEY"] == "test-key"
+    assert "UNRELATED_SECRET" not in environment
 
 
 def test_runtime_settings_reject_unsafe_bounds() -> None:

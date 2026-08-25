@@ -34,6 +34,14 @@ ACTIVE_SERVICE_NAMES = (
     "market-data",
     "research-search",
 )
+MARKET_ENVIRONMENT_KEYS = (
+    "MARKET_DATA_MODE",
+    "MARKET_DATA_FALLBACK",
+    "MASSIVE_API_KEY",
+    "MARKET_DATA_FRESHNESS_SECONDS",
+    "MARKET_DATA_TIMEOUT_SECONDS",
+    "MARKET_DATA_CACHE_SECONDS",
+)
 for _service_name in ACTIVE_SERVICE_NAMES:
     telemetry.register_service(_service_name, required=True)
 telemetry.retire_services_except(ACTIVE_SERVICE_NAMES)
@@ -194,6 +202,13 @@ def local_server_params(module: str, extra_env: dict[str, str] | None = None) ->
     return params
 
 
+def market_runtime_environment() -> dict[str, str]:
+    """Return only the market settings required by app-owned MCP subprocesses."""
+    return {
+        name: os.environ[name] for name in MARKET_ENVIRONMENT_KEYS if os.getenv(name) is not None
+    }
+
+
 def notification_mcp_server(
     telemetry_repository: TelemetryRepository | None = None,
 ) -> ObservedMCPServerStdio:
@@ -212,7 +227,7 @@ def trader_mcp_servers() -> list[ObservedMCPServerStdio]:
     """Model-facing tools cannot mutate accounts or trigger external notifications."""
     return [
         _server(
-            local_server_params("backend.market_server"),
+            local_server_params("backend.market_server", market_runtime_environment()),
             "market-data",
         ),
     ]
