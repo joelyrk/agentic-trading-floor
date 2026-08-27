@@ -5,7 +5,7 @@ from decimal import Decimal
 from types import SimpleNamespace
 
 import pytest
-from agents import ModelBehaviorError, Usage
+from agents import MaxTurnsExceeded, ModelBehaviorError, Usage
 
 import backend.traders as traders
 from backend.decisions import EvidenceClaim, ResearchBrief, SourceRecord
@@ -53,7 +53,7 @@ def test_structured_stage_repairs_one_malformed_response(monkeypatch) -> None:
     assert result.final_output == "valid"
     assert len(calls) == 2
     assert calls[0] == "original request"
-    assert "failed structured-output validation" in calls[1]
+    assert "did not produce valid final structured output" in calls[1]
     assert combined.requests == 2
     assert combined.total_tokens == 50
     assert trader._last_usage.total_tokens == 50
@@ -85,6 +85,95 @@ def test_structured_stage_stops_after_one_repair(monkeypatch) -> None:
 
     assert calls == 2
     assert trader._last_usage.total_tokens == 20
+
+
+def test_structured_stage_repairs_turn_exhaustion(monkeypatch) -> None:
+    calls = []
+
+    async def run(agent, message, **kwargs):
+        calls.append(message)
+        if len(calls) == 1:
+            handler_input = SimpleNamespace(
+                context=SimpleNamespace(usage=Usage(requests=1)),
+                run_data=SimpleNamespace(
+                    raw_responses=[SimpleNamespace(usage=usage(25))]
+                ),
+            )
+            await kwargs["error_handlers"]["max_turns"](handler_input)
+            raise MaxTurnsExceeded("Max turns (3) exceeded")
+        return SimpleNamespace(
+            final_output="valid",
+            context_wrapper=SimpleNamespace(usage=usage(35)),
+        )
+
+    monkeypatch.setattr(traders.Runner, "run", run)
+    trader = traders.Trader("Ray")
+    monkeypatch.setattr(trader, "_log_stage", lambda message: None)
+
+    result, combined = asyncio.run(
+        trader._run_structured_stage(
+            object(),
+            "original request",
+            stage_name="research",
+            stage_budget=CycleBudget(max_tokens=100),
+            max_turns=3,
+        )
+    )
+
+    assert result.final_output == "valid"
+    assert len(calls) == 2
+    assert combined.requests == 2
+    assert combined.total_tokens == 60
+    assert trader._last_usage.total_tokens == 60
+
+
+def test_max_turn_error_handler_prefers_completed_response_token_usage() -> None:
+    hooks = traders.BudgetHooks(CycleBudget(max_tokens=100))
+    handler_input = SimpleNamespace(
+        context=SimpleNamespace(usage=Usage(requests=2)),
+        run_data=SimpleNamespace(
+            raw_responses=[
+                SimpleNamespace(usage=usage(20)),
+                SimpleNamespace(usage=usage(30)),
+            ]
+        ),
+    )
+
+    asyncio.run(hooks.capture_run_error(handler_input))
+
+    assert hooks.usage.requests == 2
+    assert hooks.usage.input_tokens == 40
+    assert hooks.usage.output_tokens == 10
+    assert hooks.usage.total_tokens == 50
+
+
+def test_trader_account_context_uses_non_valuing_snapshot(monkeypatch) -> None:
+    calls = []
+
+    async def read_snapshot(name: str) -> str:
+        calls.append(name)
+        return json.dumps(
+            {
+                "name": "warren",
+                "balance": 7500.0,
+                "strategy": "Value strategy",
+                "holdings": {"BRK.B": 5},
+                "transactions": [],
+                "portfolio_value_time_series": [],
+            }
+        )
+
+    monkeypatch.setattr(traders, "read_account_snapshot_resource", read_snapshot)
+
+    report = json.loads(asyncio.run(traders.Trader("Warren").get_account_report()))
+
+    assert calls == ["Warren"]
+    assert report == {
+        "name": "warren",
+        "balance": 7500.0,
+        "holdings": {"BRK.B": 5},
+        "recent_transactions": [],
+    }
 
 
 def test_trader_context_exposes_only_eligible_claim_ids() -> None:

@@ -195,6 +195,8 @@ def test_market_mcp_receives_only_allowlisted_runtime_settings(monkeypatch) -> N
     monkeypatch.setenv("MARKET_DATA_MODE", "end_of_day")
     monkeypatch.setenv("MARKET_DATA_FALLBACK", "fail_closed")
     monkeypatch.setenv("MASSIVE_API_KEY", "test-key")
+    monkeypatch.setenv("MARKET_DATA_MAX_RETRIES", "3")
+    monkeypatch.setenv("MARKET_DATA_RETRY_BACKOFF_SECONDS", "0.25")
     monkeypatch.setenv("UNRELATED_SECRET", "must-not-propagate")
 
     environment = trader_mcp_servers()[0].params.env
@@ -203,6 +205,8 @@ def test_market_mcp_receives_only_allowlisted_runtime_settings(monkeypatch) -> N
     assert environment["MARKET_DATA_MODE"] == "end_of_day"
     assert environment["MARKET_DATA_FALLBACK"] == "fail_closed"
     assert environment["MASSIVE_API_KEY"] == "test-key"
+    assert environment["MARKET_DATA_MAX_RETRIES"] == "3"
+    assert environment["MARKET_DATA_RETRY_BACKOFF_SECONDS"] == "0.25"
     assert "UNRELATED_SECRET" not in environment
 
 

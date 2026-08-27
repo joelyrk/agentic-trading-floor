@@ -9,7 +9,11 @@ import mcp
 from mcp import StdioServerParameters
 from mcp.client.stdio import stdio_client
 
-from backend.accounts_client import account_server_params, read_accounts_resource
+from backend.accounts_client import (
+    account_server_params,
+    read_account_snapshot_resource,
+    read_accounts_resource,
+)
 from backend.migrations import migrate
 
 
@@ -39,6 +43,43 @@ def test_account_client_reads_the_configured_database(tmp_path, monkeypatch) -> 
     assert params["env"]["ACCOUNTS_DB"] == str(database)
     payload = json.loads(asyncio.run(read_accounts_resource("Alice")))
     assert payload["holdings"] == {"BRK.B": 5}
+
+
+def test_account_snapshot_succeeds_when_massive_is_unavailable_without_valuation(
+    tmp_path, monkeypatch
+) -> None:
+    database = tmp_path / "live.db"
+    migrate(str(database))
+    account = {
+        "name": "alice",
+        "balance": 7500.0,
+        "strategy": "Test strategy",
+        "holdings": {"BRK.B": 5},
+        "transactions": [],
+        "portfolio_value_time_series": [],
+    }
+    with sqlite3.connect(database) as conn:
+        conn.execute(
+            "INSERT INTO accounts(name, account) VALUES (?, ?)",
+            ("alice", json.dumps(account)),
+        )
+
+    monkeypatch.setenv("ACCOUNTS_DB", str(database))
+    monkeypatch.setenv("MARKET_DATA_MODE", "end_of_day")
+    monkeypatch.setenv("MARKET_DATA_FALLBACK", "fail_closed")
+    monkeypatch.setenv("MASSIVE_API_KEY", "unreachable-test-key")
+    monkeypatch.setenv("MARKET_DATA_TIMEOUT_SECONDS", "0.01")
+    monkeypatch.setenv("UV_CACHE_DIR", str(tmp_path / "uv-cache"))
+
+    payload = json.loads(asyncio.run(read_account_snapshot_resource("Alice")))
+
+    assert payload["holdings"] == {"BRK.B": 5}
+    assert "total_portfolio_value" not in payload
+    with sqlite3.connect(database) as conn:
+        stored = json.loads(
+            conn.execute("SELECT account FROM accounts WHERE name='alice'").fetchone()[0]
+        )
+    assert stored["portfolio_value_time_series"] == []
 
 
 def test_account_mcp_exposes_no_trade_execution_tools(tmp_path) -> None:

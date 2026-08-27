@@ -42,6 +42,13 @@ async def read_account_resource(name: str) -> str:
     return account.report()
 
 
+@mcp.resource("accounts://snapshot/{name}")
+async def read_account_snapshot_resource(name: str) -> str:
+    """Read stored account state without coupling the read to external market data."""
+    account = Account.get(name.lower())
+    return account.snapshot()
+
+
 @mcp.resource("accounts://strategy/{name}")
 async def read_strategy_resource(name: str) -> str:
     account = Account.get(name.lower())

@@ -31,5 +31,9 @@ async def read_accounts_resource(name: str) -> str:
     return await _read(f"accounts://accounts_server/{name}")
 
 
+async def read_account_snapshot_resource(name: str) -> str:
+    return await _read(f"accounts://snapshot/{name}")
+
+
 async def read_strategy_resource(name: str) -> str:
     return await _read(f"accounts://strategy/{name}")

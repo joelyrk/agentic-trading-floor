@@ -81,3 +81,34 @@ def test_simulator_must_be_selected_without_a_fallback_policy() -> None:
             freshness_threshold_seconds=60,
             request_timeout_seconds=5,
         )
+
+
+def test_settings_read_bounded_massive_retry_configuration(monkeypatch) -> None:
+    monkeypatch.setenv("MARKET_DATA_MODE", "end_of_day")
+    monkeypatch.setenv("MARKET_DATA_FALLBACK", "fail_closed")
+    monkeypatch.setenv("MASSIVE_API_KEY", "test-key")
+    monkeypatch.setenv("MARKET_DATA_MAX_RETRIES", "3")
+    monkeypatch.setenv("MARKET_DATA_RETRY_BACKOFF_SECONDS", "0.25")
+
+    settings = MarketSettings.from_env()
+
+    assert settings.max_retries == 3
+    assert settings.retry_backoff_seconds == 0.25
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [("max_retries", 11), ("retry_backoff_seconds", 31)],
+)
+def test_settings_reject_unsafe_massive_retry_bounds(field: str, value: int) -> None:
+    values = {
+        "mode": DataMode.END_OF_DAY,
+        "fallback_policy": FallbackPolicy.FAIL_CLOSED,
+        "massive_api_key": "test-key",
+        "freshness_threshold_seconds": 60,
+        "request_timeout_seconds": 5,
+        field: value,
+    }
+
+    with pytest.raises(ValidationError):
+        MarketSettings(**values)

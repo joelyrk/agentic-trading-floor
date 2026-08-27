@@ -21,6 +21,10 @@ class ProviderTimeoutError(MarketProviderError):
     code = "timeout"
 
 
+class TransientProviderError(MarketProviderError):
+    code = "provider_unavailable"
+
+
 class MalformedResponseError(MarketProviderError):
     code = "malformed_payload"
 

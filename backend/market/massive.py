@@ -2,6 +2,7 @@
 
 from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
+from time import sleep
 from typing import Any, Callable
 
 from massive import RESTClient
@@ -15,6 +16,7 @@ from .provider import (
     MalformedResponseError,
     MarketProviderError,
     ProviderTimeoutError,
+    TransientProviderError,
 )
 
 PREVIOUS_CLOSE_ENDPOINT = "/v2/aggs/ticker/{symbol}/prev"
@@ -37,13 +39,29 @@ def _status_code(exc: Exception) -> int | None:
 def _normalize_error(exc: Exception) -> MarketProviderError:
     status = _status_code(exc)
     message = str(exc).lower()
-    if status == 401 or "unauthorized" in message or "api key" in message:
-        return AuthenticationError("Massive authentication failed")
-    if status == 403 or "forbidden" in message or "entitlement" in message:
-        return EntitlementError("Massive end-of-day entitlement is unavailable")
+    diagnostic = (
+        f"status={status if status is not None else 'unknown'}, "
+        f"exception={type(exc).__name__}"
+    )
+    if status == 401:
+        return AuthenticationError(f"Massive authentication failed ({diagnostic})")
+    if status == 403:
+        return EntitlementError(
+            f"Massive end-of-day entitlement is unavailable ({diagnostic})"
+        )
+    if status is None and ("unauthorized" in message or "api key" in message):
+        return AuthenticationError(f"Massive authentication failed ({diagnostic})")
+    if status is None and ("forbidden" in message or "entitlement" in message):
+        return EntitlementError(
+            f"Massive end-of-day entitlement is unavailable ({diagnostic})"
+        )
     if isinstance(exc, TimeoutError) or "timed out" in message or "timeout" in message:
-        return ProviderTimeoutError("Massive request timed out")
-    return MarketProviderError("Massive request failed")
+        return ProviderTimeoutError(f"Massive request timed out ({diagnostic})")
+    if status == 429 or (status is not None and 500 <= status <= 599):
+        return TransientProviderError(
+            f"Massive service is temporarily unavailable ({diagnostic})"
+        )
+    return MarketProviderError(f"Massive request failed ({diagnostic})")
 
 
 def _value(item: Any, *names: str) -> Any:
@@ -67,9 +85,15 @@ class MassiveEodProvider:
         api_key: str,
         clock: Clock,
         timeout_seconds: float = 10,
+        max_retries: int = 2,
+        retry_backoff_seconds: float = 0.5,
         client_factory: Callable[..., Any] = RESTClient,
+        sleeper: Callable[[float], None] = sleep,
     ):
         self.clock = clock
+        self._max_retries = max_retries
+        self._retry_backoff_seconds = retry_backoff_seconds
+        self._sleeper = sleeper
         self._client = client_factory(
             api_key,
             connect_timeout=timeout_seconds,
@@ -79,10 +103,19 @@ class MassiveEodProvider:
 
     def observe(self, symbol: str) -> MarketObservation:
         normalized = symbol.strip().upper()
-        try:
-            rows = self._client.get_previous_close_agg(normalized)
-        except Exception as exc:
-            raise _normalize_error(exc) from exc
+        rows = None
+        for attempt in range(self._max_retries + 1):
+            try:
+                rows = self._client.get_previous_close_agg(normalized)
+                break
+            except Exception as exc:
+                normalized_error = _normalize_error(exc)
+                retryable = isinstance(
+                    normalized_error, (ProviderTimeoutError, TransientProviderError)
+                )
+                if not retryable or attempt >= self._max_retries:
+                    raise normalized_error from exc
+                self._sleeper(self._retry_backoff_seconds * (2**attempt))
         if not rows:
             raise EmptyMarketDayError(f"Massive returned no previous close for {normalized}")
 

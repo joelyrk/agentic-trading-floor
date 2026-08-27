@@ -143,6 +143,8 @@ def build_market_service(
                 settings.massive_api_key or "",
                 clock,
                 timeout_seconds=settings.request_timeout_seconds,
+                max_retries=settings.max_retries,
+                retry_backoff_seconds=settings.retry_backoff_seconds,
             )
     fallback_simulator = (
         simulator if settings.fallback_policy == FallbackPolicy.EXPLICIT_SIMULATOR else None

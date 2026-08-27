@@ -8,6 +8,7 @@ from time import monotonic
 
 from agents import (
     Agent,
+    MaxTurnsExceeded,
     ModelBehaviorError,
     ModelSettings,
     OpenAIChatCompletionsModel,
@@ -20,7 +21,7 @@ from agents import (
 from dotenv import load_dotenv
 from openai import AsyncOpenAI
 
-from .accounts_client import read_accounts_resource, read_strategy_resource
+from .accounts_client import read_account_snapshot_resource, read_strategy_resource
 from .database import write_log
 from .decisions import (
     DecisionPipeline,
@@ -77,6 +78,7 @@ GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/openai/"
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 MODEL_MAX_RETRIES = int(os.getenv("MODEL_MAX_RETRIES", "4"))
 MODEL_OUTPUT_REPAIR_ATTEMPTS = 1
+RESEARCH_MAX_TURNS = 3
 
 
 def trader_trace_metadata(
@@ -144,7 +146,7 @@ def get_researcher(model_name: str, decision_cutoff: datetime) -> Agent:
         name="Researcher",
         instructions=researcher_instructions(decision_cutoff),
         model=get_model(model_name),
-        model_settings=ModelSettings(max_tokens=2_500),
+        model_settings=ModelSettings(max_tokens=2_500, preserve_raw_usage=True),
         output_type=ResearchSynthesis,
     )
 
@@ -314,7 +316,7 @@ class Trader:
         max_turns: int,
         prior_usage: Usage | None = None,
     ) -> tuple[object, Usage]:
-        """Retry malformed structured output once while preserving usage and budgets."""
+        """Retry incomplete structured output once while preserving usage and budgets."""
         stage_usage = Usage()
         active_message = message
         for repair_attempt in range(MODEL_OUTPUT_REPAIR_ATTEMPTS + 1):
@@ -337,17 +339,21 @@ class Trader:
                     max_turns=max_turns,
                     hooks=self._budget_hooks,
                     run_config={"trace_include_sensitive_data": False},
+                    error_handlers={
+                        "max_turns": self._budget_hooks.capture_run_error,
+                        "invalid_final_output": self._budget_hooks.capture_run_error,
+                    },
                 )
-            except ModelBehaviorError:
+            except (MaxTurnsExceeded, ModelBehaviorError):
                 if self._budget_hooks.usage is not None:
                     stage_usage.add(self._budget_hooks.usage)
                 self._last_usage = self._combined_usage(prior_usage, stage_usage)
                 self._budget_hooks = None
                 if repair_attempt >= MODEL_OUTPUT_REPAIR_ATTEMPTS:
                     raise
-                self._log_stage(f"repairing invalid {stage_name} structured output")
+                self._log_stage(f"repairing incomplete {stage_name} structured output")
                 active_message = (
-                    message + "\nThe previous response failed structured-output validation. "
+                    message + "\nThe previous attempt did not produce valid final structured output. "
                     "Return a fresh response that exactly matches the required schema. "
                     "Do not add prose outside the structured response."
                 )
@@ -363,14 +369,14 @@ class Trader:
             name=self.name,
             instructions=trader_instructions(self.name, decision_cutoff),
             model=get_model(self.model_name),
-            model_settings=ModelSettings(max_tokens=2_000),
+            model_settings=ModelSettings(max_tokens=2_000, preserve_raw_usage=True),
             mcp_servers=trader_mcp_servers,
             output_type=TraderRecommendation,
         )
         return self.agent
 
     async def get_account_report(self) -> str:
-        account = await read_accounts_resource(self.name)
+        account = await read_account_snapshot_resource(self.name)
         account_json = json.loads(account)
         return bounded_account_report(account_json)
 
@@ -397,7 +403,7 @@ class Trader:
             ),
             stage_name="research",
             stage_budget=budget,
-            max_turns=2,
+            max_turns=min(budget.max_turns, RESEARCH_MAX_TURNS),
         )
         if not isinstance(research_result.final_output, ResearchSynthesis):
             raise ValueError("researcher did not return ResearchSynthesis")

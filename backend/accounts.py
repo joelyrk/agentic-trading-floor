@@ -187,6 +187,10 @@ class Account(BaseModel):
         """List all transactions made by the user."""
         return [transaction.model_dump() for transaction in self.transactions]
 
+    def snapshot(self) -> str:
+        """Return stored paper-account state without performing a market valuation."""
+        return self.model_dump_json()
+
     def report(self) -> str:
         """Return a json string representing the account."""
         portfolio_value = self.calculate_portfolio_value()

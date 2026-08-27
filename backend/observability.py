@@ -14,7 +14,7 @@ from time import monotonic
 from typing import Any
 from uuid import uuid4
 
-from agents import RunHooks
+from agents import RunHooks, Usage
 from pydantic import BaseModel, ConfigDict, Field
 
 from backend import database
@@ -118,6 +118,19 @@ class BudgetHooks(RunHooks):
 
     async def on_llm_end(self, context, agent, response) -> None:
         self.usage = context.usage
+
+    async def capture_run_error(self, handler_input) -> None:
+        """Capture completed model usage before a terminal runner error is re-raised."""
+        response_usage = Usage()
+        for response in handler_input.run_data.raw_responses:
+            response_usage.add(response.usage)
+        context_usage = handler_input.context.usage
+        self.usage = (
+            response_usage
+            if response_usage.total_tokens > context_usage.total_tokens
+            else context_usage
+        )
+        return None
 
 
 @dataclass(frozen=True)

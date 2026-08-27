@@ -17,6 +17,8 @@ class MarketSettings(BaseModel):
     massive_api_key: str | None = None
     freshness_threshold_seconds: int = Field(gt=0)
     request_timeout_seconds: float = Field(gt=0, le=120)
+    max_retries: int = Field(default=2, ge=0, le=10)
+    retry_backoff_seconds: float = Field(default=0.5, ge=0, le=30)
     cache_ttl_seconds: int = Field(default=0, ge=0, le=86_400)
 
     @model_validator(mode="after")
@@ -53,6 +55,10 @@ class MarketSettings(BaseModel):
                 os.getenv("MARKET_DATA_FRESHNESS_SECONDS", str(default_freshness))
             ),
             request_timeout_seconds=float(os.getenv("MARKET_DATA_TIMEOUT_SECONDS", "10")),
+            max_retries=int(os.getenv("MARKET_DATA_MAX_RETRIES", "2")),
+            retry_backoff_seconds=float(
+                os.getenv("MARKET_DATA_RETRY_BACKOFF_SECONDS", "0.5")
+            ),
             cache_ttl_seconds=int(os.getenv("MARKET_DATA_CACHE_SECONDS", str(default_cache_ttl))),
         )
 
