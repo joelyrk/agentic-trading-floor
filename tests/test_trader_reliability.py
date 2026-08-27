@@ -95,9 +95,7 @@ def test_structured_stage_repairs_turn_exhaustion(monkeypatch) -> None:
         if len(calls) == 1:
             handler_input = SimpleNamespace(
                 context=SimpleNamespace(usage=Usage(requests=1)),
-                run_data=SimpleNamespace(
-                    raw_responses=[SimpleNamespace(usage=usage(25))]
-                ),
+                run_data=SimpleNamespace(raw_responses=[SimpleNamespace(usage=usage(25))]),
             )
             await kwargs["error_handlers"]["max_turns"](handler_input)
             raise MaxTurnsExceeded("Max turns (3) exceeded")

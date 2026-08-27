@@ -40,27 +40,20 @@ def _normalize_error(exc: Exception) -> MarketProviderError:
     status = _status_code(exc)
     message = str(exc).lower()
     diagnostic = (
-        f"status={status if status is not None else 'unknown'}, "
-        f"exception={type(exc).__name__}"
+        f"status={status if status is not None else 'unknown'}, exception={type(exc).__name__}"
     )
     if status == 401:
         return AuthenticationError(f"Massive authentication failed ({diagnostic})")
     if status == 403:
-        return EntitlementError(
-            f"Massive end-of-day entitlement is unavailable ({diagnostic})"
-        )
+        return EntitlementError(f"Massive end-of-day entitlement is unavailable ({diagnostic})")
     if status is None and ("unauthorized" in message or "api key" in message):
         return AuthenticationError(f"Massive authentication failed ({diagnostic})")
     if status is None and ("forbidden" in message or "entitlement" in message):
-        return EntitlementError(
-            f"Massive end-of-day entitlement is unavailable ({diagnostic})"
-        )
+        return EntitlementError(f"Massive end-of-day entitlement is unavailable ({diagnostic})")
     if isinstance(exc, TimeoutError) or "timed out" in message or "timeout" in message:
         return ProviderTimeoutError(f"Massive request timed out ({diagnostic})")
     if status == 429 or (status is not None and 500 <= status <= 599):
-        return TransientProviderError(
-            f"Massive service is temporarily unavailable ({diagnostic})"
-        )
+        return TransientProviderError(f"Massive service is temporarily unavailable ({diagnostic})")
     return MarketProviderError(f"Massive request failed ({diagnostic})")
 
 

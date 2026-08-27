@@ -353,7 +353,8 @@ class Trader:
                     raise
                 self._log_stage(f"repairing incomplete {stage_name} structured output")
                 active_message = (
-                    message + "\nThe previous attempt did not produce valid final structured output. "
+                    message
+                    + "\nThe previous attempt did not produce valid final structured output. "
                     "Return a fresh response that exactly matches the required schema. "
                     "Do not add prose outside the structured response."
                 )

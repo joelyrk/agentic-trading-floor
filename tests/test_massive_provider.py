@@ -150,9 +150,7 @@ def test_massive_retries_timeouts_then_raises_with_safe_diagnostics() -> None:
     assert "super-secret-value" not in str(captured.value)
 
 
-@pytest.mark.parametrize(
-    "status,expected", [(401, AuthenticationError), (403, EntitlementError)]
-)
+@pytest.mark.parametrize("status,expected", [(401, AuthenticationError), (403, EntitlementError)])
 def test_massive_never_retries_authentication_or_entitlement_failures(
     status: int, expected: type[Exception]
 ) -> None:

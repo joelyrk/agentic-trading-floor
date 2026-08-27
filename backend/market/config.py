@@ -56,9 +56,7 @@ class MarketSettings(BaseModel):
             ),
             request_timeout_seconds=float(os.getenv("MARKET_DATA_TIMEOUT_SECONDS", "10")),
             max_retries=int(os.getenv("MARKET_DATA_MAX_RETRIES", "2")),
-            retry_backoff_seconds=float(
-                os.getenv("MARKET_DATA_RETRY_BACKOFF_SECONDS", "0.5")
-            ),
+            retry_backoff_seconds=float(os.getenv("MARKET_DATA_RETRY_BACKOFF_SECONDS", "0.5")),
             cache_ttl_seconds=int(os.getenv("MARKET_DATA_CACHE_SECONDS", str(default_cache_ttl))),
         )
 
