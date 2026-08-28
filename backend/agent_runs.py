@@ -161,8 +161,6 @@ class AgentRunRepository:
         run = self.get(run_id)
         if run is None:
             return False, "run does not exist"
-        if run.trigger != "manual":
-            return False, "scheduled runs cannot be retried from the dashboard"
         if run.status not in {"failed", "interrupted"}:
             return False, "only failed or interrupted runs can be retried"
         completed = run.completed_at or utc_now()
@@ -181,7 +179,7 @@ class AgentRunRepository:
         return True, None
 
     def retry(self, run_id: str, idempotency_key: str) -> AgentRunRecord:
-        """Create a new audited attempt for a safe, proposal-free failed manual run."""
+        """Create a new audited manual attempt for a safe, proposal-free failed run."""
         can_retry, reason = self.retryability(run_id)
         if not can_retry:
             raise AgentRunConflict(reason or "run cannot be retried")

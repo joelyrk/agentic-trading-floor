@@ -32,6 +32,8 @@ test("manual agent runs require confirmation and expose live status", () => {
   assert.match(html, /id="run-cycle-status"[^>]+aria-live="polite"/);
   assert.match(client, /window\.confirm/);
   assert.match(client, /createManualAgentRun\(crypto\.randomUUID\(\)\)/);
+  assert.match(client, /currentRunProgress\?\.can_retry \? "retry" : "run"/);
+  assert.match(client, /Retry all four agents using the same EOD snapshot/);
 });
 
 test("public showcase clearly separates view-only access from scheduled live AI", () => {

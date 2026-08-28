@@ -216,6 +216,12 @@ timestamps, data mode, market timestamp, outcome, and safe error summary. Demo
 mode disables the control, and public API mode still requires write
 authentication.
 
+Failed or interrupted manual and scheduled runs can be retried from the overview
+against their already-audited snapshot only when no cycle succeeded and no paper
+proposal was produced. Every retry is stored as a new manual run linked to the
+original through `retry_of`; successful or potentially decision-producing attempts
+remain non-retryable.
+
 `SHUTDOWN_GRACE_SECONDS` defaults to 30. SIGINT/SIGTERM stops new scheduler
 cycles, gives the active cycle that bounded grace period, then cancels it and
 persists an `interrupted` status. Startup also closes orphaned `running` cycle

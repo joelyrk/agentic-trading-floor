@@ -94,6 +94,28 @@ def test_failed_proposal_free_manual_run_can_be_retried_with_a_new_audit_id(tmp_
     assert repository.retry(run.run_id, "retry-1").run_id == retry.run_id
 
 
+def test_failed_proposal_free_scheduled_run_can_be_retried_as_manual(tmp_path) -> None:
+    repository = AgentRunRepository(str(tmp_path / "runs.db"))
+    run, _ = repository.request(
+        trigger="scheduled",
+        requested_by="scheduler",
+        idempotency_key="scheduled-1",
+        observation=observation(),
+    )
+    repository.mark_running(run.run_id)
+    repository.finish(run.run_id, "failed", "model output failed before proposals")
+
+    assert repository.retryability(run.run_id) == (True, None)
+
+    retry = repository.retry(run.run_id, "retry-scheduled-1")
+
+    assert retry.trigger == "manual"
+    assert retry.retry_of == run.run_id
+    assert retry.market_timestamp == run.market_timestamp
+    assert retry.requested_by == "scheduler"
+    assert retry.status == "queued"
+
+
 def test_retry_is_blocked_after_any_successful_cycle(tmp_path) -> None:
     path = str(tmp_path / "runs.db")
     repository = AgentRunRepository(path)

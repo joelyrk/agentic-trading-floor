@@ -293,7 +293,7 @@ async def cancel_manual_agent_run(run_id: UUID) -> dict:
 
 
 @app.post("/api/agent-runs/{run_id}/retry", status_code=202)
-async def retry_manual_agent_run(run_id: UUID, request: ManualAgentRunRequest) -> dict:
+async def retry_agent_run(run_id: UUID, request: ManualAgentRunRequest) -> dict:
     """Retry a proposal-free failed attempt against its already-audited EOD snapshot."""
     try:
         runtime = validate_startup("scheduler")
