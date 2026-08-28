@@ -20,6 +20,7 @@ from agents import (
 )
 from dotenv import load_dotenv
 from openai import AsyncOpenAI
+from openai.types.shared import Reasoning
 
 from .accounts_client import read_account_snapshot_resource, read_strategy_resource
 from .database import write_log
@@ -78,7 +79,12 @@ GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/openai/"
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 MODEL_MAX_RETRIES = int(os.getenv("MODEL_MAX_RETRIES", "4"))
 MODEL_OUTPUT_REPAIR_ATTEMPTS = 1
-RESEARCH_MAX_TURNS = 3
+RESEARCH_MAX_TURNS = 1
+RESEARCH_MAX_OUTPUT_TOKENS = 8_000
+
+
+class IncompleteStructuredOutputError(ModelBehaviorError):
+    """The model completed requests but emitted no valid structured final output."""
 
 
 def trader_trace_metadata(
@@ -142,11 +148,19 @@ def get_model(model_name: str):
 
 
 def get_researcher(model_name: str, decision_cutoff: datetime) -> Agent:
+    model = get_model(model_name)
+    settings = ModelSettings(
+        max_tokens=RESEARCH_MAX_OUTPUT_TOKENS,
+        preserve_raw_usage=True,
+    )
+    if isinstance(model, OpenAIResponsesModel):
+        settings.reasoning = Reasoning(effort="none")
+        settings.verbosity = "low"
     return Agent(
         name="Researcher",
         instructions=researcher_instructions(decision_cutoff),
-        model=get_model(model_name),
-        model_settings=ModelSettings(max_tokens=2_500, preserve_raw_usage=True),
+        model=model,
+        model_settings=settings,
         output_type=ResearchSynthesis,
     )
 
@@ -344,12 +358,25 @@ class Trader:
                         "invalid_final_output": self._budget_hooks.capture_run_error,
                     },
                 )
-            except (MaxTurnsExceeded, ModelBehaviorError):
+            except (MaxTurnsExceeded, ModelBehaviorError) as exc:
+                response_output_types = self._budget_hooks.response_output_types
                 if self._budget_hooks.usage is not None:
                     stage_usage.add(self._budget_hooks.usage)
                 self._last_usage = self._combined_usage(prior_usage, stage_usage)
                 self._budget_hooks = None
                 if repair_attempt >= MODEL_OUTPUT_REPAIR_ATTEMPTS:
+                    if isinstance(exc, MaxTurnsExceeded):
+                        usage_status = (
+                            "unavailable"
+                            if stage_usage.requests and not stage_usage.total_tokens
+                            else "available"
+                        )
+                        output_types = ",".join(response_output_types) or "none"
+                        raise IncompleteStructuredOutputError(
+                            f"{stage_name} incomplete_output after {stage_usage.requests} "
+                            f"model requests (output_types={output_types}, "
+                            f"usage_status={usage_status})"
+                        ) from exc
                     raise
                 self._log_stage(f"repairing incomplete {stage_name} structured output")
                 active_message = (

@@ -145,6 +145,7 @@ export interface AgentActivity {
   completed_at: string | null;
   requests: number;
   total_tokens: number;
+  usage_status: "available" | "unavailable";
   latency_ms: number | null;
   error_summary: string | null;
   current_activity: string;

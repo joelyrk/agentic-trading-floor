@@ -103,10 +103,29 @@ def test_cycle_usage_cost_and_decision_trace_metadata_round_trip(tmp_path) -> No
     assert metadata["cycle_id"] == context.cycle_id
     assert metadata["trace_id"] == "trace-test"
     assert metadata["total_tokens"] == 150
+    assert metadata["usage_status"] == "available"
     assert Decimal(metadata["estimated_cost_usd"]) == Decimal("0.0004")
     payload = repository.health_payload(market_status())
     assert payload["current_cycle_id"] is None
     assert payload["metrics"]["cycle_success_rate"] == 1
+
+
+def test_cycle_marks_missing_provider_usage_as_unavailable(tmp_path) -> None:
+    repository = TelemetryRepository(str(tmp_path / "cycles.db"))
+    context = CycleContext.create()
+    repository.start_cycle(context, "Alice", "test-model", "trader-v1", "simulated", CycleBudget())
+    repository.finish_cycle(
+        context.cycle_id,
+        status="failed",
+        usage=SimpleNamespace(requests=2, input_tokens=0, output_tokens=0, total_tokens=0),
+        latency_ms=25,
+        estimated_cost=Decimal("0"),
+        error="incomplete_output",
+    )
+
+    assert repository.health_payload(market_status())["latest_cycle"]["usage_status"] == (
+        "unavailable"
+    )
 
 
 def test_budget_hook_stops_before_an_over_budget_model_request() -> None:

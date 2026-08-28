@@ -47,7 +47,9 @@ def test_migrations_are_versioned_idempotent_and_upgrade_legacy_columns(tmp_path
     assert {"attempt_count", "failure_count", "active"} <= health_columns
     with sqlite3.connect(path) as conn:
         run_columns = {row[1] for row in conn.execute("PRAGMA table_info(agent_runs)")}
+        cycle_columns = {row[1] for row in conn.execute("PRAGMA table_info(cycle_metrics)")}
     assert "retry_of" in run_columns
+    assert "usage_status" in cycle_columns
 
 
 def test_concurrent_migration_attempts_converge_without_partial_schema(tmp_path) -> None:

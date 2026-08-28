@@ -221,6 +221,16 @@ MIGRATIONS = (
         ON notification_outbox(status, created_at);
     """,
     ),
+    Migration(
+        11,
+        "cycle_usage_availability",
+        """
+        ALTER TABLE cycle_metrics ADD COLUMN usage_status TEXT NOT NULL DEFAULT 'available'
+        CHECK (usage_status IN ('available', 'unavailable'));
+        UPDATE cycle_metrics SET usage_status='unavailable'
+        WHERE requests > 0 AND total_tokens = 0;
+    """,
+    ),
 )
 
 

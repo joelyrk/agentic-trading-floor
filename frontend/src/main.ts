@@ -48,6 +48,7 @@ function summarizeActivityError(error: string): string {
     return `Unsupported evidence claim${claimIds.length === 1 ? "" : "s"}: ${claimIds.join(", ")}`;
   }
   if (/invalid json/i.test(error)) return "Model returned invalid JSON";
+  if (/incomplete_output/i.test(error)) return "Model returned incomplete output";
   if (/market_data_unavailable|market data unavailable/i.test(error)) return "Market data was unavailable";
   if (/max turns/i.test(error)) return "Agent exceeded its turn limit";
   if (/budget/i.test(error)) return "Agent exceeded its run budget";

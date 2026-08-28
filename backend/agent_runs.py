@@ -50,6 +50,7 @@ class AgentActivity(BaseModel):
     completed_at: datetime | None = None
     requests: int = Field(default=0, ge=0)
     total_tokens: int = Field(default=0, ge=0)
+    usage_status: Literal["available", "unavailable"] = "available"
     latency_ms: float | None = Field(default=None, ge=0)
     error_summary: str | None = None
     current_activity: str
@@ -141,6 +142,7 @@ class AgentRunRepository:
                         completed_at=cycle["completed_at"],
                         requests=cycle["requests"],
                         total_tokens=cycle["total_tokens"],
+                        usage_status=cycle["usage_status"],
                         latency_ms=cycle["latency_ms"],
                         error_summary=cycle["error_summary"],
                         current_activity=activity,

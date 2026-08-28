@@ -2,6 +2,7 @@ import json
 import sqlite3
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
+from types import SimpleNamespace
 
 import pytest
 
@@ -210,6 +211,33 @@ def test_agent_run_progress_correlates_stage_logs_and_pending_agents(tmp_path) -
     assert len(progress.agents[0].logs) == 1
     assert progress.agents[1].status == "pending"
     assert "Waiting" in progress.agents[1].current_activity
+
+
+def test_agent_run_progress_exposes_unavailable_token_usage(tmp_path) -> None:
+    path = str(tmp_path / "runs.db")
+    runs = AgentRunRepository(path)
+    telemetry = TelemetryRepository(path)
+    run, _ = runs.request(
+        trigger="manual",
+        requested_by="local-console",
+        idempotency_key="usage-progress",
+        observation=observation(),
+    )
+    context = CycleContext.create(run_id=run.run_id)
+    telemetry.start_cycle(context, "warren", "model", "prompt", "end_of_day", CycleBudget())
+    telemetry.finish_cycle(
+        context.cycle_id,
+        status="failed",
+        usage=SimpleNamespace(requests=2, input_tokens=0, output_tokens=0, total_tokens=0),
+        latency_ms=1,
+        estimated_cost=Decimal("0"),
+        error="incomplete_output",
+    )
+
+    progress = runs.progress(run.run_id)
+
+    assert progress is not None
+    assert progress.agents[0].usage_status == "unavailable"
 
 
 def test_stale_active_agent_run_is_recovered(tmp_path) -> None:

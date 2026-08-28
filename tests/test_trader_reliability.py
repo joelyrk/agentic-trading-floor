@@ -125,6 +125,68 @@ def test_structured_stage_repairs_turn_exhaustion(monkeypatch) -> None:
     assert trader._last_usage.total_tokens == 60
 
 
+def test_structured_stage_bounds_repeated_empty_responses_with_diagnostic(monkeypatch) -> None:
+    calls = 0
+
+    async def run(agent, message, **kwargs):
+        nonlocal calls
+        calls += 1
+        handler_input = SimpleNamespace(
+            context=SimpleNamespace(usage=Usage(requests=1)),
+            run_data=SimpleNamespace(
+                raw_responses=[
+                    SimpleNamespace(
+                        usage=Usage(requests=1),
+                        output=[SimpleNamespace(type="reasoning")],
+                    )
+                ]
+            ),
+        )
+        await kwargs["error_handlers"]["max_turns"](handler_input)
+        raise MaxTurnsExceeded("Max turns (1) exceeded")
+
+    monkeypatch.setattr(traders.Runner, "run", run)
+    trader = traders.Trader("Cathie")
+    monkeypatch.setattr(trader, "_log_stage", lambda message: None)
+
+    with pytest.raises(
+        traders.IncompleteStructuredOutputError,
+        match=(
+            r"research incomplete_output after 2 model requests "
+            r"\(output_types=reasoning, usage_status=unavailable\)"
+        ),
+    ):
+        asyncio.run(
+            trader._run_structured_stage(
+                object(),
+                "original request",
+                stage_name="research",
+                stage_budget=CycleBudget(max_tokens=100),
+                max_turns=1,
+            )
+        )
+
+    assert calls == 2
+    assert trader._last_usage.requests == 2
+    assert trader._last_usage.total_tokens == 0
+
+
+def test_researcher_uses_bounded_low_verbosity_responses_settings(monkeypatch) -> None:
+    model = traders.OpenAIResponsesModel(
+        model="gpt-5.4-mini",
+        openai_client=traders.AsyncOpenAI(api_key="test-key"),
+    )
+    monkeypatch.setattr(traders, "get_model", lambda model_name: model)
+
+    agent = traders.get_researcher("gpt-5.4-mini", NOW)
+
+    assert agent.model is model
+    assert agent.model_settings.max_tokens == 8_000
+    assert agent.model_settings.reasoning.effort == "none"
+    assert agent.model_settings.verbosity == "low"
+    assert traders.RESEARCH_MAX_TURNS == 1
+
+
 def test_max_turn_error_handler_prefers_completed_response_token_usage() -> None:
     hooks = traders.BudgetHooks(CycleBudget(max_tokens=100))
     handler_input = SimpleNamespace(

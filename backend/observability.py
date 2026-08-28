@@ -102,6 +102,7 @@ class BudgetHooks(RunHooks):
     def __init__(self, budget: CycleBudget):
         self.budget = budget
         self.usage = None
+        self.response_output_types: tuple[str, ...] = ()
 
     async def on_llm_start(self, context, agent, system_prompt, input_items) -> None:
         usage = context.usage
@@ -122,8 +123,14 @@ class BudgetHooks(RunHooks):
     async def capture_run_error(self, handler_input) -> None:
         """Capture completed model usage before a terminal runner error is re-raised."""
         response_usage = Usage()
+        output_types: set[str] = set()
         for response in handler_input.run_data.raw_responses:
             response_usage.add(response.usage)
+            output_types.update(
+                str(getattr(item, "type", type(item).__name__))
+                for item in getattr(response, "output", ())
+            )
+        self.response_output_types = tuple(sorted(output_types))
         context_usage = handler_input.context.usage
         self.usage = (
             response_usage
@@ -276,11 +283,12 @@ class TelemetryRepository:
         input_tokens = int(getattr(usage, "input_tokens", 0)) if usage else 0
         output_tokens = int(getattr(usage, "output_tokens", 0)) if usage else 0
         total_tokens = int(getattr(usage, "total_tokens", 0)) if usage else 0
+        usage_status = "unavailable" if requests > 0 and total_tokens == 0 else "available"
         with sqlite3.connect(self.path) as conn:
             conn.execute(
                 """UPDATE cycle_metrics SET completed_at=?, status=?, requests=?, input_tokens=?,
-                   output_tokens=?, total_tokens=?, estimated_cost_usd=?, latency_ms=?, error_summary=?,
-                   decision_ids=? WHERE cycle_id=?""",
+                   output_tokens=?, total_tokens=?, usage_status=?, estimated_cost_usd=?,
+                   latency_ms=?, error_summary=?, decision_ids=? WHERE cycle_id=?""",
                 (
                     utc_now().isoformat(),
                     status,
@@ -288,6 +296,7 @@ class TelemetryRepository:
                     input_tokens,
                     output_tokens,
                     total_tokens,
+                    usage_status,
                     str(estimated_cost),
                     latency_ms,
                     safe_error(error) if error else None,
@@ -312,7 +321,7 @@ class TelemetryRepository:
                 """SELECT dt.decision_id, dt.cycle_id, dt.trace_id, cm.run_id, cm.scenario_id,
                           cm.model, cm.prompt_version, cm.market_mode, cm.requests, cm.input_tokens,
                           cm.output_tokens, cm.total_tokens, cm.estimated_cost_usd, cm.latency_ms,
-                          cm.status
+                          cm.usage_status, cm.status
                    FROM decision_telemetry dt JOIN cycle_metrics cm ON cm.cycle_id=dt.cycle_id
                    WHERE dt.decision_id=?""",
                 (decision_id,),

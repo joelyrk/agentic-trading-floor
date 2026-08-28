@@ -221,7 +221,7 @@ cycles, gives the active cycle that bounded grace period, then cancels it and
 persists an `interrupted` status. Startup also closes orphaned `running` cycle
 records left by a prior process failure.
 
-Token and request counts come from the model provider's usage response. Cost is estimated from the configured per-million-token rates because this project can route to several providers and models; rates default to zero instead of embedding prices that may become stale. The token/spend hook stops before another model request once a budget is exhausted, the final response is checked again before any proposal reaches deterministic execution, and the wall-time budget encloses MCP startup and the full agent run.
+Token and request counts come from the model provider's usage response. Cost is estimated from the configured per-million-token rates because this project can route to several providers and models; rates default to zero instead of embedding prices that may become stale. Completed requests whose provider response omits token usage are recorded with `usage_status=unavailable`, rather than being presented as genuine zero-token calls. The token/spend hook stops before another model request once a budget is exhausted, the final response is checked again before any proposal reaches deterministic execution, and the wall-time budget encloses MCP startup and the full agent run. Structured research uses one bounded model turn per attempt, one repair attempt, an 8,000-token output ceiling, and low-verbosity/no-reasoning settings for the OpenAI Responses path.
 
 ## Run
 
