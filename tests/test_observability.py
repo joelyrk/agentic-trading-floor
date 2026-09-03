@@ -4,6 +4,7 @@ from decimal import Decimal
 from types import SimpleNamespace
 
 import pytest
+from agents import Usage
 
 from backend.mcp_servers import (
     ObservedMCPServerStdio,
@@ -46,6 +47,31 @@ def test_diagnostics_are_redacted_and_bounded() -> None:
     assert "abcdefghijklmnopqrstuvwxyz" not in diagnostic
     assert "[REDACTED]" in diagnostic
     assert len(diagnostic) == 500
+
+
+def test_model_response_diagnostics_redact_provider_identifiers() -> None:
+    hooks = BudgetHooks(CycleBudget(max_tokens=100))
+    handler_input = SimpleNamespace(
+        context=SimpleNamespace(usage=Usage(requests=1)),
+        run_data=SimpleNamespace(
+            raw_responses=[
+                SimpleNamespace(
+                    usage=Usage(requests=1),
+                    output=[],
+                    response_id="token=do-not-store",
+                    request_id="req-safe",
+                    raw_usage=None,
+                )
+            ]
+        ),
+    )
+
+    asyncio.run(hooks.capture_run_error(handler_input))
+
+    diagnostic = hooks.response_diagnostics[0].compact(1)
+    assert "do-not-store" not in diagnostic
+    assert "REDACTED" in diagnostic
+    assert "request=req-safe" in diagnostic
 
 
 def test_service_transitions_and_circuit_breaker_are_persisted(tmp_path) -> None:
@@ -108,6 +134,26 @@ def test_cycle_usage_cost_and_decision_trace_metadata_round_trip(tmp_path) -> No
     payload = repository.health_payload(market_status())
     assert payload["current_cycle_id"] is None
     assert payload["metrics"]["cycle_success_rate"] == 1
+    assert payload["metrics"]["estimated_cost_usd"] == pytest.approx(0.0004)
+
+
+def test_research_cost_uses_separate_rates_and_falls_back_conservatively(monkeypatch) -> None:
+    monkeypatch.setenv("MODEL_INPUT_COST_PER_MILLION", "2")
+    monkeypatch.setenv("MODEL_OUTPUT_COST_PER_MILLION", "4")
+    monkeypatch.delenv("RESEARCH_MODEL_INPUT_COST_PER_MILLION", raising=False)
+    monkeypatch.delenv("RESEARCH_MODEL_OUTPUT_COST_PER_MILLION", raising=False)
+
+    fallback = CycleBudget.from_env()
+
+    assert fallback.estimate_research_cost(100, 50) == Decimal("0.0004")
+
+    monkeypatch.setenv("RESEARCH_MODEL_INPUT_COST_PER_MILLION", "0.40")
+    monkeypatch.setenv("RESEARCH_MODEL_OUTPUT_COST_PER_MILLION", "1.60")
+    configured = CycleBudget.from_env()
+
+    assert configured.estimate_research_cost(1_082, 449) == Decimal("0.0011512")
+    research_stage = configured.for_research_stage()
+    assert research_stage.estimate_cost(1_082, 449) == Decimal("0.0011512")
 
 
 def test_cycle_marks_missing_provider_usage_as_unavailable(tmp_path) -> None:

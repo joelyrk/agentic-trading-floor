@@ -3,10 +3,31 @@
 from __future__ import annotations
 
 import os
+import re
 from pathlib import Path
 from typing import Literal
 
 from pydantic import BaseModel, Field, SecretStr, model_validator
+
+DEFAULT_MODEL_NAME = "gpt-5.4-mini"
+DEFAULT_RESEARCH_MODEL_NAME = "gpt-4.1-mini-2025-04-14"
+_MODEL_NAME_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:/-]{0,99}$")
+
+
+def configured_model_name(
+    value: str | None,
+    *,
+    default: str = DEFAULT_MODEL_NAME,
+    setting_name: str = "MODEL_NAME",
+) -> str:
+    """Validate a configured API model identifier without rewriting it."""
+    model_name = (default if value is None else value).strip()
+    if not _MODEL_NAME_PATTERN.fullmatch(model_name):
+        raise ValueError(
+            f"{setting_name} must be a non-empty model identifier containing only letters, "
+            "numbers, '.', '_', ':', '/', or '-'"
+        )
+    return model_name
 
 
 class APIAccessSettings(BaseModel):
@@ -117,10 +138,16 @@ def validate_startup(component: Literal["api", "scheduler"]) -> RuntimeSettings:
     if component == "scheduler":
         if not application.scheduled_ai_enabled:
             raise ValueError("APP_MODE=demo is read-only and cannot run the scheduler")
-        model = os.getenv("MODEL_NAME", "gpt-5.4-mini")
+        model = configured_model_name(os.getenv("MODEL_NAME"))
+        research_model = configured_model_name(
+            os.getenv("RESEARCH_MODEL_NAME"),
+            default=DEFAULT_RESEARCH_MODEL_NAME,
+            setting_name="RESEARCH_MODEL_NAME",
+        )
         use_many = os.getenv("USE_MANY_MODELS", "false").strip().lower() == "true"
         missing: list[str] = []
-        if not os.getenv("OPENAI_API_KEY") and not use_many and "/" not in model:
+        requires_openai = "/" not in research_model or (not use_many and "/" not in model)
+        if not os.getenv("OPENAI_API_KEY") and requires_openai:
             missing.append("OPENAI_API_KEY")
         if not os.getenv("TAVILY_API_KEY"):
             missing.append("TAVILY_API_KEY")

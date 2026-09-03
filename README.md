@@ -116,10 +116,11 @@ All four traders use one configurable model by default:
 
 ```dotenv
 MODEL_NAME=gpt-5.4-mini
+RESEARCH_MODEL_NAME=gpt-4.1-mini-2025-04-14
 USE_MANY_MODELS=false
 ```
 
-`MODEL_NAME` defaults to `gpt-5.4-mini` when omitted and is shown verbatim in the API, dashboard, traces, and cycle telemetry. `USE_MANY_MODELS=true` retains the fixed four-provider comparison roster and ignores `MODEL_NAME`; the corresponding provider keys are then required.
+`MODEL_NAME` defaults to `gpt-5.4-mini` for trading decisions. Bounded, tool-free research synthesis uses the pinned non-reasoning `RESEARCH_MODEL_NAME`, which defaults to `gpt-4.1-mini-2025-04-14`; cycle telemetry and traces identify both models. `USE_MANY_MODELS=true` retains the fixed four-provider comparison roster for trading and ignores `MODEL_NAME`; the corresponding provider keys are then required. Research continues to require the configured research model's credentials.
 
 Each research and trader stage gets one budget-accounted repair attempt when
 the provider returns malformed structured output. Proposal generation receives
@@ -194,7 +195,11 @@ CYCLE_MAX_SPEND_USD=5
 MODEL_MAX_RETRIES=4
 MODEL_INPUT_COST_PER_MILLION=0
 MODEL_OUTPUT_COST_PER_MILLION=0
+RESEARCH_MODEL_INPUT_COST_PER_MILLION=0
+RESEARCH_MODEL_OUTPUT_COST_PER_MILLION=0
 ```
+
+Research and trading token usage are priced separately before their costs are combined in cycle telemetry. If the research-specific rates are omitted, they inherit the trader rates to remain conservatively estimated rather than silently undercounted. Existing cycle rows are not recalculated because historical telemetry does not contain a per-stage token split.
 
 The standard EOD profile runs once on UTC weekdays at `22:30` UTC (06:30 the
 following day in Singapore), after the U.S. regular close in both daylight and
@@ -227,7 +232,7 @@ cycles, gives the active cycle that bounded grace period, then cancels it and
 persists an `interrupted` status. Startup also closes orphaned `running` cycle
 records left by a prior process failure.
 
-Token and request counts come from the model provider's usage response. Cost is estimated from the configured per-million-token rates because this project can route to several providers and models; rates default to zero instead of embedding prices that may become stale. Completed requests whose provider response omits token usage are recorded with `usage_status=unavailable`, rather than being presented as genuine zero-token calls. The token/spend hook stops before another model request once a budget is exhausted, the final response is checked again before any proposal reaches deterministic execution, and the wall-time budget encloses MCP startup and the full agent run. Structured research uses one bounded model turn per attempt, one repair attempt, an 8,000-token output ceiling, and low-verbosity/no-reasoning settings for the OpenAI Responses path.
+Token and request counts come from the model provider's usage response. Cost is estimated from the configured per-million-token rates because this project can route to several providers and models; rates default to zero instead of embedding prices that may become stale. Configure the highest selected model rates to keep mixed research/trader estimates conservative. Completed requests whose provider response omits token usage are recorded with `usage_status=unavailable`, rather than being presented as genuine zero-token calls. The token/spend hook stops before another model request once a budget is exhausted, the final response is checked again before any proposal reaches deterministic execution, and the wall-time budget encloses MCP startup and the full agent run. Structured research uses Chat Completions with `max_completion_tokens=2500` and one model turn per attempt; tool-using traders retain Responses. The provider-facing research schema uses only simple JSON types, then deterministic Pydantic validation applies all identifier, length, count, and confidence bounds before evidence can reach a trader. Compatible third-party Chat providers retain the legacy `max_tokens` setting. Bounded failure diagnostics persist redacted provider response/request IDs, output item types, per-response token totals, and raw-usage availability without storing prompts or model output. Provider-side output exhaustion is reported as `output_limit_exceeded` and as a completed request with unavailable usage, rather than as a zero-request failure.
 
 ## Run
 

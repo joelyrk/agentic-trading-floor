@@ -1,6 +1,5 @@
 import asyncio
 import os
-import re
 import signal
 from datetime import datetime, timedelta, timezone
 from typing import List
@@ -11,7 +10,14 @@ from dotenv import load_dotenv
 import backend.startup as startup
 
 from .agent_runs import AgentRunConflict, AgentRunRepository, UnchangedMarketData
-from .config import validate_startup
+from .config import (
+    DEFAULT_MODEL_NAME as CONFIG_DEFAULT_MODEL_NAME,
+)
+from .config import (
+    DEFAULT_RESEARCH_MODEL_NAME,
+    configured_model_name,
+    validate_startup,
+)
 from .decisions.repository import DecisionRepository
 from .market import MarketDataError, get_market_observation, is_market_open
 from .notifications import enqueue_run_notifications, publish_run_notifications
@@ -29,23 +35,15 @@ RUN_EVEN_WHEN_MARKET_IS_CLOSED = (
     os.getenv("RUN_EVEN_WHEN_MARKET_IS_CLOSED", "false").strip().lower() == "true"
 )
 USE_MANY_MODELS = os.getenv("USE_MANY_MODELS", "false").strip().lower() == "true"
-DEFAULT_MODEL_NAME = "gpt-5.4-mini"
-_MODEL_NAME_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:/-]{0,99}$")
 _trace_processor_registered = False
-
-
-def configured_model_name(value: str | None) -> str:
-    """Validate a configured API model identifier without rewriting it."""
-    model_name = (DEFAULT_MODEL_NAME if value is None else value).strip()
-    if not _MODEL_NAME_PATTERN.fullmatch(model_name):
-        raise ValueError(
-            "MODEL_NAME must be a non-empty model identifier containing only letters, "
-            "numbers, '.', '_', ':', '/', or '-'"
-        )
-    return model_name
-
+DEFAULT_MODEL_NAME = CONFIG_DEFAULT_MODEL_NAME
 
 MODEL_NAME = configured_model_name(os.getenv("MODEL_NAME"))
+RESEARCH_MODEL_NAME = configured_model_name(
+    os.getenv("RESEARCH_MODEL_NAME"),
+    default=DEFAULT_RESEARCH_MODEL_NAME,
+    setting_name="RESEARCH_MODEL_NAME",
+)
 
 names = ["Warren", "George", "Ray", "Cathie"]
 lastnames = ["Patience", "Bold", "Systematic", "Crypto"]
@@ -67,7 +65,14 @@ def create_traders() -> List[Trader]:
     ensure_default_strategies()
     traders = []
     for name, lastname, model_name in zip(names, lastnames, model_names):
-        traders.append(Trader(name, lastname, model_name))
+        traders.append(
+            Trader(
+                name,
+                lastname,
+                model_name,
+                research_model_name=RESEARCH_MODEL_NAME,
+            )
+        )
     return traders
 
 

@@ -7,7 +7,9 @@ from .models import (
     EvidenceStance,
     ResearchBrief,
     ResearchClaimDraft,
+    ResearchClaimOutput,
     ResearchSynthesis,
+    ResearchSynthesisOutput,
     SourceRecord,
 )
 from .policy import ResearchPolicy, ResearchPolicyError
@@ -17,10 +19,12 @@ __all__ = [
     "EvidenceStance",
     "RESEARCHER_PROMPT_VERSION",
     "ResearchClaimDraft",
+    "ResearchClaimOutput",
     "ResearchBrief",
     "ResearchPolicy",
     "ResearchPolicyError",
     "ResearchSynthesis",
+    "ResearchSynthesisOutput",
     "SourceRecord",
     "TRADER_PROMPT_VERSION",
 ]

@@ -110,6 +110,26 @@ class ResearchClaimDraft(StrictModel):
     caveats: list[str] = Field(default_factory=list, max_length=5)
 
 
+class ResearchClaimOutput(StrictModel):
+    """Provider-facing claim shape; deterministic validation applies domain bounds later."""
+
+    claim_id: str
+    claim: str
+    source_ids: list[str]
+    stance: EvidenceStance
+    confidence: float
+    material: bool
+    caveats: list[str]
+
+
+class ResearchSynthesisOutput(StrictModel):
+    """Simple provider-facing schema that avoids constrained-decoder validation keywords."""
+
+    summary: str
+    claims: list[ResearchClaimOutput]
+    caveats: list[str]
+
+
 class ResearchSynthesis(StrictModel):
     """Bounded researcher output over an application-supplied source catalog."""
 

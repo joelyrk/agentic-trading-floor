@@ -22,7 +22,12 @@ from backend.decisions import (
 from backend.decisions.models import ProposedTrade
 from backend.decisions.repository import DecisionRepository
 from backend.market.models import DataMode, MarketObservation, ObservationSource
-from backend.research import ResearchPolicy
+from backend.research import (
+    ResearchClaimDraft,
+    ResearchPolicy,
+    ResearchSynthesis,
+    ResearchSynthesisOutput,
+)
 
 NOW = datetime(2026, 8, 13, 12, tzinfo=timezone.utc)
 
@@ -118,6 +123,63 @@ def test_research_brief_bounds_sources_and_excerpts() -> None:
     ]
     with pytest.raises(ValidationError):
         brief(sources=sources)
+
+
+def test_research_synthesis_retains_august_caveat_schema() -> None:
+    synthesis = ResearchSynthesis(
+        summary="summary",
+        caveats=["x" * 241],
+        claims=[
+            ResearchClaimDraft(
+                claim_id="c1",
+                claim="claim",
+                source_ids=["s1"],
+                stance="supports",
+                confidence=Decimal("0.8"),
+                caveats=["y" * 241],
+            )
+        ],
+    )
+
+    assert len(synthesis.caveats[0]) == 241
+    assert len(synthesis.claims[0].caveats[0]) == 241
+    schema = ResearchSynthesis.model_json_schema()
+    assert schema["properties"]["caveats"]["items"] == {"type": "string"}
+    claim_schema = schema["$defs"]["ResearchClaimDraft"]
+    assert claim_schema["properties"]["caveats"]["items"] == {"type": "string"}
+
+
+def test_provider_research_schema_defers_constraints_to_domain_validation() -> None:
+    schema_text = json.dumps(ResearchSynthesisOutput.model_json_schema())
+
+    for unsupported_constraint in (
+        "default",
+        "maxItems",
+        "maxLength",
+        "maximum",
+        "minItems",
+        "minLength",
+        "minimum",
+        "pattern",
+    ):
+        assert unsupported_constraint not in schema_text
+
+    output = ResearchSynthesisOutput(
+        summary="summary",
+        claims=[
+            {
+                "claim_id": "c1",
+                "claim": "claim",
+                "source_ids": ["s1"],
+                "stance": "supports",
+                "confidence": 0.8,
+                "material": True,
+                "caveats": [],
+            }
+        ],
+        caveats=[],
+    )
+    assert ResearchSynthesis.model_validate(output.model_dump()).claims[0].claim_id == "c1"
 
 
 def test_future_dated_source_and_unsupported_proposal_are_rejected() -> None:

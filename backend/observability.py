@@ -73,16 +73,26 @@ class CycleBudget(BaseModel):
     max_spend_usd: Decimal = Field(default=Decimal("5"), gt=0)
     input_cost_per_million: Decimal = Field(default=Decimal("0"), ge=0)
     output_cost_per_million: Decimal = Field(default=Decimal("0"), ge=0)
+    research_input_cost_per_million: Decimal = Field(default=Decimal("0"), ge=0)
+    research_output_cost_per_million: Decimal = Field(default=Decimal("0"), ge=0)
 
     @classmethod
     def from_env(cls) -> "CycleBudget":
+        input_rate = os.getenv("MODEL_INPUT_COST_PER_MILLION", "0")
+        output_rate = os.getenv("MODEL_OUTPUT_COST_PER_MILLION", "0")
         return cls(
             max_turns=os.getenv("CYCLE_MAX_TURNS", "8"),
             max_tokens=os.getenv("CYCLE_MAX_TOKENS", "40000"),
             max_wall_seconds=os.getenv("CYCLE_MAX_WALL_SECONDS", "180"),
             max_spend_usd=os.getenv("CYCLE_MAX_SPEND_USD", "5"),
-            input_cost_per_million=os.getenv("MODEL_INPUT_COST_PER_MILLION", "0"),
-            output_cost_per_million=os.getenv("MODEL_OUTPUT_COST_PER_MILLION", "0"),
+            input_cost_per_million=input_rate,
+            output_cost_per_million=output_rate,
+            research_input_cost_per_million=os.getenv(
+                "RESEARCH_MODEL_INPUT_COST_PER_MILLION", input_rate
+            ),
+            research_output_cost_per_million=os.getenv(
+                "RESEARCH_MODEL_OUTPUT_COST_PER_MILLION", output_rate
+            ),
         )
 
     def estimate_cost(self, input_tokens: int, output_tokens: int) -> Decimal:
@@ -91,9 +101,51 @@ class CycleBudget(BaseModel):
             + Decimal(output_tokens) * self.output_cost_per_million
         ) / Decimal(1_000_000)
 
+    def estimate_research_cost(self, input_tokens: int, output_tokens: int) -> Decimal:
+        return (
+            Decimal(input_tokens) * self.research_input_cost_per_million
+            + Decimal(output_tokens) * self.research_output_cost_per_million
+        ) / Decimal(1_000_000)
+
+    def for_research_stage(self) -> "CycleBudget":
+        """Use research-model rates while preserving the cycle's hard limits."""
+        return self.model_copy(
+            update={
+                "input_cost_per_million": self.research_input_cost_per_million,
+                "output_cost_per_million": self.research_output_cost_per_million,
+            }
+        )
+
 
 class BudgetExceeded(RuntimeError):
     pass
+
+
+def _safe_provider_identifier(value: object | None) -> str | None:
+    if value is None:
+        return None
+    redacted = safe_error(value, limit=80)
+    return re.sub(r"[^A-Za-z0-9_.:-]", "_", redacted)
+
+
+@dataclass(frozen=True)
+class ModelResponseDiagnostic:
+    """Credential-safe identifiers and shape metadata for one completed model request."""
+
+    response_id: str | None
+    request_id: str | None
+    output_types: tuple[str, ...]
+    total_tokens: int
+    raw_usage_available: bool
+
+    def compact(self, index: int) -> str:
+        output_types = "+".join(self.output_types) or "none"
+        return (
+            f"{index}:response={self.response_id or 'missing'},"
+            f"request={self.request_id or 'missing'},types={output_types},"
+            f"tokens={self.total_tokens},"
+            f"raw_usage={'available' if self.raw_usage_available else 'missing'}"
+        )
 
 
 class BudgetHooks(RunHooks):
@@ -103,6 +155,7 @@ class BudgetHooks(RunHooks):
         self.budget = budget
         self.usage = None
         self.response_output_types: tuple[str, ...] = ()
+        self.response_diagnostics: tuple[ModelResponseDiagnostic, ...] = ()
 
     async def on_llm_start(self, context, agent, system_prompt, input_items) -> None:
         usage = context.usage
@@ -124,13 +177,37 @@ class BudgetHooks(RunHooks):
         """Capture completed model usage before a terminal runner error is re-raised."""
         response_usage = Usage()
         output_types: set[str] = set()
+        diagnostics: list[ModelResponseDiagnostic] = []
         for response in handler_input.run_data.raw_responses:
-            response_usage.add(response.usage)
-            output_types.update(
+            usage = getattr(response, "usage", None) or Usage()
+            response_usage.add(usage)
+            response_types = {
                 str(getattr(item, "type", type(item).__name__))
                 for item in getattr(response, "output", ())
+            }
+            output_types.update(response_types)
+            response_id = getattr(response, "response_id", None)
+            if response_id is None:
+                response_id = next(
+                    (
+                        provider_data.get("response_id")
+                        for item in getattr(response, "output", ())
+                        if isinstance(provider_data := getattr(item, "provider_data", None), dict)
+                        and provider_data.get("response_id")
+                    ),
+                    None,
+                )
+            diagnostics.append(
+                ModelResponseDiagnostic(
+                    response_id=_safe_provider_identifier(response_id),
+                    request_id=_safe_provider_identifier(getattr(response, "request_id", None)),
+                    output_types=tuple(sorted(response_types)),
+                    total_tokens=int(getattr(usage, "total_tokens", 0)),
+                    raw_usage_available=getattr(response, "raw_usage", None) is not None,
+                )
             )
         self.response_output_types = tuple(sorted(output_types))
+        self.response_diagnostics = tuple(diagnostics)
         context_usage = handler_input.context.usage
         self.usage = (
             response_usage

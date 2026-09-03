@@ -3,6 +3,7 @@ import json
 import os
 from contextlib import AsyncExitStack
 from datetime import datetime, timezone
+from decimal import Decimal
 from functools import lru_cache
 from time import monotonic
 
@@ -19,10 +20,10 @@ from agents import (
     trace,
 )
 from dotenv import load_dotenv
-from openai import AsyncOpenAI
-from openai.types.shared import Reasoning
+from openai import AsyncOpenAI, BadRequestError
 
 from .accounts_client import read_account_snapshot_resource, read_strategy_resource
+from .config import DEFAULT_RESEARCH_MODEL_NAME
 from .database import write_log
 from .decisions import (
     DecisionPipeline,
@@ -47,6 +48,7 @@ from .observability import (
     BudgetHooks,
     CycleBudget,
     CycleContext,
+    ModelResponseDiagnostic,
     TelemetryRepository,
     safe_error,
 )
@@ -56,6 +58,7 @@ from .research import (
     EvidenceClaim,
     ResearchPolicy,
     ResearchSynthesis,
+    ResearchSynthesisOutput,
 )
 from .research_search_server import BoundedSearchBundle
 from .templates import (
@@ -80,11 +83,15 @@ OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 MODEL_MAX_RETRIES = int(os.getenv("MODEL_MAX_RETRIES", "4"))
 MODEL_OUTPUT_REPAIR_ATTEMPTS = 1
 RESEARCH_MAX_TURNS = 1
-RESEARCH_MAX_OUTPUT_TOKENS = 8_000
+RESEARCH_MAX_OUTPUT_TOKENS = 2_500
 
 
 class IncompleteStructuredOutputError(ModelBehaviorError):
     """The model completed requests but emitted no valid structured final output."""
+
+
+class ProviderOutputLimitError(ModelBehaviorError):
+    """The provider exhausted its output allowance before returning structured output."""
 
 
 def trader_trace_metadata(
@@ -147,21 +154,39 @@ def get_model(model_name: str):
         return OpenAIResponsesModel(model=model_name, openai_client=_openai_client())
 
 
-def get_researcher(model_name: str, decision_cutoff: datetime) -> Agent:
-    model = get_model(model_name)
-    settings = ModelSettings(
-        max_tokens=RESEARCH_MAX_OUTPUT_TOKENS,
-        preserve_raw_usage=True,
+def get_research_model(model_name: str):
+    """Use Chat Completions for bounded, tool-free research structured output."""
+    if "/" in model_name or any(
+        provider in model_name.lower() for provider in ("deepseek", "grok", "gemini")
+    ):
+        return get_model(model_name)
+    return OpenAIChatCompletionsModel(model=model_name, openai_client=_openai_client())
+
+
+def _uses_official_openai(model_name: str) -> bool:
+    return "/" not in model_name and not any(
+        provider in model_name.lower() for provider in ("deepseek", "grok", "gemini")
     )
-    if isinstance(model, OpenAIResponsesModel):
-        settings.reasoning = Reasoning(effort="none")
-        settings.verbosity = "low"
+
+
+def get_researcher(model_name: str, decision_cutoff: datetime) -> Agent:
+    model = get_research_model(model_name)
+    if _uses_official_openai(model_name):
+        settings = ModelSettings(
+            extra_args={"max_completion_tokens": RESEARCH_MAX_OUTPUT_TOKENS},
+            preserve_raw_usage=True,
+        )
+    else:
+        settings = ModelSettings(
+            max_tokens=RESEARCH_MAX_OUTPUT_TOKENS,
+            preserve_raw_usage=True,
+        )
     return Agent(
         name="Researcher",
         instructions=researcher_instructions(decision_cutoff),
         model=model,
         model_settings=settings,
-        output_type=ResearchSynthesis,
+        output_type=ResearchSynthesisOutput,
     )
 
 
@@ -284,14 +309,24 @@ def only_skippable_proposal_errors(error: str | None) -> bool:
 
 
 class Trader:
-    def __init__(self, name: str, lastname="Trader", model_name="gpt-5.4-mini"):
+    def __init__(
+        self,
+        name: str,
+        lastname="Trader",
+        model_name="gpt-5.4-mini",
+        *,
+        research_model_name=DEFAULT_RESEARCH_MODEL_NAME,
+    ):
         self.name = name
         self.lastname = lastname
         self.agent = None
         self.model_name = model_name
+        self.research_model_name = research_model_name
         self.do_trade = True
         self._budget_hooks = None
         self._last_usage = None
+        self._research_usage = None
+        self._active_stage: str | None = None
         self._run_id: str | None = None
         self._processing_warning: str | None = None
 
@@ -310,6 +345,24 @@ class Trader:
         combined.add(self._last_usage)
         combined.add(current)
         return combined
+
+    def _cycle_cost(self, budget: CycleBudget, usage: Usage | None) -> Decimal:
+        """Price research and trader tokens at their respective configured rates."""
+        if usage is None:
+            return Decimal("0")
+        if self._research_usage is None:
+            estimator = (
+                budget.estimate_research_cost
+                if self._active_stage == "research"
+                else budget.estimate_cost
+            )
+            return estimator(usage.input_tokens, usage.output_tokens)
+        research = self._research_usage
+        trader_input = max(usage.input_tokens - research.input_tokens, 0)
+        trader_output = max(usage.output_tokens - research.output_tokens, 0)
+        return budget.estimate_research_cost(
+            research.input_tokens, research.output_tokens
+        ) + budget.estimate_cost(trader_input, trader_output)
 
     @staticmethod
     def _combined_usage(prior: Usage | None, current: Usage | None) -> Usage:
@@ -331,15 +384,22 @@ class Trader:
         prior_usage: Usage | None = None,
     ) -> tuple[object, Usage]:
         """Retry incomplete structured output once while preserving usage and budgets."""
+        self._active_stage = stage_name
         stage_usage = Usage()
+        stage_diagnostics: list[ModelResponseDiagnostic] = []
         active_message = message
         for repair_attempt in range(MODEL_OUTPUT_REPAIR_ATTEMPTS + 1):
-            spent = stage_budget.estimate_cost(stage_usage.input_tokens, stage_usage.output_tokens)
+            priced_budget = (
+                stage_budget.for_research_stage() if stage_name == "research" else stage_budget
+            )
+            spent = priced_budget.estimate_cost(
+                stage_usage.input_tokens, stage_usage.output_tokens
+            )
             remaining_tokens = stage_budget.max_tokens - stage_usage.total_tokens
             remaining_spend = stage_budget.max_spend_usd - spent
             if remaining_tokens <= 0 or remaining_spend <= 0:
                 raise BudgetExceeded(f"{stage_name} repair exhausted the cycle budget")
-            attempt_budget = stage_budget.model_copy(
+            attempt_budget = priced_budget.model_copy(
                 update={
                     "max_tokens": remaining_tokens,
                     "max_spend_usd": remaining_spend,
@@ -358,8 +418,43 @@ class Trader:
                         "invalid_final_output": self._budget_hooks.capture_run_error,
                     },
                 )
+            except BadRequestError as exc:
+                # A provider can spend its entire generation allowance and then
+                # return only an HTTP error, leaving the SDK without token usage.
+                # Count the completed request and expose that usage is unavailable.
+                stage_usage.add(Usage(requests=1))
+                self._last_usage = self._combined_usage(prior_usage, stage_usage)
+                self._budget_hooks = None
+                if "output limit was reached" in safe_error(exc).lower():
+                    settings = getattr(agent, "model_settings", None)
+                    extra_args = getattr(settings, "extra_args", None) or {}
+                    limit_name = (
+                        "max_completion_tokens"
+                        if "max_completion_tokens" in extra_args
+                        else "max_tokens"
+                    )
+                    limit = extra_args.get(
+                        "max_completion_tokens", getattr(settings, "max_tokens", None)
+                    )
+                    reasoning = getattr(getattr(settings, "reasoning", None), "effort", None)
+                    model = getattr(getattr(agent, "model", None), "model", "unknown")
+                    transport = type(getattr(agent, "model", agent)).__name__
+                    provider_request_id = getattr(exc, "request_id", None)
+                    request_id = (
+                        safe_error(provider_request_id, limit=80)
+                        if provider_request_id is not None
+                        else "missing"
+                    )
+                    raise ProviderOutputLimitError(
+                        f"{stage_name} output_limit_exceeded "
+                        f"(model={model}, transport={transport}, {limit_name}={limit}, "
+                        f"reasoning_effort={reasoning or 'provider-default'}, "
+                        f"request_id={request_id}, usage_status=unavailable)"
+                    ) from exc
+                raise
             except (MaxTurnsExceeded, ModelBehaviorError) as exc:
                 response_output_types = self._budget_hooks.response_output_types
+                stage_diagnostics.extend(self._budget_hooks.response_diagnostics)
                 if self._budget_hooks.usage is not None:
                     stage_usage.add(self._budget_hooks.usage)
                 self._last_usage = self._combined_usage(prior_usage, stage_usage)
@@ -372,10 +467,25 @@ class Trader:
                             else "available"
                         )
                         output_types = ",".join(response_output_types) or "none"
+                        transport = (
+                            "chat_completions"
+                            if isinstance(getattr(agent, "model", None), OpenAIChatCompletionsModel)
+                            else "responses"
+                            if isinstance(getattr(agent, "model", None), OpenAIResponsesModel)
+                            else type(getattr(agent, "model", agent)).__name__
+                        )
+                        responses = (
+                            ";".join(
+                                diagnostic.compact(index)
+                                for index, diagnostic in enumerate(stage_diagnostics, start=1)
+                            )
+                            or "none"
+                        )
                         raise IncompleteStructuredOutputError(
                             f"{stage_name} incomplete_output after {stage_usage.requests} "
-                            f"model requests (output_types={output_types}, "
-                            f"usage_status={usage_status})"
+                            f"model requests (transport={transport}, "
+                            f"output_types={output_types}, usage_status={usage_status}, "
+                            f"responses=[{responses}])"
                         ) from exc
                     raise
                 self._log_stage(f"repairing incomplete {stage_name} structured output")
@@ -419,8 +529,11 @@ class Trader:
             _search_query(self.name, strategy, account, search_started),
         )
         decision_cutoff = datetime.now(timezone.utc)
-        researcher = get_researcher(self.model_name, decision_cutoff)
-        self._log_stage(f"synthesizing evidence from {len(bundle.results)} bounded sources")
+        researcher = get_researcher(self.research_model_name, decision_cutoff)
+        self._log_stage(
+            f"synthesizing evidence from {len(bundle.results)} bounded sources "
+            f"with {self.research_model_name}"
+        )
         research_result, research_usage = await self._run_structured_stage(
             researcher,
             research_message(
@@ -433,10 +546,14 @@ class Trader:
             stage_budget=budget,
             max_turns=min(budget.max_turns, RESEARCH_MAX_TURNS),
         )
-        if not isinstance(research_result.final_output, ResearchSynthesis):
-            raise ValueError("researcher did not return ResearchSynthesis")
-        research = _research_brief(bundle, research_result.final_output, decision_cutoff)
-        spent = budget.estimate_cost(research_usage.input_tokens, research_usage.output_tokens)
+        self._research_usage = research_usage
+        if not isinstance(research_result.final_output, ResearchSynthesisOutput):
+            raise ValueError("researcher did not return ResearchSynthesisOutput")
+        synthesis = ResearchSynthesis.model_validate(research_result.final_output.model_dump())
+        research = _research_brief(bundle, synthesis, decision_cutoff)
+        spent = budget.estimate_research_cost(
+            research_usage.input_tokens, research_usage.output_tokens
+        )
         remaining_tokens = budget.max_tokens - research_usage.total_tokens
         remaining_spend = budget.max_spend_usd - spent
         if remaining_tokens <= 0 or remaining_spend <= 0:
@@ -464,7 +581,7 @@ class Trader:
         usage.add(research_usage)
         usage.add(trader_usage)
         self._last_usage = usage
-        estimated_cost = budget.estimate_cost(usage.input_tokens, usage.output_tokens)
+        estimated_cost = self._cycle_cost(budget, usage)
         if usage.total_tokens > budget.max_tokens:
             raise BudgetExceeded(
                 f"cycle token budget exceeded ({usage.total_tokens}/{budget.max_tokens})"
@@ -527,6 +644,7 @@ class Trader:
             model_name=self.model_name,
             market_mode=get_market_service().status().mode.value,
         )
+        metadata["research_model"] = self.research_model_name
         with trace(trace_name, trace_id=trace_id, group_id=context.run_id, metadata=metadata):
             processed, usage = await self.run_with_mcp_servers(budget)
             return processed, usage, trace_id
@@ -534,6 +652,8 @@ class Trader:
     async def run(self, *, run_id: str | None = None):
         self._budget_hooks = None
         self._last_usage = None
+        self._research_usage = None
+        self._active_stage = None
         self._processing_warning = None
         budget = CycleBudget.from_env()
         context = CycleContext.create(
@@ -546,7 +666,7 @@ class Trader:
         telemetry.start_cycle(
             context,
             self.name,
-            self.model_name,
+            f"trader={self.model_name};research={self.research_model_name}",
             TRADER_PROMPT_VERSION,
             market_mode,
             budget,
@@ -556,7 +676,7 @@ class Trader:
         try:
             async with asyncio.timeout(budget.max_wall_seconds):
                 processed, usage, trace_id = await self.run_with_trace(context, budget)
-            cost = budget.estimate_cost(usage.input_tokens, usage.output_tokens)
+            cost = self._cycle_cost(budget, usage)
             telemetry.finish_cycle(
                 context.cycle_id,
                 status="succeeded",
@@ -570,9 +690,7 @@ class Trader:
         except asyncio.CancelledError:
             usage = self._failure_usage()
             self._log_stage("interrupted during scheduler shutdown")
-            cost = budget.estimate_cost(
-                getattr(usage, "input_tokens", 0), getattr(usage, "output_tokens", 0)
-            )
+            cost = self._cycle_cost(budget, usage)
             telemetry.finish_cycle(
                 context.cycle_id,
                 status="interrupted",
@@ -586,9 +704,7 @@ class Trader:
             usage = self._failure_usage()
             self._log_stage(f"failed: {safe_error(e)}")
             attribute_runtime_failure(e)
-            cost = budget.estimate_cost(
-                getattr(usage, "input_tokens", 0), getattr(usage, "output_tokens", 0)
-            )
+            cost = self._cycle_cost(budget, usage)
             telemetry.finish_cycle(
                 context.cycle_id,
                 status="failed",
