@@ -392,9 +392,7 @@ class Trader:
             priced_budget = (
                 stage_budget.for_research_stage() if stage_name == "research" else stage_budget
             )
-            spent = priced_budget.estimate_cost(
-                stage_usage.input_tokens, stage_usage.output_tokens
-            )
+            spent = priced_budget.estimate_cost(stage_usage.input_tokens, stage_usage.output_tokens)
             remaining_tokens = stage_budget.max_tokens - stage_usage.total_tokens
             remaining_spend = stage_budget.max_spend_usd - spent
             if remaining_tokens <= 0 or remaining_spend <= 0:

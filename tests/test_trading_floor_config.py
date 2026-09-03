@@ -28,9 +28,7 @@ def test_traders_receive_separate_research_model(monkeypatch) -> None:
     traders = floor.create_traders()
 
     assert {trader.model_name for trader in traders} == {"gpt-5.4-mini"}
-    assert {trader.research_model_name for trader in traders} == {
-        "gpt-4.1-mini-2025-04-14"
-    }
+    assert {trader.research_model_name for trader in traders} == {"gpt-4.1-mini-2025-04-14"}
 
 
 def test_model_name_preserves_supported_provider_identifier_shapes() -> None:
